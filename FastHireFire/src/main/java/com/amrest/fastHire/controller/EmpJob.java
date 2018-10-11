@@ -2,12 +2,18 @@ package com.amrest.fastHire.controller;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import javax.naming.NamingException;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -21,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.amrest.fastHire.POJO.Detail;
 import com.amrest.fastHire.POJO.Field;
+import com.amrest.fastHire.SF.DestinationClient;
 import com.amrest.fastHire.connections.HttpConnectionGET;
 import com.amrest.fastHire.connections.HttpConnectionPOST;
 import com.amrest.fastHire.utilities.CommonFunctions;
@@ -33,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class EmpJob {
 
 	private static final String configName = "sfconfigname";
+	public static final String destinationName = "prehiremgrSFTest";
 	private static final Logger logger = LoggerFactory.getLogger(EmpJob.class);
 
 	private String paramName = null;
@@ -69,17 +77,20 @@ public class EmpJob {
 	private String deparment = null;
 	private String division = null;
 	private String standardHours = null;
+	private String parentCode = null;
+	private String managerId = null;
 
 	private static String datePattern = "dd/MM/yyyy";
 
 	@PostMapping(value = ConstantManager.empJob, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson(@RequestBody String request) throws ParseException {
+	public String perPerson(@RequestBody String request) throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
 
 		// Extract the params and their values
 		parseRequest(request);
 
 		// getting params for the json Body
 		callAPI(paramPositionValue);
+		getManagerFromEmpJob();
 
 		URLManager genURL = new URLManager(getClass().getSimpleName(), configName);
 		String urlToCall = genURL.formURLToCall();
@@ -94,10 +105,27 @@ public class EmpJob {
 		return result;
 	}
 
+	private void getManagerFromEmpJob() throws NamingException, ClientProtocolException, IOException, URISyntaxException {
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		HttpResponse response = destClient.callDestinationGET("/EmpJob?$format=json&$filter=positionNav/code eq '"+parentCode+"'&$expand=positionNav&$select=userId","");
+		String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+		JSONObject jsonObject = (JSONObject) JSONValue.parse(responseString);
+		jsonObject = (JSONObject) jsonObject.get("d");
+		JSONArray jsonArray = (JSONArray) jsonObject.get("results");
+		jsonObject = (JSONObject)jsonArray.get(0);
+		 managerId = jsonObject.get("userId").toString();
+		
+	}
+
 	// Call another api
 	private void callAPI(String position) {
 		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "Position?$filter=code%20eq%20'" + position
-				+ "'&$format=json&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours";
+				+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
 		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
 		logger.error(urlToCall);
 		
@@ -171,6 +199,12 @@ public class EmpJob {
 			} else {
 				standardHours = "0";
 			}
+			if(jsonObject.get("parentPosition")!=  null){
+				JSONObject parentPositionObject = (JSONObject) JSONValue.parse(jsonObject.get("parentPosition").toString());
+				parentCode = parentPositionObject.get("code").toString();
+			}
+			else
+			{parentCode = "";}
 		}
 	}
 
@@ -278,6 +312,7 @@ public class EmpJob {
 		obj.put(paramTimeTypeName, paramTimeTypeValue);
 		obj.put(paramWorkSchName, paramWorkSchValue);
 		obj.put("standardHours", standardHours);
+		obj.put("managerId", managerId);
 		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}

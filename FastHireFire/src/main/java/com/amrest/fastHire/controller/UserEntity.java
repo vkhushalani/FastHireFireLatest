@@ -38,6 +38,9 @@ public class UserEntity {
 	private String paramName = null;
 	private String paramValue = null;
 	private final String sDate = "startdate";
+	private String emailValue = null;
+	private String lastNameValue = null;
+	private String firstNameValue = null;
 	
 	@PostMapping(value = ConstantManager.userEntity, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public String userEntity(@RequestBody String request) throws ParseException {
@@ -81,6 +84,19 @@ public class UserEntity {
 						logger.error(paramValue.toString());
 						break;
 					}
+					else if(techName.equalsIgnoreCase("emailAddress")){
+						emailValue =  field.getValue().toString();
+						logger.error("emailValue"+emailValue);
+					}
+					else if(techName.equalsIgnoreCase("lastName")){
+						lastNameValue = field.getValue().toString();	
+						logger.error("lastNameValue"+lastNameValue);
+					}
+										
+					else if(techName.equalsIgnoreCase("firstName")){
+						firstNameValue = field.getValue().toString();
+						logger.error("firstNameValue"+firstNameValue);
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -100,6 +116,10 @@ public class UserEntity {
 		obj.put("status", "Active");
 		obj.put("userId", userID);
 		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
+		obj.put("email",emailValue);
+		obj.put("lastName", lastNameValue);
+		obj.put("firstName", firstNameValue);
+		logger.debug("input object"+obj.toJSONString());
 		return obj.toJSONString();
 	}
 	private String dateFormatted(String startDate) {

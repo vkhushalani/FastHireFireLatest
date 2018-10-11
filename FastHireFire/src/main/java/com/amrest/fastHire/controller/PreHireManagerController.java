@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -20,7 +19,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -448,7 +446,7 @@ public class PreHireManagerController {
 												 
 												 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 												 JSONObject responseObject = new JSONObject(responseJson);
-												 
+												 logger.debug("responseObject"+responseObject);
 												 JSONArray responseResult = responseObject.getJSONObject("d").getJSONArray("results");
 												 String valuePath = fieldDataFromSystem.getValue();
 												 String[] valuePathArray = valuePath.split("/");
@@ -456,10 +454,20 @@ public class PreHireManagerController {
 												 String[] keyPathArray = keyPath.split("/");
 												 JSONObject temp = null;
 												 int index =0 ;
+												 
+												 logger.debug("valuePathArray.length"+valuePathArray.length);
 												 if(valuePathArray.length > 1 && keyPathArray.length > 1)
 												 {
 													 for(int k =0;k<valuePathArray.length - 1;k++){
-													 responseResult = responseResult.getJSONObject(0).getJSONObject(valuePathArray[index]).getJSONArray("results");
+														 JSONObject tempObj =  responseResult.getJSONObject(0).getJSONObject(valuePathArray[index]);
+														 if(tempObj.has("results")){
+															 responseResult = tempObj.getJSONArray("results");}
+														 else
+														 {
+															 JSONArray tempArray =  new JSONArray();
+															 tempArray.put(tempObj);
+															 responseResult = tempArray;
+														 }
 													 index = index +1;}
 												 }
 												 
@@ -520,7 +528,7 @@ public class PreHireManagerController {
 				 logger.debug("From tag source SF : "+mapTemplateFieldProperties.getField().getName());
 			 SFAPI depenedentEntity = sfAPIService.findById(fieldDataFromSystem.getTagSourceFromSF(),"GET");
 			 String dependentUrl;
-			 if(depenedentEntity.getTagSource().equalsIgnoreCase("UI")){
+			 if(depenedentEntity.getTagSource().equalsIgnoreCase("UI2")){
 				 
 				 logger.debug("Source is dependent on UI input"+mapTemplateFieldProperties.getField().getName());
 				 dependentUrl = depenedentEntity.getUrl().replace("<"+depenedentEntity.getReplaceTag()+">",compareMap.get(depenedentEntity.getTagSourceValuePath()));
@@ -681,14 +689,15 @@ public class PreHireManagerController {
 		{
 		case "Codelist":
 			CodeList affectedFieldCodelist = codeListService.findByCountryFieldDependent(map.get("fieldId"),map.get("country"), map.get("triggerFieldId"), map.get("selectedValue"));
+			if(affectedFieldCodelist != null){
 			List<CodeListText> affectedFieldCodelistTextList = codeListTextService.findByCodeListIdLang(affectedFieldCodelist.getId(), map.get("locale"));
 			for(CodeListText codeListText : affectedFieldCodelistTextList)
 			{
 				DropDownKeyValue keyValuePair = new DropDownKeyValue();
 				keyValuePair.setKey(codeListText.getValue());
-				keyValuePair.setKey(codeListText.getDescription());
+				keyValuePair.setValue(codeListText.getDescription());
 				resultDropDown.add(keyValuePair);
-			}
+			}}
 			break;
 		case "Picklist":
 			FieldDataFromSystem fieldDataFrom = fieldDataFromSystemService.findByFieldCountry(map.get("fieldId"), map.get("country")).get(0);
@@ -849,21 +858,21 @@ public class PreHireManagerController {
 					 destClient.setConfiguration();
 					 destClient.setDestConfiguration();
 					 destClient.setHeaders(destClient.getDestProperty("Authentication"));
-					 HttpResponse response = destClient.callDestinationGET("/EmpJob","?$filter=userId eq '"+map.get("userId")+"'&$format=json&$expand=userNav&$select=employeeClass,countryOfCompany,userNav/custom10");
+					 HttpResponse response = destClient.callDestinationGET("/EmpJob","?$filter=userId eq '"+map.get("userId")+"'&$format=json&$expand=userNav&$select=employeeClass,countryOfCompany");
 					 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 				 
 					 JSONObject responseObject = new JSONObject(responseJson);
 					 JSONObject resultObj = responseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 					 map.put("uri", resultObj.getJSONObject("__metadata").getString("uri"));
 					 
-					 String value= resultObj.getJSONObject("userNav").getString("custom10");
-					 String milliSec = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
-//						logger.debug("Endate Milli Sec: "+milliSec);
-						long milliSecLong = Long.valueOf(milliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
-						milliSec = Objects.toString(milliSecLong,null);
-//						logger.debug("New milliSec Milli Sec: "+milliSec);
-						value = value.replace(value.substring(value.indexOf("(") + 1, value.lastIndexOf(")")), milliSec);
-						map.put("startDate",value);
+//					 String value= resultObj.getJSONObject("userNav").getString("custom10");
+//					 String milliSec = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
+////						logger.debug("Endate Milli Sec: "+milliSec);
+//						long milliSecLong = Long.valueOf(milliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
+//						milliSec = Objects.toString(milliSecLong,null);
+////						logger.debug("New milliSec Milli Sec: "+milliSec);
+//						value = value.replace(value.substring(value.indexOf("(") + 1, value.lastIndexOf(")")), milliSec);
+//						map.put("startDate",value);
 				 // not recommended but no choice need to discuss for employee class
 					 switch(resultObj.getString("countryOfCompany"))
 					 {
@@ -878,9 +887,7 @@ public class PreHireManagerController {
 					 		break;	
 						 
 					 }
-				// add end Date
-//				 Date endDate = new SimpleDateFormat("dd/MM/yyyy").parse("31/12/9999");
-//				 map.put("endDate", "/Date("+Long.toString(endDate.getTime())+")/");
+
 				 // update the employee class to an actual one 
 				 // read the json file from resource folder
 					 JSONObject jsonObject = readJSONFile("/JSONFiles/ConfirmHire.json");
@@ -945,7 +952,6 @@ public class PreHireManagerController {
 						String updateresponseJson = EntityUtils.toString(updateresponse.getEntity(), "UTF-8");
 						JSONObject updateresponseObject = new JSONObject(updateresponseJson);
 						String status =  updateresponseObject.getJSONArray("d").getJSONObject(0).getString("status");
-//						String message =  updateresponseObject.getJSONArray("d").getJSONObject(0).getString("message");
 						if(!status.equalsIgnoreCase("OK")){
 							return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 									 

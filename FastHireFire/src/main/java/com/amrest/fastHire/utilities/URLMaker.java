@@ -193,7 +193,7 @@ public class URLMaker {
 			break;
 
 		case "UserEntity":
-			urlToMake = urlToMake + "upsert?$format=json";
+			urlToMake = urlToMake + "upsert?$format=json&sendWelcomeMessage=true";
 			break;
 			
 		case "PerPerson":
