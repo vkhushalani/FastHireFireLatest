@@ -755,83 +755,66 @@ public class PreHireManagerController {
 		    map.put(key, postObject.getString(key));
 		}
 		
-		JSONObject jsonObject =  readJSONFile("/JSONFiles/InactivateCandidate.json");
+		// declare the destinaton client to call SF APis
+	    DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 		
-		//parse json file to JSON String
+		 
+		 // get Job Code from the user calling Emp job
+		 HttpResponse EmpJobResponse = destClient.callDestinationGET("/EmpJob","?$filter=userId eq '"+map.get("userId") +"' &$format=json&$select=startDate,userId,employmentType,workscheduleCode,jobCode,division,standardHours,costCenter,payGrade,eventReason,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,location,holidayCalendarCode,company");
+		 String EmpJobResponseJson = EntityUtils.toString(EmpJobResponse.getEntity(), "UTF-8");
+		 JSONObject EmpJobResponseObject = new JSONObject(EmpJobResponseJson);
+		 EmpJobResponseObject = EmpJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		 String jobCode = EmpJobResponseObject.getString("position");
+
+		 // get Uri from the job code calling position details 
+		 HttpResponse posResponse = destClient.callDestinationGET("/Position","?$filter=code eq '" + jobCode+ "'&$format=json&$select=code,location,payGrade,businessUnit,jobCode,department,division,company");
+		 String posResponseJson = EntityUtils.toString(posResponse.getEntity(), "UTF-8");
+		 JSONObject posResponseObject = new JSONObject(posResponseJson);
+		 String uri = posResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0).getJSONObject("__metadata").getString("uri");
+		 
+		
+		 //read the inactivating cadidate post json 
+		JSONObject jsonObject =  readJSONFile("/JSONFiles/InactivateCandidate.json");
+			
+		// replace the values in the post jsonString from the map
 		if(jsonObject !=null){
-        String jsonString = jsonObject.toString();
-        // replace the values from the map
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-    		jsonString = jsonString.replaceAll("<"+entry.getKey()+">", entry.getValue());
-    	}
-        
-        // now call all the requests for cancel hire
-        
-        //inactivate employee
-         DestinationClient destClient = new DestinationClient();
-		 destClient.setDestName(destinationName);
-		 destClient.setHeaderProvider();
-		 destClient.setConfiguration();
-		 destClient.setDestConfiguration();
-		 destClient.setHeaders(destClient.getDestProperty("Authentication"));
+				
+		    String jsonString = jsonObject.toString();
+		        
+		  for (Map.Entry<String, String> entry : map.entrySet()) {
+			jsonString = jsonString.replaceAll("<"+entry.getKey()+">", entry.getValue());
+		 	}
+		  
+		// change the location of empjob entity foe background process deletion of candidates
+		  
+		  EmpJobResponseObject.put("location", "NA");
+		  HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("upsert", "?$format=json",EmpJobResponseObject.toString());
+		String EmpJobPostResponseJson = EntityUtils.toString(EmpJobPostResponse.getEntity(), "UTF-8");
+		  
+		//inactivate employee post
 		 HttpResponse response = destClient.callDestinationPOST("upsert", "?$format=json",jsonString );
 		 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		
-		 // get Job Code from the user calling Emp job
-//		 logger.debug("get Job Code from the user calling Emp job");
-		 DestinationClient empJobDestClient = new DestinationClient();
-		 empJobDestClient.setDestName(destinationName);
-		 empJobDestClient.setHeaderProvider();
-		 empJobDestClient.setConfiguration();
-		 empJobDestClient.setDestConfiguration();
-		 empJobDestClient.setHeaders(empJobDestClient.getDestProperty("Authentication"));
-		 HttpResponse EmpJobResponse = empJobDestClient.callDestinationGET("/EmpJob","?$filter=userId eq '"+map.get("userId") +"' &$format=json&$select=position");
-		 String EmpJobResponseJson = EntityUtils.toString(EmpJobResponse.getEntity(), "UTF-8");
-		 JSONObject EmpJobResponseObject = new JSONObject(EmpJobResponseJson);
-//		 logger.debug("EmpJobResponseObject: "+EmpJobResponseObject);
-		 String jobCode = EmpJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0).getString("position");
-//		 logger.debug("JobCode: "+ jobCode);
-		 // get Uri from the job code calling position details 
-		 DestinationClient posDestClient = new DestinationClient();
-		 posDestClient.setDestName(destinationName);
-		 posDestClient.setHeaderProvider();
-		 posDestClient.setConfiguration();
-		 posDestClient.setDestConfiguration();
-		 posDestClient.setHeaders(posDestClient.getDestProperty("Authentication"));
-		 HttpResponse posResponse = posDestClient.callDestinationGET("/Position","?$filter=code eq '" + jobCode+ "'&$format=json&$select=code,location,payGrade,businessUnit,jobCode,department,division,company");
-		 String posResponseJson = EntityUtils.toString(posResponse.getEntity(), "UTF-8");
-		 JSONObject posResponseObject = new JSONObject(posResponseJson);
-		 
-//		 logger.debug("posResponseObject"+posResponseObject);
-		 String uri = posResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0).getJSONObject("__metadata").getString("uri");
-		 
-//		 logger.debug("uri"+uri);
-		 // get the json for vacant position 
+
+		 // get the json string for vacant position 
 		 JSONObject vacantJsonObject =  readJSONFile("/JSONFiles/CancelHire.json");
-			if(vacantJsonObject !=null){
 			
-				// clear Map
-				map.clear();
-		 	
-				// add new values
-				
+		// replace the values from the map
+		 if(vacantJsonObject !=null){
 				map.put("uri", uri);
-		 	
-				//parse json file to JSON String
-				
 				String vacantJsonString = vacantJsonObject.toString();
-				// replace the values from the map
+				
 				for (Map.Entry<String, String> entry : map.entrySet()) {
 					vacantJsonString = vacantJsonString.replaceAll("<"+entry.getKey()+">", entry.getValue());
 	    	}
 //				logger.debug("replace vacantJsonString: "+vacantJsonString);
-			 DestinationClient vacantDestClient = new DestinationClient();
-			 vacantDestClient.setDestName(destinationName);
-			 vacantDestClient.setHeaderProvider();
-			 vacantDestClient.setConfiguration();
-			 vacantDestClient.setDestConfiguration();
-			 vacantDestClient.setHeaders(vacantDestClient.getDestProperty("Authentication"));
-			 HttpResponse vacantResponse = vacantDestClient.callDestinationPOST("upsert", "?$format=json",vacantJsonString);
+			
+			 HttpResponse vacantResponse = destClient.callDestinationPOST("upsert", "?$format=json",vacantJsonString);
 			 String vacantResponseJson = EntityUtils.toString(vacantResponse.getEntity(), "UTF-8");
 			 return ResponseEntity.ok().body(vacantResponseJson);
 			}
