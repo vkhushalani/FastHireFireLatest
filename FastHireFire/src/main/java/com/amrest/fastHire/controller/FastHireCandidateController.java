@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -85,6 +86,27 @@ public class FastHireCandidateController {
 	
 	@Autowired
 	FieldDataFromSystemService fieldDataFromSystemService;
+	
+	@GetMapping(value = "/UserDetails")
+	public ResponseEntity <?> getUserDetails(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
+		String loggedInUser =  request.getUserPrincipal().getName();
+		loggedInUser = "E00000118";
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// call to get local language of the logged in user
+		
+		HttpResponse userResponse =  destClient.callDestinationGET("/User", "?$filter=userId eq '"+loggedInUser+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
+		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
+		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		return ResponseEntity.ok().body(userResponseObject.toString());
+	}
 	
 	@GetMapping(value = "/FormTemplate")
 	public ResponseEntity <?> getFormTemplateFields(@RequestParam(value = "businessUnit", required = false) String businessUnitId,

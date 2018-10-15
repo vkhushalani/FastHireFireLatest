@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -51,6 +53,8 @@ import com.amrest.fastHire.service.MapCountryBusinessUnitTemplateService;
 import com.amrest.fastHire.service.MapTemplateFieldGroupService;
 import com.amrest.fastHire.service.MapTemplateFieldPropertiesService;
 import com.amrest.fastHire.service.SFAPIService;
+import com.amrest.fastHire.service.SFConstantsService;
+import com.amrest.fastHire.utilities.DashBoardPositionClass;
 import com.amrest.fastHire.utilities.DropDownKeyValue;
 import com.amrest.fastHire.service.FieldTextService;
 import com.google.gson.Gson;
@@ -64,6 +68,7 @@ import com.amrest.fastHire.model.MapCountryBusinessUnitTemplate;
 import com.amrest.fastHire.model.MapTemplateFieldGroup;
 import com.amrest.fastHire.model.MapTemplateFieldProperties;
 import com.amrest.fastHire.model.SFAPI;
+import com.amrest.fastHire.model.SFConstants;
 import com.amrest.fastHire.model.Template;
 
 
@@ -107,36 +112,229 @@ public class PreHireManagerController {
 	
 	@Autowired
 	FieldService fieldService;
+	@Autowired
+	SFConstantsService sfConstantsService;
 	
+	@GetMapping(value = "/UserDetails")
+	public ResponseEntity <?> getUserDetails(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
+		String loggedInUser =  request.getUserPrincipal().getName();
+		loggedInUser = "E00000118";
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// call to get local language of the logged in user
+		
+		HttpResponse userResponse =  destClient.callDestinationGET("/User", "?$filter=userId eq '"+loggedInUser+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
+		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
+		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		return ResponseEntity.ok().body(userResponseObject.toString());
+	}
+	
+	@GetMapping(value = "/DashBoardPositions")
+	public ResponseEntity <List<DashBoardPositionClass>> getDashBoardPositions(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException, java.text.ParseException{
+		String loggedInUser =  request.getUserPrincipal().getName();
+		// need to remove this code
+		loggedInUser = "E00000118";
+		
+		Map<String,String> paraMap = new HashMap<String,String>();
+		List<DashBoardPositionClass> returnPositions = new ArrayList<DashBoardPositionClass>();
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// get the Emjob Details of the logged In user
+		
+		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
+		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
+		JSONObject empJobResponseObject = new JSONObject(empJobResponseJsonString);
+		empJobResponseObject = empJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		paraMap.put("company", empJobResponseObject.getJSONObject("positionNav").getString("company"));
+		paraMap.put("department", empJobResponseObject.getJSONObject("positionNav").getString("department"));
+		paraMap.put("country", empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
+		
+		
+		
+		// get Vacant Positions 
+		HttpResponse vacantPosResponse =  destClient.callDestinationGET("/Position", "?$filter="
+				+ "vacant eq true and company eq '"+paraMap.get("company")+"' "
+				+ "and department eq '"+paraMap.get("department")+"' "
+				+ "and incumbent eq null"
+				+ "&$format=json"
+				+ "&$expand=employeeClassNav"
+				+ "&$select="
+				+ "externalName_localized,"
+				+ "externalName_defaultValue,"
+				+ "createdDate,payGrade,jobTitle,code"
+				+ "employeeClassNav/label_defaultValue,"
+				+ "employeeClassNav/label_localized");
+		String vacantPosResponseJsonString = EntityUtils.toString(vacantPosResponse.getEntity(), "UTF-8");
+		JSONObject vacantPosResponseObject = new JSONObject(vacantPosResponseJsonString);
+		JSONArray vacantPosResultArray = vacantPosResponseObject.getJSONObject("d").getJSONArray("results");
+		
+		for (int i=0;i<vacantPosResultArray.length();i++)
+		{
+			JSONObject vacantPos = vacantPosResultArray.getJSONObject(i);
+			DashBoardPositionClass pos = new DashBoardPositionClass();
+			pos.setPayGrade(vacantPos.getString("payGrade"));
+			pos.setPositionCode(vacantPos.getString("code"));
+			pos.setPositionTitle(vacantPos.getString("externalName_localized") != null ? vacantPos.getString("externalName_localized") : vacantPos.getString("externalName_defaultValue"));//null check 
+			pos.setEmployeeClassName(vacantPos.getJSONObject("employeeClassNav").getString("label_localized")!= null ? vacantPos.getJSONObject("employeeClassNav").getString("label_localized") : vacantPos.getJSONObject("employeeClassNav").getString("label_defaultValue"));//null check
+			pos.setUserFirstName(null);
+			pos.setUserLastName(null);
+			pos.setUserId(null);
+			pos.setLastUpdatedDate(vacantPos.getString("createdDate"));
+			pos.setDayDiff(null);
+			pos.setVacant(true);
+			pos.setStartDate(null);
+			returnPositions.add(pos);
+			
+		}
+		
+		SFConstants employeeClassConstant = sfConstantsService.findById("employeeClassId");
+		SFConstants empStatusConstant = sfConstantsService.findById("emplStatusId");
+		
+		// get OnGoing Hiring
+		HttpResponse ongoingPosResponse =  destClient.callDestinationGET("/EmpJob", "?$format=json&$filter="
+				+ "employeeClass eq '"+employeeClassConstant.getValue()+"' and "
+				+ "company eq '"+paraMap.get("company")+"' and "
+				+ "department eq '"+paraMap.get("department")+"' and "
+				+ "emplStatusNav/id ne '"+empStatusConstant.getValue()+"'"
+				+ "&$expand=positionNav,userNav,"
+				+ "positionNav/employeeClassNav"
+				+ "&$select=userId,startDate,position,"
+				+ "createdDateTime,createdOn,"
+				+ "positionNav/externalName_localized,"
+				+ "positionNav/externalName_defaultValue,"
+				+ "positionNav/payGrade,positionNav/jobTitle,"
+				+ "userNav/userId,userNav/username,userNav/defaultFullName,"
+				+ "userNav/firstName,userNav/lastName,userNav/custom10,"
+				+ "positionNav/employeeClassNav/label_localized,"
+				+ "positionNav/employeeClassNav/label_defaultValue");
+		
+		String ongoingPosResponseJsonString = EntityUtils.toString(ongoingPosResponse.getEntity(), "UTF-8");
+		JSONObject ongoingPosResponseObject = new JSONObject(ongoingPosResponseJsonString);
+		JSONArray ongoingPosResultArray = ongoingPosResponseObject.getJSONObject("d").getJSONArray("results");
+		
+		SimpleDateFormat dateformatter = new SimpleDateFormat(
+			      "dd/MM/yyyy");
+		Date today =  dateformatter.parse(dateformatter.format(new Date()));
+		
+		for (int i=0;i<ongoingPosResultArray.length();i++)
+		{
+			JSONObject ongoingPos = ongoingPosResultArray.getJSONObject(i);
+			DashBoardPositionClass pos = new DashBoardPositionClass();
+			pos.setPayGrade(ongoingPos.getJSONObject("positionNav").getString("payGrade"));
+			pos.setPositionCode(ongoingPos.getString("position"));
+			pos.setPositionTitle(ongoingPos.getJSONObject("positionNav").getString("externalName_localized") !=null ? ongoingPos.getJSONObject("positionNav").getString("externalName_localized"):ongoingPos.getJSONObject("positionNav").getString("externalName_defaultValue"));
+			pos.setEmployeeClassName(ongoingPos.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_localized") !=null ? ongoingPos.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_localized"): ongoingPos.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_defaultValue"));
+			pos.setUserFirstName(ongoingPos.getJSONObject("userNav").getString("firstName"));
+			pos.setUserLastName(ongoingPos.getJSONObject("userNav").getString("lastName"));
+			pos.setUserId(ongoingPos.getJSONObject("userNav").getString("userId"));
+			pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
+			pos.setVacant(false);
+			
+			String startDate = ongoingPos.getJSONObject("userNav").getString("custom10");
+			String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
+			long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
+			smilliSec = Objects.toString(smilliSecLong,null);
+			startDate = startDate.replace(startDate.substring(startDate.indexOf("(") + 1, startDate.lastIndexOf(")")), smilliSec);
+			pos.setStartDate(startDate);
+			
+			long diffInMillies =  Math.abs(smilliSecLong - today.getTime());
+			long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+			pos.setDayDiff(Objects.toString(diff,null)); // calculate day difference
+			returnPositions.add(pos);
+			
+		}
+		
+		// return the JSON Object
+		return ResponseEntity.ok().body(returnPositions);
+		
+	}
 	@GetMapping(value = "/FormTemplate")
 	public ResponseEntity <?> getFormTemplateFields(
-			@RequestParam(value = "country", required = true) String countryId,
+			HttpServletRequest request,
 			@RequestParam(value = "category", required = true) String category,
 			@RequestParam(value = "businessUnit", required = false) String businessUnitId,
-			@RequestParam(value = "language", required = false , defaultValue = "en_US") String language,
 			@RequestParam(value = "candidateId", required = false ) String candidateId,
 			@RequestParam(value = "position", required = true ) String position
 			) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
 		
+		String loggedInUser =  request.getUserPrincipal().getName();
+		loggedInUser = "E00000118";
+		
+		Map<String,String> compareMap = new HashMap<String,String>();
+		
+		
+		compareMap.put("category", category);
+		compareMap.put("businessUnit", businessUnitId);
+		
+		compareMap.put("position", position);
+		
+		
+		// make calls to get language and country
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// call to get local language of the logged in user
+		
+		HttpResponse userResponse =  destClient.callDestinationGET("/User", "?$filter=userId eq '"+loggedInUser+ "'&$format=json&$select=defaultLocale");
+		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
+		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		compareMap.put("locale", userResponseObject.getString("defaultLocale"));
+		
+		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country");
+		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
+		JSONObject empJobResponseObject = new JSONObject(empJobResponseJsonString);
+		empJobResponseObject = empJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		
+		compareMap.put("company", empJobResponseObject.getJSONObject("positionNav").getString("company"));
+		compareMap.put("department", empJobResponseObject.getJSONObject("positionNav").getString("department"));
+		compareMap.put("country", empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
+		
+		SFConstants employeeClassConstant = sfConstantsService.findById("employeeClassId");
+		SFConstants empStatusConstant = sfConstantsService.findById("emplStatusId");
+		
+		
+		HttpResponse candidateResponse =  destClient.callDestinationGET("/EmpJob", "?$format=json&$filter=position eq '"+compareMap.get("position")+"' and employeeClass eq '"+employeeClassConstant+"' and company eq '"+compareMap.get("company")+"' and department eq '"+compareMap.get("department")+"' and emplStatusNav/id ne '"+empStatusConstant+"'&$select=userId,position");
+		String candidateResponseJsonString = EntityUtils.toString(candidateResponse.getEntity(), "UTF-8");
+		JSONObject candidateResponseObject = new JSONObject(candidateResponseJsonString);
+		candidateResponseObject = candidateResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		if(candidateResponseObject !=null){
+		compareMap.put("candidateId", candidateResponseObject.getString("userId"));
+		}
+		else
+		{compareMap.put("candidateId", "");}
+		
 		Date today = new Date();
 		Template template = null;
 		JSONArray returnArray =  new JSONArray();
-		Map<String,String> compareMap = new HashMap<String,String>();
-		compareMap.put("country", countryId);
-		compareMap.put("category", category);
-		compareMap.put("businessUnit", businessUnitId);
-		compareMap.put("locale", language);
-		compareMap.put("candidateId", candidateId);
-		compareMap.put("position", position);
-			
+		
+		
 		// Get the Business Unit and Company Map
 		MapCountryBusinessUnit mapCountryBusinessUnit;
 		if(businessUnitId ==  null){
-		List<MapCountryBusinessUnit> mapCountryBusinessUnitList = mapCountryBusinessUnitService.findByCountry(countryId);
+		List<MapCountryBusinessUnit> mapCountryBusinessUnitList = mapCountryBusinessUnitService.findByCountry(compareMap.get("country"));
 		mapCountryBusinessUnit = mapCountryBusinessUnitList.get(0);}
 		else
 		{
-			 mapCountryBusinessUnit = mapCountryBusinessUnitService.findByCountryBusinessUnit(countryId,businessUnitId);
+			 mapCountryBusinessUnit = mapCountryBusinessUnitService.findByCountryBusinessUnit(compareMap.get("country"),businessUnitId);
 		}
 		//getting the template per BUnit and Country
 		List<MapCountryBusinessUnitTemplate> mapTemplateList = mapCountryBusinessUnitTemplateService.findByCountryBusinessUnitId(mapCountryBusinessUnit.getId());
@@ -277,7 +475,7 @@ public class PreHireManagerController {
 								
 								//setting field labels
 //								logger.debug("setting field labels"+mapTemplateFieldProperties.getField().getTechnicalName());
-								FieldText fieldText = fieldTextService.findByFieldLanguage(mapTemplateFieldProperties.getFieldId(),language);
+								FieldText fieldText = fieldTextService.findByFieldLanguage(mapTemplateFieldProperties.getFieldId(),compareMap.get("locale"));
 								if(fieldText!=null){
 									
 									mapTemplateFieldProperties.getField().setName(fieldText.getName());
@@ -330,8 +528,8 @@ public class PreHireManagerController {
 										{	
 //											logger.debug("Inside Codelist "+mapTemplateFieldProperties.getField().getName());
 											
-											String codeListId = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), countryId).getId();
-										CodeListText clText = codeListTextService.findById(codeListId, language, value);	
+											String codeListId = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), compareMap.get("country")).getId();
+										CodeListText clText = codeListTextService.findById(codeListId, compareMap.get("locale"), value);	
 											if( clText != null){
 													value = clText.getDescription();
 													}
@@ -382,17 +580,12 @@ public class PreHireManagerController {
 								 	{
 										 case "Picklist": 
 //											 logger.debug("Picklist"+mapTemplateFieldProperties.getField().getName());
-											 fieldDataFromSystemList =  fieldDataFromSystemService.findByFieldCountry(mapTemplateFieldProperties.getField().getId(), countryId);
+											 fieldDataFromSystemList =  fieldDataFromSystemService.findByFieldCountry(mapTemplateFieldProperties.getField().getId(), compareMap.get("country"));
 											
 											 if(fieldDataFromSystemList.size() !=0)
 											 {
 												 FieldDataFromSystem fieldDataFromSystem = fieldDataFromSystemList.get(0);
-												 DestinationClient destClient = new DestinationClient();
-												 destClient.setDestName(fieldDataFromSystem.getDestinationName());
-												 destClient.setHeaderProvider();
-												 destClient.setConfiguration();
-												 destClient.setDestConfiguration();
-												 destClient.setHeaders(destClient.getDestProperty("Authentication"));
+												
 //												  
 												 logger.debug("ID: "+fieldDataFromSystem.getFieldId() +", Name: "+ mapTemplateFieldProperties.getField().getName()+fieldDataFromSystem.getIsDependentField());
 												String picklistUrlFilter = getPicklistUrlFilter(fieldDataFromSystem,mapTemplateFieldProperties,compareMap,responseMap,destClient);
@@ -415,7 +608,7 @@ public class PreHireManagerController {
 													 JSONArray pickListLabels = responseResult.getJSONObject(i).getJSONObject("picklistLabels").getJSONArray("results");
 													 for(int j=0;j<pickListLabels.length();j++)
 													 {
-														 if(pickListLabels.getJSONObject(j).get("locale").toString().equalsIgnoreCase(language))
+														 if(pickListLabels.getJSONObject(j).get("locale").toString().equalsIgnoreCase(compareMap.get("locale")))
 														 {
 															 keyValue.setValue(pickListLabels.getJSONObject(j).get("label").toString());
 														 }
@@ -428,17 +621,12 @@ public class PreHireManagerController {
 											 break;
 										 case "Entity":
 //											 logger.debug("Entity"+mapTemplateFieldProperties.getField().getName());
-											  fieldDataFromSystemList =  fieldDataFromSystemService.findByFieldCountry(mapTemplateFieldProperties.getField().getId(), countryId);
+											  fieldDataFromSystemList =  fieldDataFromSystemService.findByFieldCountry(mapTemplateFieldProperties.getField().getId(), compareMap.get("country"));
 											
 											 if(fieldDataFromSystemList.size() !=0)
 											 {
 												 FieldDataFromSystem fieldDataFromSystem = fieldDataFromSystemList.get(0);
-												 DestinationClient destClient = new DestinationClient();
-												 destClient.setDestName(fieldDataFromSystem.getDestinationName());
-												 destClient.setHeaderProvider();
-												 destClient.setConfiguration();
-												 destClient.setDestConfiguration();
-												 destClient.setHeaders(destClient.getDestProperty("Authentication"));
+												 
 												 logger.debug("ID: "+fieldDataFromSystem.getFieldId() +", Name: "+ mapTemplateFieldProperties.getField().getName()+fieldDataFromSystem.getIsDependentField());
 												 String picklistUrlFilter = getPicklistUrlFilter(fieldDataFromSystem,mapTemplateFieldProperties,compareMap,responseMap,destClient);
 												 logger.debug("picklistUrlFilter"+picklistUrlFilter);
@@ -478,7 +666,7 @@ public class PreHireManagerController {
 												 	if(valuePathArray[index].contains("<locale>"))
 														 {
 															
-															 valuePathArray[index] = valuePathArray[index].replace("<locale>", language);
+															 valuePathArray[index] = valuePathArray[index].replace("<locale>", compareMap.get("locale"));
 														 }
 												 	keyValue.setValue(temp.get(valuePathArray[index]).toString());
 												 	keyValue.setKey(temp.get(keyPathArray[index]).toString());
@@ -490,9 +678,9 @@ public class PreHireManagerController {
 											 break;
 										 case "Codelist":
 //											 logger.debug("Codelist"+mapTemplateFieldProperties.getField().getName());
-											 CodeList codeList = codeListService.findByCountryField(mapTemplateFieldProperties.getField().getId(), countryId);
+											 CodeList codeList = codeListService.findByCountryField(mapTemplateFieldProperties.getField().getId(), compareMap.get("country"));
 											 if(codeList != null){
-											 List<CodeListText> codeListValues = codeListTextService.findByCodeListIdLang(codeList.getId(), language);
+											 List<CodeListText> codeListValues = codeListTextService.findByCodeListIdLang(codeList.getId(), compareMap.get("locale"));
 											 for(CodeListText value : codeListValues){
 												 DropDownKeyValue keyValue = new DropDownKeyValue();
 												 keyValue.setKey(value.getValue());
@@ -848,29 +1036,11 @@ public class PreHireManagerController {
 					 JSONObject resultObj = responseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 					 map.put("uri", resultObj.getJSONObject("__metadata").getString("uri"));
 					 
-//					 String value= resultObj.getJSONObject("userNav").getString("custom10");
-//					 String milliSec = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
-////						logger.debug("Endate Milli Sec: "+milliSec);
-//						long milliSecLong = Long.valueOf(milliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
-//						milliSec = Objects.toString(milliSecLong,null);
-////						logger.debug("New milliSec Milli Sec: "+milliSec);
-//						value = value.replace(value.substring(value.indexOf("(") + 1, value.lastIndexOf(")")), milliSec);
-//						map.put("startDate",value);
 				 // not recommended but no choice need to discuss for employee class
-					 switch(resultObj.getString("countryOfCompany"))
-					 {
-					 	case "POL":
-					 		 map.put("employeeClass", "34465");
-					 		break;
-					 	case "HUN":
-					 		map.put("employeeClass", "34208");
-					 		break;
-					 	case "FRA"	:
-					 		map.put("employeeClass", "34043");
-					 		break;	
-						 
+					 if(resultObj.getString("countryOfCompany") !=null){
+					 SFConstants employeeClassConst = sfConstantsService.findById("employeeClassId_"+resultObj.getString("countryOfCompany"));
+					 map.put("employeeClass", employeeClassConst.getValue());
 					 }
-
 				 // update the employee class to an actual one 
 				 // read the json file from resource folder
 					 JSONObject jsonObject = readJSONFile("/JSONFiles/ConfirmHire.json");
