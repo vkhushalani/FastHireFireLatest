@@ -90,6 +90,17 @@ public class MapTemplateFieldPropertiesServiceImp implements MapTemplateFieldPro
 		List<MapTemplateFieldProperties> items =  query.getResultList();
 		return items;
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<MapTemplateFieldProperties> getCandidateIsEIsVFalseFields(String templateFieldGroupId) {
+		// TODO Auto-generated method stub
+		Query query = em.createNamedQuery("MapTemplateFieldProperties.getCandidateIsVisibleAndIsEditableFalse")
+				.setParameter("templateFieldGroupId",templateFieldGroupId)
+				.setParameter("Isfalse", false);
+		List<MapTemplateFieldProperties> items =  query.getResultList();
+		return items;
+	}
 
 
 }

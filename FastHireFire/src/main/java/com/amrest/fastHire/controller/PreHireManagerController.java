@@ -174,7 +174,7 @@ public class PreHireManagerController {
 				+ "&$select="
 				+ "externalName_localized,"
 				+ "externalName_defaultValue,"
-				+ "createdDate,payGrade,jobTitle,code"
+				+ "createdDate,payGrade,jobTitle,code,"
 				+ "employeeClassNav/label_defaultValue,"
 				+ "employeeClassNav/label_localized");
 		String vacantPosResponseJsonString = EntityUtils.toString(vacantPosResponse.getEntity(), "UTF-8");
@@ -231,7 +231,10 @@ public class PreHireManagerController {
 		
 		for (int i=0;i<ongoingPosResultArray.length();i++)
 		{
+			
 			JSONObject ongoingPos = ongoingPosResultArray.getJSONObject(i);
+			logger.debug("userNav"+ongoingPos.get("userNav"));
+			if(!ongoingPos.get("userNav").toString().equalsIgnoreCase("null")){
 			DashBoardPositionClass pos = new DashBoardPositionClass();
 			pos.setPayGrade(ongoingPos.getJSONObject("positionNav").getString("payGrade"));
 			pos.setPositionCode(ongoingPos.getString("position"));
@@ -253,7 +256,7 @@ public class PreHireManagerController {
 			long diffInMillies =  Math.abs(smilliSecLong - today.getTime());
 			long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
 			pos.setDayDiff(Objects.toString(diff,null)); // calculate day difference
-			returnPositions.add(pos);
+			returnPositions.add(pos);}
 			
 		}
 		
@@ -261,12 +264,29 @@ public class PreHireManagerController {
 		return ResponseEntity.ok().body(returnPositions);
 		
 	}
+	@GetMapping(value = "/PositionDetails/{position}")
+	public ResponseEntity <?> getPositionDetails(@PathVariable("position") String position) throws ClientProtocolException, IOException, URISyntaxException, NamingException{
+		
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// call to get local language of the logged in user
+		
+		HttpResponse userResponse =  destClient.callDestinationGET("/Position", "?$filter=code eq '"+position+"'&$format=json&$select=code,location,payGrade,jobCode,standardHours,externalName_localized");
+		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
+		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		return ResponseEntity.ok().body(userResponseObject.toString());
+	}
 	@GetMapping(value = "/FormTemplate")
 	public ResponseEntity <?> getFormTemplateFields(
 			HttpServletRequest request,
-			@RequestParam(value = "category", required = true) String category,
 			@RequestParam(value = "businessUnit", required = false) String businessUnitId,
-			@RequestParam(value = "candidateId", required = false ) String candidateId,
 			@RequestParam(value = "position", required = true ) String position
 			) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
 		
@@ -276,9 +296,8 @@ public class PreHireManagerController {
 		Map<String,String> compareMap = new HashMap<String,String>();
 		
 		
-		compareMap.put("category", category);
-		compareMap.put("businessUnit", businessUnitId);
 		
+		compareMap.put("businessUnit", businessUnitId);
 		compareMap.put("position", position);
 		
 		
@@ -299,7 +318,7 @@ public class PreHireManagerController {
 		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 		compareMap.put("locale", userResponseObject.getString("defaultLocale"));
 		
-		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country");
+		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country,positionNav/company,positionNav/department");
 		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
 		JSONObject empJobResponseObject = new JSONObject(empJobResponseJsonString);
 		empJobResponseObject = empJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
@@ -317,10 +336,16 @@ public class PreHireManagerController {
 		JSONObject candidateResponseObject = new JSONObject(candidateResponseJsonString);
 		candidateResponseObject = candidateResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 		if(candidateResponseObject !=null){
-		compareMap.put("candidateId", candidateResponseObject.getString("userId"));
+			compareMap.put("category", "CONFIRM");
+			compareMap.put("candidateId", candidateResponseObject.getString("userId"));
 		}
 		else
-		{compareMap.put("candidateId", "");}
+		{	
+			compareMap.put("category", "INITIATE");
+			compareMap.put("candidateId", "");
+		}
+		
+		
 		
 		Date today = new Date();
 		Template template = null;
@@ -346,7 +371,7 @@ public class PreHireManagerController {
 			if(today.before(mapTemplate.getEndDate()) && today.after(mapTemplate.getStartDate()))
 			 {
 				
-				if( mapTemplate.getTemplate().getCategory().equalsIgnoreCase(category))
+				if( mapTemplate.getTemplate().getCategory().equalsIgnoreCase(compareMap.get("category")))
 				{
 					template = mapTemplate.getTemplate();
 					break;
@@ -366,7 +391,7 @@ public class PreHireManagerController {
 				
 				// get the details of Position for CONFIRM Hire Template value setting 
 //				logger.debug("get the details of Position for CONFIRM Hire Template value setting ");
-				if(category.equalsIgnoreCase("CONFIRM")){
+				if(compareMap.get("category").equalsIgnoreCase("CONFIRM")){
 					
 					// get all the fields Entity Names Distinct
 					for(MapTemplateFieldGroup fieldGroup : templateFieldGroups)
@@ -484,7 +509,7 @@ public class PreHireManagerController {
 								//setting the field values
 //								logger.debug("setting the field values"+mapTemplateFieldProperties.getField().getName());
 								//INITIATE Template
-								if(category.equalsIgnoreCase("INITIATE")){
+								if(compareMap.get("category").equalsIgnoreCase("INITIATE")){
 									if(mapTemplateFieldProperties.getValue() == null){
 									if(mapTemplateFieldProperties.getField().getInitialValue() != null){
 										mapTemplateFieldProperties.setValue(mapTemplateFieldProperties.getField().getInitialValue());}

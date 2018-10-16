@@ -25,7 +25,8 @@ import com.amrest.fastHire.utilities.DropDownKeyValue;
 		@NamedQuery(name = "MapTemplateFieldProperties.findByTemplateFieldGroupManager", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.templateFieldGroupId = :templateFieldGroupId AND map.isVisibleManager = :isVisibleManager"),
 		@NamedQuery(name = "MapTemplateFieldProperties.findByTemplateFieldGroupCandidate", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.templateFieldGroupId = :templateFieldGroupId AND map.isVisibleCandidate = :isVisibleCandidate"),
 		@NamedQuery(name = "MapTemplateFieldProperties.findById", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.templateFieldGroupId = :templateFieldGroupId AND map.fieldId = :fieldId"),
-		@NamedQuery(name = "MapTemplateFieldProperties.findByFieldIdVisibleManager", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.isVisibleManager = :isVisibleManager AND map.fieldId = :fieldId")
+		@NamedQuery(name = "MapTemplateFieldProperties.findByFieldIdVisibleManager", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.isVisibleManager = :isVisibleManager AND map.fieldId = :fieldId"),
+		@NamedQuery(name = "MapTemplateFieldProperties.getCandidateIsVisibleAndIsEditableFalse", query = "SELECT map FROM MapTemplateFieldProperties map where (map.isVisibleCandidate = :Isfalse or map.isEditableCandidate = :Isfalse) and map.templateFieldGroupId = :templateFieldGroupId")
 		
 })
 public class MapTemplateFieldProperties implements Comparable<MapTemplateFieldProperties>{
