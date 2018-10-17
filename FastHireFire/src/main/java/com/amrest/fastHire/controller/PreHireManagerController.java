@@ -264,25 +264,7 @@ public class PreHireManagerController {
 		return ResponseEntity.ok().body(returnPositions);
 		
 	}
-	@GetMapping(value = "/PositionDetails/{position}")
-	public ResponseEntity <?> getPositionDetails(@PathVariable("position") String position) throws ClientProtocolException, IOException, URISyntaxException, NamingException{
-		
-		
-		DestinationClient destClient = new DestinationClient();
-		destClient.setDestName(destinationName);
-		destClient.setHeaderProvider();
-		destClient.setConfiguration();
-		destClient.setDestConfiguration();
-		destClient.setHeaders(destClient.getDestProperty("Authentication"));
-		
-		// call to get local language of the logged in user
-		
-		HttpResponse userResponse =  destClient.callDestinationGET("/Position", "?$filter=code eq '"+position+"'&$format=json&$select=code,location,payGrade,jobCode,standardHours,externalName_localized");
-		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
-		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
-		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		return ResponseEntity.ok().body(userResponseObject.toString());
-	}
+
 	@GetMapping(value = "/FormTemplate")
 	public ResponseEntity <?> getFormTemplateFields(
 			HttpServletRequest request,
@@ -292,6 +274,11 @@ public class PreHireManagerController {
 		
 		String loggedInUser =  request.getUserPrincipal().getName();
 		loggedInUser = "E00000118";
+		
+		Date today = new Date();
+		Template template = null;
+		JSONObject returnObject = new JSONObject();
+		JSONArray returnArray =  new JSONArray();
 		
 		Map<String,String> compareMap = new HashMap<String,String>();
 		
@@ -330,14 +317,22 @@ public class PreHireManagerController {
 		SFConstants employeeClassConstant = sfConstantsService.findById("employeeClassId");
 		SFConstants empStatusConstant = sfConstantsService.findById("emplStatusId");
 		
+		HttpResponse positionResponse =  destClient.callDestinationGET("/Position", "?$filter=code eq '"+position+"'&$format=json&$select=code,vacant,location,payGrade,jobCode,standardHours,externalName_localized");
+		String positionResponseJsonString = EntityUtils.toString(positionResponse.getEntity(), "UTF-8");
+		JSONObject positionResponseObject = new JSONObject(positionResponseJsonString);
+		positionResponseObject = positionResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 		
-		HttpResponse candidateResponse =  destClient.callDestinationGET("/EmpJob", "?$format=json&$filter=position eq '"+compareMap.get("position")+"' and employeeClass eq '"+employeeClassConstant+"' and company eq '"+compareMap.get("company")+"' and department eq '"+compareMap.get("department")+"' and emplStatusNav/id ne '"+empStatusConstant+"'&$select=userId,position");
-		String candidateResponseJsonString = EntityUtils.toString(candidateResponse.getEntity(), "UTF-8");
-		JSONObject candidateResponseObject = new JSONObject(candidateResponseJsonString);
-		candidateResponseObject = candidateResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		if(candidateResponseObject !=null){
+		returnObject.put("PositionDetails", positionResponseObject);
+	
+		if(!positionResponseObject.getBoolean("vacant")){
+			HttpResponse candidateResponse =  destClient.callDestinationGET("/EmpJob", "?$format=json&$filter=position eq '"+compareMap.get("position")+"' and employeeClass eq '"+employeeClassConstant.getValue()+"' and company eq '"+compareMap.get("company")+"' and department eq '"+compareMap.get("department")+"' and emplStatusNav/id ne '"+empStatusConstant.getValue()+"'&$select=userId,position,userNav/userId,userNav/username,userNav/defaultFullName,userNav/firstName,userNav/lastName");
+			String candidateResponseJsonString = EntityUtils.toString(candidateResponse.getEntity(), "UTF-8");
+			JSONObject candidateResponseObject = new JSONObject(candidateResponseJsonString);
+			JSONArray candidateResponseArray = candidateResponseObject.getJSONObject("d").getJSONArray("results");
+			candidateResponseObject = candidateResponseArray.getJSONObject(0);
 			compareMap.put("category", "CONFIRM");
 			compareMap.put("candidateId", candidateResponseObject.getString("userId"));
+			returnObject.put("CandidateDetails", candidateResponseObject.getJSONObject("userNav"));
 		}
 		else
 		{	
@@ -347,9 +342,7 @@ public class PreHireManagerController {
 		
 		
 		
-		Date today = new Date();
-		Template template = null;
-		JSONArray returnArray =  new JSONArray();
+		
 		
 		
 		// Get the Business Unit and Company Map
@@ -728,8 +721,8 @@ public class PreHireManagerController {
 					
 					}
 			}
-				
-		return ResponseEntity.ok().body(returnArray.toString());
+		returnObject.put("TemplateFieldGroups", returnArray);
+		return ResponseEntity.ok().body(returnObject.toString());
 	
 	}
 	
@@ -876,25 +869,43 @@ public class PreHireManagerController {
 			@PathVariable("fieldId") String fieldId,
 			@RequestParam(value = "triggerFieldId", required = true) String triggerFieldId,
 			@RequestParam(value = "selectedValue", required = true) String selectedValue,
-			@RequestParam(value = "country", required = true) String countryId,
-			@RequestParam(value = "language", required = false , defaultValue = "en_US") String language) throws NamingException, ClientProtocolException, IOException, URISyntaxException {
+			HttpServletRequest request
+			) throws NamingException, ClientProtocolException, IOException, URISyntaxException {
+		
+
+		String loggedInUser =  request.getUserPrincipal().getName();
+		loggedInUser = "E00000118";
 		
 		Map<String,String> map = new HashMap<String,String>();
-		map.put("country", countryId);
-		map.put("locale", language);
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// call to get local language of the logged in user
+		
+		HttpResponse userResponse =  destClient.callDestinationGET("/User", "?$filter=userId eq '"+loggedInUser+ "'&$format=json&$select=defaultLocale");
+		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
+		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		map.put("locale", userResponseObject.getString("defaultLocale"));
+		
+		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country,positionNav/company,positionNav/department");
+		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
+		JSONObject empJobResponseObject = new JSONObject(empJobResponseJsonString);
+		empJobResponseObject = empJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		
+		map.put("country", empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
+		
+		
 		map.put("fieldId", fieldId);
 		map.put("selectedValue", selectedValue);
 		map.put("fieldId", fieldId);
 		map.put("triggerFieldId", triggerFieldId);
 		
-		DestinationClient destClient = new DestinationClient();
-		 destClient.setDestName(destinationName);
-		 destClient.setHeaderProvider();
-		 destClient.setConfiguration();
-		 destClient.setDestConfiguration();
-		 destClient.setHeaders(destClient.getDestProperty("Authentication"));
-		 
-			
 		List<DropDownKeyValue> resultDropDown = new ArrayList<DropDownKeyValue>();
 		
 		Field affectedField = fieldService.findById(fieldId);
