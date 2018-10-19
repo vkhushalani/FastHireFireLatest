@@ -209,7 +209,7 @@ public class PreHireManagerController {
 				+ "company eq '"+paraMap.get("company")+"' and "
 				+ "department eq '"+paraMap.get("department")+"' and "
 				+ "emplStatusNav/id ne '"+empStatusConstant.getValue()+"'"
-				+ "&$expand=positionNav,userNav,"
+				+ " and userNav/userId ne null &$expand=positionNav,userNav,"
 				+ "positionNav/employeeClassNav"
 				+ "&$select=userId,startDate,position,"
 				+ "createdDateTime,createdOn,"
@@ -233,7 +233,7 @@ public class PreHireManagerController {
 		{
 			
 			JSONObject ongoingPos = ongoingPosResultArray.getJSONObject(i);
-			logger.debug("userNav"+ongoingPos.get("userNav"));
+//			logger.debug("userNav"+ongoingPos.get("userNav"));
 			if(!ongoingPos.get("userNav").toString().equalsIgnoreCase("null")){
 			DashBoardPositionClass pos = new DashBoardPositionClass();
 			pos.setPayGrade(ongoingPos.getJSONObject("positionNav").getString("payGrade"));
@@ -325,7 +325,7 @@ public class PreHireManagerController {
 		returnObject.put("PositionDetails", positionResponseObject);
 	
 		if(!positionResponseObject.getBoolean("vacant")){
-			HttpResponse candidateResponse =  destClient.callDestinationGET("/EmpJob", "?$format=json&$filter=position eq '"+compareMap.get("position")+"' and employeeClass eq '"+employeeClassConstant.getValue()+"' and company eq '"+compareMap.get("company")+"' and department eq '"+compareMap.get("department")+"' and emplStatusNav/id ne '"+empStatusConstant.getValue()+"'&$select=userId,position,userNav/userId,userNav/username,userNav/defaultFullName,userNav/firstName,userNav/lastName");
+			HttpResponse candidateResponse =  destClient.callDestinationGET("/EmpJob", "?$format=json&$filter=position eq '"+compareMap.get("position")+"' and employeeClass eq '"+employeeClassConstant.getValue()+"' and company eq '"+compareMap.get("company")+"' and department eq '"+compareMap.get("department")+"' and emplStatusNav/id ne '"+empStatusConstant.getValue()+"' and userNav/userId ne null &$expand=userNav &$select=userId,position,userNav/userId,userNav/username,userNav/defaultFullName,userNav/firstName,userNav/lastName");
 			String candidateResponseJsonString = EntityUtils.toString(candidateResponse.getEntity(), "UTF-8");
 			JSONObject candidateResponseObject = new JSONObject(candidateResponseJsonString);
 			JSONArray candidateResponseArray = candidateResponseObject.getJSONObject("d").getJSONArray("results");
@@ -520,10 +520,10 @@ public class PreHireManagerController {
 									JSONObject responseObject = new JSONObject(responseMap.get(mapTemplateFieldProperties.getField().getEntityName()));
 									
 									JSONArray responseResult = responseObject.getJSONObject("d").getJSONArray("results");
-//									logger.debug("responseResult:"+responseResult);
+									logger.debug("responseResult:"+responseResult);
 									if(responseResult.length() !=0){
 									JSONObject positionEntity = responseResult.getJSONObject(0);
-//									logger.debug("positionEntity:"+positionEntity);
+									logger.debug("positionEntity:"+positionEntity);
 									String value ;
 									if(!mapTemplateFieldProperties.getField().getTechnicalName().equalsIgnoreCase("startDate")){
 									 value = getValueFromPathJson(positionEntity,mapTemplateFieldProperties.getField().getValueFromPath(),compareMap);}
@@ -605,15 +605,15 @@ public class PreHireManagerController {
 												 FieldDataFromSystem fieldDataFromSystem = fieldDataFromSystemList.get(0);
 												
 //												  
-												 logger.debug("ID: "+fieldDataFromSystem.getFieldId() +", Name: "+ mapTemplateFieldProperties.getField().getName()+fieldDataFromSystem.getIsDependentField());
+//												 logger.debug("ID: "+fieldDataFromSystem.getFieldId() +", Name: "+ mapTemplateFieldProperties.getField().getName()+fieldDataFromSystem.getIsDependentField());
 												String picklistUrlFilter = getPicklistUrlFilter(fieldDataFromSystem,mapTemplateFieldProperties,compareMap,responseMap,destClient);
-												logger.debug("picklistUrlFilter"+picklistUrlFilter);
+//												logger.debug("picklistUrlFilter"+picklistUrlFilter);
 												 
 												 HttpResponse response = destClient.callDestinationGET(fieldDataFromSystem.getPath(),picklistUrlFilter);
 												
 												 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 												 
-												 logger.debug("responseJson:"+responseJson);
+//												 logger.debug("responseJson:"+responseJson);
 												 JSONObject responseObject = new JSONObject(responseJson);
 							
 												 JSONArray responseResult = responseObject.getJSONObject("d").getJSONArray("results");
@@ -645,14 +645,14 @@ public class PreHireManagerController {
 											 {
 												 FieldDataFromSystem fieldDataFromSystem = fieldDataFromSystemList.get(0);
 												 
-												 logger.debug("ID: "+fieldDataFromSystem.getFieldId() +", Name: "+ mapTemplateFieldProperties.getField().getName()+fieldDataFromSystem.getIsDependentField());
+//												 logger.debug("ID: "+fieldDataFromSystem.getFieldId() +", Name: "+ mapTemplateFieldProperties.getField().getName()+fieldDataFromSystem.getIsDependentField());
 												 String picklistUrlFilter = getPicklistUrlFilter(fieldDataFromSystem,mapTemplateFieldProperties,compareMap,responseMap,destClient);
-												 logger.debug("picklistUrlFilter"+picklistUrlFilter);
+//												 logger.debug("picklistUrlFilter"+picklistUrlFilter);
 												 HttpResponse response = destClient.callDestinationGET(fieldDataFromSystem.getPath(),picklistUrlFilter);
 												 
 												 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 												 JSONObject responseObject = new JSONObject(responseJson);
-												 logger.debug("responseObject"+responseObject);
+//												 logger.debug("responseObject"+responseObject);
 												 JSONArray responseResult = responseObject.getJSONObject("d").getJSONArray("results");
 												 String valuePath = fieldDataFromSystem.getValue();
 												 String[] valuePathArray = valuePath.split("/");
@@ -661,7 +661,7 @@ public class PreHireManagerController {
 												 JSONObject temp = null;
 												 int index =0 ;
 												 
-												 logger.debug("valuePathArray.length"+valuePathArray.length);
+//												 logger.debug("valuePathArray.length"+valuePathArray.length);
 												 if(valuePathArray.length > 1 && keyPathArray.length > 1)
 												 {
 													 for(int k =0;k<valuePathArray.length - 1;k++){
@@ -729,14 +729,14 @@ public class PreHireManagerController {
 	private String getPicklistUrlFilter(FieldDataFromSystem fieldDataFromSystem, MapTemplateFieldProperties mapTemplateFieldProperties, Map<String, String> compareMap, HashMap<String, String> responseMap, DestinationClient destClient) throws ClientProtocolException, IOException, URISyntaxException {
 		String picklistUrlFilter = fieldDataFromSystem.getFilter();
 		if(fieldDataFromSystem.getIsDependentField()){
-			 logger.debug("inside is dependent field : "+mapTemplateFieldProperties.getField().getName());
+//			 logger.debug("inside is dependent field : "+mapTemplateFieldProperties.getField().getName());
 			 if(fieldDataFromSystem.getTagSourceFromSF() != null){
-				 logger.debug("From tag source SF : "+mapTemplateFieldProperties.getField().getName());
+//				 logger.debug("From tag source SF : "+mapTemplateFieldProperties.getField().getName());
 			 SFAPI depenedentEntity = sfAPIService.findById(fieldDataFromSystem.getTagSourceFromSF(),"GET");
 			 String dependentUrl;
 			 if(depenedentEntity.getTagSource().equalsIgnoreCase("UI2")){
 				 
-				 logger.debug("Source is dependent on UI input"+mapTemplateFieldProperties.getField().getName());
+//				 logger.debug("Source is dependent on UI input"+mapTemplateFieldProperties.getField().getName());
 				 dependentUrl = depenedentEntity.getUrl().replace("<"+depenedentEntity.getReplaceTag()+">",compareMap.get(depenedentEntity.getTagSourceValuePath()));
 			 }
 			 else
@@ -746,16 +746,16 @@ public class PreHireManagerController {
 				 String dValue = getValueFromPathJson(responseResult.getJSONObject(0),depenedentEntity.getTagSourceValuePath(), compareMap);
 				 dependentUrl = depenedentEntity.getUrl().replace("<"+depenedentEntity.getReplaceTag()+">",dValue);
 			 }
-			 logger.debug("dependentUrl:"+dependentUrl);
+//			 logger.debug("dependentUrl:"+dependentUrl);
 			 HttpResponse dependentResponse = destClient.callDestinationGET(dependentUrl,"");
 			 String dependentResponseJson = EntityUtils.toString(dependentResponse.getEntity(), "UTF-8");
-			 logger.debug("dependentResponseJson:"+dependentResponseJson);
+//			 logger.debug("dependentResponseJson:"+dependentResponseJson);
 			 JSONObject dependentResponseObject = new JSONObject(dependentResponseJson);
 			 JSONArray dependentResponseResult = dependentResponseObject.getJSONObject("d").getJSONArray("results");
 			 String replaceValue = getValueFromPathJson(dependentResponseResult.getJSONObject(0),fieldDataFromSystem.getTagSourceValuePath(),compareMap);
-			 logger.debug("replaceValue:"+replaceValue);
+//			 logger.debug("replaceValue:"+replaceValue);
 			 picklistUrlFilter = picklistUrlFilter.replace("<"+fieldDataFromSystem.getReplaceTag()+">", replaceValue);
-			 logger.debug("picklistUrlFilter:"+picklistUrlFilter);
+//			 logger.debug("picklistUrlFilter:"+picklistUrlFilter);
 			 }
 				 else if(fieldDataFromSystem.getTagSourceFromField() != null){
 					 Field dependentField = fieldService.findById(fieldDataFromSystem.getTagSourceFromField());
@@ -782,30 +782,30 @@ public class PreHireManagerController {
 		String [] techPathArray  = path.split("/");
 //		String [] techPathArray = mapTemplateFieldProperties.getField().getValueFromPath().split("/");
 		JSONArray tempArray;
-//		logger.debug("techPathArray"+techPathArray.length);
+		logger.debug("techPathArray"+techPathArray.length);
 		for(int i=0;i<techPathArray.length;i++)
 		{
-//			logger.debug("Step"+i+"techPathArray.length - 1"+(techPathArray.length - 1));
+			logger.debug("Step"+i+"techPathArray.length - 1"+(techPathArray.length - 1));
 			if(i != techPathArray.length - 1){
-//				logger.debug("techPathArray["+i+"]"+techPathArray[i]);
+				logger.debug("techPathArray["+i+"]"+techPathArray[i]);
 				if(techPathArray[i].contains("[]")){
 					
 					tempArray = positionEntity.getJSONArray(techPathArray[i].replace("[]", ""));
-//					logger.debug("tempArray"+i+tempArray);
+					logger.debug("tempArray"+i+tempArray);
 					if(tempArray.length()!=0){
 						String findObjectKey = techPathArray[i+1].substring(techPathArray[i+1].indexOf("(") + 1, techPathArray[i+1].indexOf(")"));
 					for(int j = 0;j< tempArray.length() ;j++)
 					{
 						
 						
-//						logger.debug("findObjectKey"+j+findObjectKey);
+						logger.debug("findObjectKey"+j+findObjectKey);
 						if(tempArray.getJSONObject(j).get(findObjectKey).toString().equalsIgnoreCase(compareMap.get(findObjectKey)))
 						{
 							
 							positionEntity = tempArray.getJSONObject(j);
-//							logger.debug("positionEntity"+j+positionEntity);
+							logger.debug("positionEntity"+j+positionEntity);
 							techPathArray[i+1] = techPathArray[i+1].replace("("+findObjectKey+")", "");
-//							logger.debug("techPathArray[i+1]"+(i+1)+techPathArray[i+1]);
+							logger.debug("techPathArray[i+1]"+(i+1)+techPathArray[i+1]);
 							break;
 							
 						}
@@ -831,9 +831,9 @@ public class PreHireManagerController {
 					
 					
 					try{
-//						logger.debug("Object no Array"+techPathArray[i]);
+						logger.debug("Object no Array"+techPathArray[i]);
 						positionEntity = positionEntity.getJSONObject(techPathArray[i]);
-//						logger.debug("Object no Array positionEntity"+positionEntity);
+						logger.debug("Object no Array positionEntity"+positionEntity);
 					}
 					catch(JSONException exception)
 					{
@@ -845,13 +845,13 @@ public class PreHireManagerController {
 			else
 			{
 				try{
-//					logger.debug("techPathArray["+i+"]"+techPathArray[i]);
+					logger.debug("techPathArray["+i+"]"+techPathArray[i]);
 						if(techPathArray[i].contains("<locale>"))
 					 {
-//							logger.debug("with label techPathArray["+i+"]"+techPathArray[i]);
+							logger.debug("with label techPathArray["+i+"]"+techPathArray[i]);
 						 techPathArray[i] = techPathArray[i].replace("<locale>", compareMap.get("locale"));
 					 }
-//						logger.debug("positionEntity.get(techPathArray[i]).toString()"+i+positionEntity.get(techPathArray[i]).toString());
+						logger.debug("positionEntity.get(techPathArray[i]).toString()"+i+positionEntity.get(techPathArray[i]).toString());
 				return positionEntity.get(techPathArray[i]).toString();
 				}
 				catch(JSONException exception)
@@ -1019,11 +1019,16 @@ public class PreHireManagerController {
 		  EmpJobResponseObject.put("location", "NA");
 		  HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("upsert", "?$format=json",EmpJobResponseObject.toString());
 		String EmpJobPostResponseJson = EntityUtils.toString(EmpJobPostResponse.getEntity(), "UTF-8");
-		  
-		//inactivate employee post
-		 HttpResponse response = destClient.callDestinationPOST("upsert", "?$format=json",jsonString );
-		 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		
+		logger.debug("responseJson to update locaton" + EmpJobPostResponseJson);
+		JSONObject EmpJobPostResponseObj = new JSONObject(EmpJobPostResponseJson);
+		String status =  EmpJobPostResponseObj.getJSONArray("d").getJSONObject(0).getString("status");
+		if(status.equalsIgnoreCase("OK")){
+		
+		//inactivate employee post
+		 HttpResponse response = destClient.callDestinationPOST("upsert", "?$format=json",jsonString);
+		 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
+		 logger.debug("responseJson to inactivate candidate" + responseJson);
 
 		 // get the json string for vacant position 
 		 JSONObject vacantJsonObject =  readJSONFile("/JSONFiles/CancelHire.json");
@@ -1042,7 +1047,7 @@ public class PreHireManagerController {
 			 String vacantResponseJson = EntityUtils.toString(vacantResponse.getEntity(), "UTF-8");
 			 return ResponseEntity.ok().body(vacantResponseJson);
 			}
-		}
+		}}
 			return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	@PostMapping("/ConfirmHire")
