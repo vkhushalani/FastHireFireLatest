@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -76,6 +78,7 @@ import com.amrest.fastHire.model.Template;
 @RequestMapping("/PreHireManager")
 public class PreHireManagerController {
 	 public static final String destinationName = "prehiremgrSFTest";
+	 public static final String scpDestinationName = "scpiBasic";
 	 public static final Integer  padStartDate  = 15;
 	 
 	Logger logger = LoggerFactory.getLogger(PreHireManagerController.class);
@@ -118,7 +121,10 @@ public class PreHireManagerController {
 	@GetMapping(value = "/UserDetails")
 	public ResponseEntity <?> getUserDetails(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
 		String loggedInUser =  request.getUserPrincipal().getName();
+	if(loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
+			|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")){
 		loggedInUser = "E00000118";
+		}
 		
 		DestinationClient destClient = new DestinationClient();
 		destClient.setDestName(destinationName);
@@ -140,7 +146,10 @@ public class PreHireManagerController {
 	public ResponseEntity <List<DashBoardPositionClass>> getDashBoardPositions(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException, java.text.ParseException{
 		String loggedInUser =  request.getUserPrincipal().getName();
 		// need to remove this code
-		loggedInUser = "E00000118";
+		if(loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
+				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")){
+			loggedInUser = "E00000118";
+			}
 		
 		Map<String,String> paraMap = new HashMap<String,String>();
 		List<DashBoardPositionClass> returnPositions = new ArrayList<DashBoardPositionClass>();
@@ -273,7 +282,10 @@ public class PreHireManagerController {
 			) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
 		
 		String loggedInUser =  request.getUserPrincipal().getName();
-		loggedInUser = "E00000118";
+		if(loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
+				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")){
+			loggedInUser = "E00000118";
+			}
 		
 		Date today = new Date();
 		Template template = null;
@@ -874,7 +886,10 @@ public class PreHireManagerController {
 		
 
 		String loggedInUser =  request.getUserPrincipal().getName();
-		loggedInUser = "E00000118";
+		if(loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
+				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")){
+			loggedInUser = "E00000118";
+			}
 		
 		Map<String,String> map = new HashMap<String,String>();
 		
@@ -966,6 +981,7 @@ public class PreHireManagerController {
 		
 		return ResponseEntity.ok().body(resultDropDown);
 	}
+	
 	@PostMapping("/CancelHire")
 	public ResponseEntity <?> cancelHire(@RequestBody String postJson) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException{
 		Map<String,String> map = new HashMap<String,String>();  
@@ -1001,22 +1017,12 @@ public class PreHireManagerController {
 		 JSONObject posResponseObject = new JSONObject(posResponseJson);
 		 String uri = posResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0).getJSONObject("__metadata").getString("uri");
 		 
-		
-		 //read the inactivating cadidate post json 
-		JSONObject jsonObject =  readJSONFile("/JSONFiles/InactivateCandidate.json");
-			
-		// replace the values in the post jsonString from the map
-		if(jsonObject !=null){
-				
-		    String jsonString = jsonObject.toString();
-		        
-		  for (Map.Entry<String, String> entry : map.entrySet()) {
-			jsonString = jsonString.replaceAll("<"+entry.getKey()+">", entry.getValue());
-		 	}
 		  
 		// change the location of empjob entity foe background process deletion of candidates
 		  
 		  EmpJobResponseObject.put("location", "NA");
+		  EmpJobResponseObject.put("eventReason", "CS_JobAbandonment");
+		  EmpJobResponseObject.getJSONObject("__metadata").put("uri", "EmpJob");
 		  HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("upsert", "?$format=json",EmpJobResponseObject.toString());
 		String EmpJobPostResponseJson = EntityUtils.toString(EmpJobPostResponse.getEntity(), "UTF-8");
 		
@@ -1024,11 +1030,6 @@ public class PreHireManagerController {
 		JSONObject EmpJobPostResponseObj = new JSONObject(EmpJobPostResponseJson);
 		String status =  EmpJobPostResponseObj.getJSONArray("d").getJSONObject(0).getString("status");
 		if(status.equalsIgnoreCase("OK")){
-		
-		//inactivate employee post
-		 HttpResponse response = destClient.callDestinationPOST("upsert", "?$format=json",jsonString);
-		 String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
-		 logger.debug("responseJson to inactivate candidate" + responseJson);
 
 		 // get the json string for vacant position 
 		 JSONObject vacantJsonObject =  readJSONFile("/JSONFiles/CancelHire.json");
@@ -1047,7 +1048,8 @@ public class PreHireManagerController {
 			 String vacantResponseJson = EntityUtils.toString(vacantResponse.getEntity(), "UTF-8");
 			 return ResponseEntity.ok().body(vacantResponseJson);
 			}
-		}}
+		}
+//		}
 			return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	@PostMapping("/ConfirmHire")
@@ -1077,11 +1079,11 @@ public class PreHireManagerController {
 					 JSONObject resultObj = responseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 					 map.put("uri", resultObj.getJSONObject("__metadata").getString("uri"));
 					 
-				 // not recommended but no choice need to discuss for employee class
 					 if(resultObj.getString("countryOfCompany") !=null){
 					 SFConstants employeeClassConst = sfConstantsService.findById("employeeClassId_"+resultObj.getString("countryOfCompany"));
 					 map.put("employeeClass", employeeClassConst.getValue());
 					 }
+					 
 				 // update the employee class to an actual one 
 				 // read the json file from resource folder
 					 JSONObject jsonObject = readJSONFile("/JSONFiles/ConfirmHire.json");
@@ -1094,13 +1096,8 @@ public class PreHireManagerController {
 			    	}
 		        
 		       
-			        DestinationClient destPostClient = new DestinationClient();
-			        destPostClient.setDestName(destinationName);
-			        destPostClient.setHeaderProvider();
-			        destPostClient.setConfiguration();
-			        destPostClient.setDestConfiguration();
-			        destPostClient.setHeaders(destPostClient.getDestProperty("Authentication"));
-					HttpResponse postresponse = destPostClient.callDestinationPOST("upsert", "?$format=json",jsonString);
+			      
+					HttpResponse postresponse = destClient.callDestinationPOST("upsert", "?$format=json",jsonString);
 					String postresponseJson = EntityUtils.toString(postresponse.getEntity(), "UTF-8");
 					
 		        //updating the startDate and endDate to confirm the hire
@@ -1113,13 +1110,8 @@ public class PreHireManagerController {
 				
 				// reading the records
 				for (Map.Entry<String,String> entity : entityMap.entrySet())  {
-					DestinationClient destGetClient = new DestinationClient();
-					destGetClient.setDestName(destinationName);
-					destGetClient.setHeaderProvider();
-					destGetClient.setConfiguration();
-					destGetClient.setDestConfiguration();
-					destGetClient.setHeaders(destGetClient.getDestProperty("Authentication"));
-					HttpResponse getresponse = destGetClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
+					
+					HttpResponse getresponse = destClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
 					String getresponseJson = EntityUtils.toString(getresponse.getEntity(), "UTF-8");
 //					logger.debug("getresponseJson read"+getresponseJson);
 					entityResponseMap.put(entity.getKey(), getresponseJson);
@@ -1136,13 +1128,8 @@ public class PreHireManagerController {
 					String postJsonString = getresultObj.toString();	
 //					logger.debug("Entity: "+entity.getKey()+" postJsonString: "+postJsonString);
 					
-						DestinationClient destUpdateClient = new DestinationClient();
-					 	destUpdateClient.setDestName(destinationName);
-					 	destUpdateClient.setHeaderProvider();
-					 	destUpdateClient.setConfiguration();
-					 	destUpdateClient.setDestConfiguration();
-					 	destUpdateClient.setHeaders(destUpdateClient.getDestProperty("Authentication"));
-						HttpResponse updateresponse = destUpdateClient.callDestinationPOST("upsert", "?$format=json&purgeType=full",postJsonString);
+						
+						HttpResponse updateresponse = destClient.callDestinationPOST("upsert", "?$format=json&purgeType=full",postJsonString);
 						String updateresponseJson = EntityUtils.toString(updateresponse.getEntity(), "UTF-8");
 						JSONObject updateresponseObject = new JSONObject(updateresponseJson);
 						String status =  updateresponseObject.getJSONArray("d").getJSONObject(0).getString("status");
@@ -1154,6 +1141,23 @@ public class PreHireManagerController {
 //					}
 						
 					}
+				// call the SCPI Interface api
+				
+//				DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+//				String ms = map.get("startDate").substring(map.get("startDate").indexOf("(") + 1, map.get("startDate").indexOf(")"));
+//				long milliSeconds= Long.parseLong(ms);
+//				Calendar calendar = Calendar.getInstance();
+//				calendar.setTimeInMillis(milliSeconds);
+//				String dateString = formatter.format(calendar.getTime()); 
+//				dateString = dateString+"T00:00:00.000Z";
+//				 DestinationClient scpiDestClient = new DestinationClient();
+//				 scpiDestClient.setDestName(scpDestinationName);
+//				 scpiDestClient.setHeaderProvider();
+//				 scpiDestClient.setConfiguration();
+//				 scpiDestClient.setDestConfiguration();
+//				 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
+//				 HttpResponse scpiResponse = destClient.callDestinationPOST("", "?PersonId="+map.get("userId")+"&TimeStamp="+dateString+"&$format=json","{}");
+				
 				 return ResponseEntity.ok().body("Success");
 		        }
 				
