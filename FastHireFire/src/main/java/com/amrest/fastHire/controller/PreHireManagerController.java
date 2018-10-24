@@ -1144,10 +1144,7 @@ public class PreHireManagerController {
 				// call the SCPI Interface api
 				
 //				DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-//				String ms = map.get("startDate").substring(map.get("startDate").indexOf("(") + 1, map.get("startDate").indexOf(")"));
-//				long milliSeconds= Long.parseLong(ms);
 //				Calendar calendar = Calendar.getInstance();
-//				calendar.setTimeInMillis(milliSeconds);
 //				String dateString = formatter.format(calendar.getTime()); 
 //				dateString = dateString+"T00:00:00.000Z";
 //				 DestinationClient scpiDestClient = new DestinationClient();
@@ -1156,7 +1153,7 @@ public class PreHireManagerController {
 //				 scpiDestClient.setConfiguration();
 //				 scpiDestClient.setDestConfiguration();
 //				 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
-//				 HttpResponse scpiResponse = destClient.callDestinationPOST("", "?PersonId="+map.get("userId")+"&TimeStamp="+dateString+"&$format=json","{}");
+//				 HttpResponse scpiResponse = destClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+dateString+"&$format=json","{}");
 				
 				 return ResponseEntity.ok().body("Success");
 		        }

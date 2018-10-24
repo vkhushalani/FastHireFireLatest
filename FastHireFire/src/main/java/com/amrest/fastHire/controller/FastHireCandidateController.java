@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -112,9 +113,95 @@ public class FastHireCandidateController {
 		return ResponseEntity.ok().body(userResponseObject.toString());
 	}
 	
+	@GetMapping(value = "/FormGroups")
+	public ResponseEntity <?> getFormGroups(@RequestParam(value = "businessUnit", required = false) String businessUnitId,
+			@RequestParam(value = "candidateId", required = true) String tempUserId,HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
+		JSONObject returnObject = new JSONObject();		
+		JSONArray jsonArray = new JSONArray();
+		// get logged in User Id
+			String loggedInUser =  request.getUserPrincipal().getName();
+		// adding  dummy userId for now
+			loggedInUser = tempUserId;
+			
+			Map<String,String> map = new HashMap<String,String>();
+			DestinationClient destClientUser = new DestinationClient();
+			destClientUser.setDestName(destinationName);
+			destClientUser.setHeaderProvider();
+			destClientUser.setConfiguration();
+			destClientUser.setDestConfiguration();
+			destClientUser.setHeaders(destClientUser.getDestProperty("Authentication"));
+			 HttpResponse responseUser = destClientUser.callDestinationGET("/EmpJob","?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav,userNav&$select=positionNav/companyNav/country,userNav/defaultLocale");
+			 String responseUserJson = EntityUtils.toString(responseUser.getEntity(), "UTF-8");
+			 logger.debug("responseUserJson"+responseUserJson);
+			 JSONObject userEmpJobObject = new JSONObject(responseUserJson);
+			 userEmpJobObject = userEmpJobObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+			
+			 map.put("country",userEmpJobObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
+			 map.put("category", "CONFIRM");
+			 map.put("candidateId", loggedInUser);
+			 map.put("locale", userEmpJobObject.getJSONObject("userNav").getString("defaultLocale"));
+			
+		
+			MapCountryBusinessUnit mapCountryBusinessUnit;
+			if(businessUnitId ==  null){
+			List<MapCountryBusinessUnit> mapCountryBusinessUnitList = mapCountryBusinessUnitService.findByCountry(map.get("country"));
+			mapCountryBusinessUnit = mapCountryBusinessUnitList.get(0);}
+			else
+			{
+				 mapCountryBusinessUnit = mapCountryBusinessUnitService.findByCountryBusinessUnit(map.get("country"),businessUnitId);
+			}
+			//getting the template per BUnit and Country
+			List<MapCountryBusinessUnitTemplate> mapTemplateList = mapCountryBusinessUnitTemplateService.findByCountryBusinessUnitId(mapCountryBusinessUnit.getId());
+			
+			Date today = new Date();
+			Template template = null;
+			
+			// getting valid template per category (Confirm)
+			for(MapCountryBusinessUnitTemplate mapTemplate : mapTemplateList)
+			{
+				
+				if(today.before(mapTemplate.getEndDate()) && today.after(mapTemplate.getStartDate()))
+				 {
+					
+					if( mapTemplate.getTemplate().getCategory().equalsIgnoreCase(map.get("category")))
+					{
+						template = mapTemplate.getTemplate();
+						break;
+					}
+					
+				 }
+			}
+			if(template !=null)
+			{
+				List<MapTemplateFieldGroup> templateFieldGroups = mapTemplateFieldGroupService.findByTemplate(template.getId());
+				if(templateFieldGroups.size() !=0)
+				{
+					Collections.sort(templateFieldGroups);
+					for( MapTemplateFieldGroup tFieldGroup :templateFieldGroups)
+					{
+						// candidate app will only have fields which have is candidate visible = true
+						if(tFieldGroup.getIsVisibleCandidate()){
+							Gson gson = new Gson();
+						
+							if(tFieldGroup.getFieldGroup() !=null){
+								// setting the field Group
+								JSONObject  jsonObject = new JSONObject();
+								tFieldGroup.getFieldGroup().setFieldGroupSeq(tFieldGroup.getFieldGroupSeq());
+							    String jsonString = gson.toJson(tFieldGroup.getFieldGroup());
+							    jsonObject.put("fieldGroup",new JSONObject(jsonString));
+							    jsonArray.put(jsonObject);
+								
+							}}}
+					
+				}
+			}
+			returnObject.put("hiringForm",jsonArray);
+		return ResponseEntity.ok().body(returnObject.toString());
+	}
+	
 	@GetMapping(value = "/FormTemplate")
 	public ResponseEntity <?> getFormTemplateFields(@RequestParam(value = "businessUnit", required = false) String businessUnitId,
-			@RequestParam(value = "candidateId", required = true) String tempUserId,
+			@RequestParam(value = "candidateId", required = true) String tempUserId,@RequestParam(value = "fieldGroupName", required = true) String fieldGroupName,
 			HttpServletRequest request) throws NamingException, ParseException, IOException, URISyntaxException{
 		JSONObject returnObject = new JSONObject();
 		JSONArray returnArray =  new JSONArray();

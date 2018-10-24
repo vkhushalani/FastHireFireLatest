@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
@@ -149,13 +150,51 @@ public class UrlClient {
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet request = new HttpGet(urlString);
 		
+		if(!this.getTokenType().equalsIgnoreCase("Bearer")){
+			
 			String userCredentials = this.getUserName()+":"+this.getPassword();
 			String basicAuth = this.getTokenType()+" " + javax.xml.bind.DatatypeConverter.printBase64Binary(userCredentials.getBytes());
 			request.setHeader("Authorization", basicAuth);
+		}
+		else
+		{	
+			request.setHeader("Authorization", this.getTokenType()+" "+this.getPassword());
+			
+		}
 	
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		logger.debug("responseJson"+response );
 		return response;
+	}
+	public HttpResponse callDestinationDELETE() throws URISyntaxException, ClientProtocolException, IOException{
+		URL url= new URL(this.getBaseUrl()+this.getPath()+this.getFilter());
+		URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+		String urlString = uri.toASCIIString();
+		logger.debug("urlString"+urlString );
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpDelete request = new HttpDelete(urlString);
+		
+		request.setHeader("Accept", "application/json");
+		request.setHeader("Content-type", "application/json");
+		
+		if(!this.getTokenType().equalsIgnoreCase("Bearer")){
+		
+			String userCredentials = this.getUserName()+":"+this.getPassword();
+			String basicAuth = this.getTokenType()+" " + javax.xml.bind.DatatypeConverter.printBase64Binary(userCredentials.getBytes());
+			request.setHeader("Authorization", basicAuth);
+		}
+		else
+		{	
+			request.setHeader("Authorization", this.getTokenType()+" "+this.getPassword());
+			
+		}
+			
+		
+		HttpResponse response = httpClient.execute(request);
+//		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
+		logger.debug("responseJson"+response );
+		return response;
+		
 	}
 }
