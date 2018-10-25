@@ -201,7 +201,7 @@ public class FastHireCandidateController {
 	
 	@GetMapping(value = "/FormTemplate")
 	public ResponseEntity <?> getFormTemplateFields(@RequestParam(value = "businessUnit", required = false) String businessUnitId,
-			@RequestParam(value = "candidateId", required = true) String tempUserId,@RequestParam(value = "fieldGroupName", required = true) String fieldGroupName,
+			@RequestParam(value = "candidateId", required = true) String tempUserId,@RequestParam(value = "fieldGroup", required = true) String fieldGroupId,
 			HttpServletRequest request) throws NamingException, ParseException, IOException, URISyntaxException{
 		JSONObject returnObject = new JSONObject();
 		JSONArray returnArray =  new JSONArray();
@@ -224,7 +224,7 @@ public class FastHireCandidateController {
 		 logger.debug("responseUserJson"+responseUserJson);
 		 JSONObject userEmpJobObject = new JSONObject(responseUserJson);
 		 userEmpJobObject = userEmpJobObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		 returnObject.put("userEmpJob", userEmpJobObject);
+//		 returnObject.put("userEmpJob", userEmpJobObject);
 		 map.put("position",userEmpJobObject.getString("position"));
 		 map.put("department",userEmpJobObject.getJSONObject("positionNav").getString("department"));
 		 map.put("company",userEmpJobObject.getJSONObject("positionNav").getString("company"));
@@ -270,7 +270,9 @@ public class FastHireCandidateController {
 			if(template !=null)
 			{
 				// get all field groups for the template
-				List<MapTemplateFieldGroup> templateFieldGroups = mapTemplateFieldGroupService.findByTemplate(template.getId());
+//				List<MapTemplateFieldGroup> templateFieldGroups = mapTemplateFieldGroupService.findByTemplate(template.getId());
+				
+				List<MapTemplateFieldGroup> templateFieldGroups = mapTemplateFieldGroupService.findByTemplateFieldGroup(template.getId(), fieldGroupId);
 				if(templateFieldGroups.size() !=0)
 				{	
 					HashMap<String, String> responseMap = new HashMap<>(); 

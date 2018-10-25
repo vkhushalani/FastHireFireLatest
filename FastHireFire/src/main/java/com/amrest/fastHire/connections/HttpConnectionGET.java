@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ import com.amrest.fastHire.utilities.ConstantManager;
 import com.amrest.fastHire.utilities.URLManager;
 import com.sap.cloud.account.TenantContext;
 import com.sap.core.connectivity.api.authentication.AuthenticationHeader;
+import com.sap.core.connectivity.api.authentication.AuthenticationHeaderProvider;
 import com.sap.core.connectivity.api.configuration.DestinationConfiguration;
 
 /*
@@ -36,6 +39,7 @@ public class HttpConnectionGET {
 	private URI uri;
 
 	private static final String authTypeBasic = "BasicAuthentication";
+	private static final String oAuthauthType = "OAuth2SAMLBearerAssertion";
 
 	@SuppressWarnings("rawtypes")
 	private Class className;
@@ -205,6 +209,11 @@ public class HttpConnectionGET {
 			if (authTypeBasic.equalsIgnoreCase((authenticationType))) {
 				BasicAuthenticationHeaderProvider headerProvider = new BasicAuthenticationHeaderProvider();
 				authenticationHeaders.add(headerProvider.getAuthenticationHeader(destinationConfiguration));
+			}
+			else if (oAuthauthType.equalsIgnoreCase(authenticationType)){
+				Context ctx = new InitialContext();
+				AuthenticationHeaderProvider authHeaderProvider = (AuthenticationHeaderProvider) ctx.lookup("java:comp/env/myAuthHeaderProvider");
+				authenticationHeaders = authHeaderProvider.getOAuth2SAMLBearerAssertionHeaders(destinationConfiguration);
 			}
 			return authenticationHeaders;
 

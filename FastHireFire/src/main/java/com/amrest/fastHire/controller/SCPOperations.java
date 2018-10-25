@@ -109,7 +109,7 @@ public class SCPOperations {
 				
 				client.setPostJson(json);
 				HttpResponse response = client.callDestinationPUT();
-				if(response.getStatusLine().getStatusCode() == 200){
+				if(response.getStatusLine().getStatusCode() == 201){
 				return 	ResponseEntity.ok().body("Success");
 				}
 				

@@ -14,6 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +24,7 @@ import com.amrest.fastHire.authentication.BasicAuthenticationHeaderProvider;
 import com.amrest.fastHire.connections.POJO.CustomStatus;
 import com.amrest.fastHire.utilities.ConstantManager;
 import com.sap.core.connectivity.api.authentication.AuthenticationHeader;
+import com.sap.core.connectivity.api.authentication.AuthenticationHeaderProvider;
 import com.sap.core.connectivity.api.configuration.DestinationConfiguration;
 
 /*
@@ -38,6 +42,7 @@ public class HttpConnectionPUT {
 	private Class className;
 
 	private static final String authType = "BasicAuthentication";
+	private static final String oAuthauthType = "OAuth2SAMLBearerAssertion";
 	private static final String message = "Success";
 	private static final String zeroLength = "0";
 
@@ -246,6 +251,11 @@ public class HttpConnectionPUT {
 			if (authType.equalsIgnoreCase((authenticationType))) {
 				BasicAuthenticationHeaderProvider headerProvider = new BasicAuthenticationHeaderProvider();
 				authenticationHeaders.add(headerProvider.getAuthenticationHeader(destinationConfiguration));
+			}
+			else if (oAuthauthType.equalsIgnoreCase(authenticationType)){
+				Context ctx = new InitialContext();
+				AuthenticationHeaderProvider authHeaderProvider = (AuthenticationHeaderProvider) ctx.lookup("java:comp/env/myAuthHeaderProvider");
+				authenticationHeaders = authHeaderProvider.getOAuth2SAMLBearerAssertionHeaders(destinationConfiguration);
 			}
 			return authenticationHeaders;
 

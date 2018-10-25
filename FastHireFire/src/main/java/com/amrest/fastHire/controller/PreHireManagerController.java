@@ -1142,19 +1142,41 @@ public class PreHireManagerController {
 						
 					}
 				// call the SCPI Interface api
-				
-//				DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-//				Calendar calendar = Calendar.getInstance();
-//				String dateString = formatter.format(calendar.getTime()); 
-//				dateString = dateString+"T00:00:00.000Z";
-//				 DestinationClient scpiDestClient = new DestinationClient();
-//				 scpiDestClient.setDestName(scpDestinationName);
-//				 scpiDestClient.setHeaderProvider();
-//				 scpiDestClient.setConfiguration();
-//				 scpiDestClient.setDestConfiguration();
-//				 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
-//				 HttpResponse scpiResponse = destClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+dateString+"&$format=json","{}");
-				
+				Thread thread = new Thread(new Runnable(){
+					  @Override
+					  public void run(){
+							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+							Calendar calendar = Calendar.getInstance();
+							String dateString = formatter.format(calendar.getTime()); 
+							dateString = dateString+"T00:00:00.000Z";
+							 DestinationClient scpiDestClient = new DestinationClient();
+							 scpiDestClient.setDestName(scpDestinationName);
+							 try {
+								scpiDestClient.setHeaderProvider();
+								scpiDestClient.setConfiguration();
+								scpiDestClient.setDestConfiguration();
+								 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
+								 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+dateString+"&$format=json");
+							} catch (NamingException e) {
+								
+								e.printStackTrace();
+							} catch (ClientProtocolException e) {
+								
+								e.printStackTrace();
+							} catch (IOException e) {
+								
+								e.printStackTrace();
+							} catch (URISyntaxException e) {
+								
+								e.printStackTrace();
+							}
+							 
+							 
+					 
+					  }
+					});
+
+				thread.start();
 				 return ResponseEntity.ok().body("Success");
 		        }
 				
