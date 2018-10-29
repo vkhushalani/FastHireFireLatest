@@ -67,7 +67,7 @@ public class URLManager {
 	 * @return String
 	 */
 	public String formURLToCall() {
-		String dUrl = destinationURL();
+		String dUrl = destinationURL()+"/";
 
 		switch (controllerClass) {
 		case "PaymentInfoController":

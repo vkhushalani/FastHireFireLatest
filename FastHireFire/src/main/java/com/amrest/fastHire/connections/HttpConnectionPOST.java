@@ -91,6 +91,7 @@ public class HttpConnectionPOST {
 
 			List<AuthenticationHeader> authenticationHeaders = getAuthenticationHeaders(destinationConfiguration);
 			for (AuthenticationHeader authenticationHeader : authenticationHeaders) {
+				logger.debug("authHeader , Name : Value" +  authenticationHeader.getName() + " : " + authenticationHeader.getValue());
 				connection.addRequestProperty(authenticationHeader.getName(), authenticationHeader.getValue());
 			}
 			
@@ -149,6 +150,7 @@ public class HttpConnectionPOST {
 				}
 			}
 		}
+		logger.debug("return Post String : " + builder.toString());
 		return builder.toString();
 
 	}
@@ -182,6 +184,7 @@ public class HttpConnectionPOST {
 
 			List<AuthenticationHeader> authenticationHeaders = getAuthenticationHeaders(destinationConfiguration);
 			for (AuthenticationHeader authenticationHeader : authenticationHeaders) {
+				logger.debug("authHeader , Name : Value" +  authenticationHeader.getName() + " : " + authenticationHeader.getValue());
 				connection.addRequestProperty(authenticationHeader.getName(), authenticationHeader.getValue());
 			}
 

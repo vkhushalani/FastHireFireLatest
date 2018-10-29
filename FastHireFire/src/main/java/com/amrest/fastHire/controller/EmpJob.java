@@ -124,7 +124,7 @@ public class EmpJob {
 
 	// Call another api
 	private void callAPI(String position) {
-		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "Position?$filter=code%20eq%20'" + position
+		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "/Position?$filter=code%20eq%20'" + position
 				+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
 		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
 		logger.error(urlToCall);

@@ -177,13 +177,12 @@ public class PreHireManagerController {
 		HttpResponse vacantPosResponse =  destClient.callDestinationGET("/Position", "?$filter="
 				+ "vacant eq true and company eq '"+paraMap.get("company")+"' "
 				+ "and department eq '"+paraMap.get("department")+"' "
-				+ "and incumbent eq null"
 				+ "&$format=json"
 				+ "&$expand=employeeClassNav"
 				+ "&$select="
 				+ "externalName_localized,"
 				+ "externalName_defaultValue,"
-				+ "createdDate,payGrade,jobTitle,code,"
+				+ "payGrade,jobTitle,code,"
 				+ "employeeClassNav/label_defaultValue,"
 				+ "employeeClassNav/label_localized");
 		String vacantPosResponseJsonString = EntityUtils.toString(vacantPosResponse.getEntity(), "UTF-8");
@@ -201,7 +200,7 @@ public class PreHireManagerController {
 			pos.setUserFirstName(null);
 			pos.setUserLastName(null);
 			pos.setUserId(null);
-			pos.setLastUpdatedDate(vacantPos.getString("createdDate"));
+//			pos.setLastUpdatedDate(vacantPos.getString("createdDate"));
 			pos.setDayDiff(null);
 			pos.setVacant(true);
 			pos.setStartDate(null);
@@ -217,11 +216,10 @@ public class PreHireManagerController {
 				+ "employeeClass eq '"+employeeClassConstant.getValue()+"' and "
 				+ "company eq '"+paraMap.get("company")+"' and "
 				+ "department eq '"+paraMap.get("department")+"' and "
-				+ "emplStatusNav/id ne '"+empStatusConstant.getValue()+"'"
-				+ " and userNav/userId ne null &$expand=positionNav,userNav,"
+				+ "emplStatusNav/id ne '"+empStatusConstant.getValue()+"' "
+				+ "and userNav/userId ne null &$expand=positionNav,userNav,"
 				+ "positionNav/employeeClassNav"
 				+ "&$select=userId,startDate,position,"
-				+ "createdDateTime,createdOn,"
 				+ "positionNav/externalName_localized,"
 				+ "positionNav/externalName_defaultValue,"
 				+ "positionNav/payGrade,positionNav/jobTitle,"
@@ -252,7 +250,7 @@ public class PreHireManagerController {
 			pos.setUserFirstName(ongoingPos.getJSONObject("userNav").getString("firstName"));
 			pos.setUserLastName(ongoingPos.getJSONObject("userNav").getString("lastName"));
 			pos.setUserId(ongoingPos.getJSONObject("userNav").getString("userId"));
-			pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
+//			pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
 			pos.setVacant(false);
 			
 			String startDate = ongoingPos.getJSONObject("userNav").getString("custom10");
