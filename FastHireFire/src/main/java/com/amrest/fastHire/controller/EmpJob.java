@@ -313,6 +313,7 @@ public class EmpJob {
 		obj.put(paramWorkSchName, paramWorkSchValue);
 		obj.put("standardHours", standardHours);
 		obj.put("managerId", managerId);
+		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
 		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}

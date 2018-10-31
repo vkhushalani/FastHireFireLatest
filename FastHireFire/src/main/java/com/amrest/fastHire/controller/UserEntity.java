@@ -115,7 +115,7 @@ public class UserEntity {
 		obj.put("username", userID);
 		obj.put("status", "Active");
 		obj.put("userId", userID);
-		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
+//		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
 		obj.put("email",emailValue);
 		obj.put("lastName", lastNameValue);
 		obj.put("firstName", firstNameValue);

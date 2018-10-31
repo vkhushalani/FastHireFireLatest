@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amrest.fastHire.SF.DestinationClient;
+import com.amrest.fastHire.SF.PexClient;
 import com.amrest.fastHire.service.BusinessUnitService;
 import com.amrest.fastHire.service.CodeListService;
 import com.amrest.fastHire.service.CodeListTextService;
@@ -79,6 +80,8 @@ import com.amrest.fastHire.model.Template;
 public class PreHireManagerController {
 	 public static final String destinationName = "prehiremgrSFTest";
 	 public static final String scpDestinationName = "scpiBasic";
+	 public static final String pexDestinationName = "FastHirePEX";
+	 
 	 public static final Integer  padStartDate  = 15;
 	 
 	Logger logger = LoggerFactory.getLogger(PreHireManagerController.class);
@@ -219,12 +222,12 @@ public class PreHireManagerController {
 				+ "emplStatusNav/id ne '"+empStatusConstant.getValue()+"' "
 				+ "and userNav/userId ne null &$expand=positionNav,userNav,"
 				+ "positionNav/employeeClassNav"
-				+ "&$select=userId,startDate,position,"
+				+ "&$select=userId,startDate,customString11,position,"
 				+ "positionNav/externalName_localized,"
 				+ "positionNav/externalName_defaultValue,"
 				+ "positionNav/payGrade,positionNav/jobTitle,"
 				+ "userNav/userId,userNav/username,userNav/defaultFullName,"
-				+ "userNav/firstName,userNav/lastName,userNav/custom10,"
+				+ "userNav/firstName,userNav/lastName,"
 				+ "positionNav/employeeClassNav/label_localized,"
 				+ "positionNav/employeeClassNav/label_defaultValue");
 		
@@ -253,7 +256,7 @@ public class PreHireManagerController {
 //			pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
 			pos.setVacant(false);
 			
-			String startDate = ongoingPos.getJSONObject("userNav").getString("custom10");
+			String startDate = ongoingPos.getString("customString11");
 			String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
 			long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
 			smilliSec = Objects.toString(smilliSecLong,null);
@@ -530,16 +533,16 @@ public class PreHireManagerController {
 									JSONObject responseObject = new JSONObject(responseMap.get(mapTemplateFieldProperties.getField().getEntityName()));
 									
 									JSONArray responseResult = responseObject.getJSONObject("d").getJSONArray("results");
-									logger.debug("responseResult:"+responseResult);
+//									logger.debug("responseResult:"+responseResult);
 									if(responseResult.length() !=0){
 									JSONObject positionEntity = responseResult.getJSONObject(0);
-									logger.debug("positionEntity:"+positionEntity);
+//									logger.debug("positionEntity:"+positionEntity);
 									String value ;
 									if(!mapTemplateFieldProperties.getField().getTechnicalName().equalsIgnoreCase("startDate")){
 									 value = getValueFromPathJson(positionEntity,mapTemplateFieldProperties.getField().getValueFromPath(),compareMap);}
 									else
 									{
-										value = getValueFromPathJson(positionEntity,"userNav/custom10",compareMap);
+										value = getValueFromPathJson(positionEntity,"customString11",compareMap);
 										
 										String milliSec = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
 //										logger.debug("Endate Milli Sec: "+milliSec);
@@ -792,30 +795,30 @@ public class PreHireManagerController {
 		String [] techPathArray  = path.split("/");
 //		String [] techPathArray = mapTemplateFieldProperties.getField().getValueFromPath().split("/");
 		JSONArray tempArray;
-		logger.debug("techPathArray"+techPathArray.length);
+//		logger.debug("techPathArray"+techPathArray.length);
 		for(int i=0;i<techPathArray.length;i++)
 		{
-			logger.debug("Step"+i+"techPathArray.length - 1"+(techPathArray.length - 1));
+//			logger.debug("Step"+i+"techPathArray.length - 1"+(techPathArray.length - 1));
 			if(i != techPathArray.length - 1){
-				logger.debug("techPathArray["+i+"]"+techPathArray[i]);
+//				logger.debug("techPathArray["+i+"]"+techPathArray[i]);
 				if(techPathArray[i].contains("[]")){
 					
 					tempArray = positionEntity.getJSONArray(techPathArray[i].replace("[]", ""));
-					logger.debug("tempArray"+i+tempArray);
+//					logger.debug("tempArray"+i+tempArray);
 					if(tempArray.length()!=0){
 						String findObjectKey = techPathArray[i+1].substring(techPathArray[i+1].indexOf("(") + 1, techPathArray[i+1].indexOf(")"));
 					for(int j = 0;j< tempArray.length() ;j++)
 					{
 						
 						
-						logger.debug("findObjectKey"+j+findObjectKey);
+//						logger.debug("findObjectKey"+j+findObjectKey);
 						if(tempArray.getJSONObject(j).get(findObjectKey).toString().equalsIgnoreCase(compareMap.get(findObjectKey)))
 						{
 							
 							positionEntity = tempArray.getJSONObject(j);
-							logger.debug("positionEntity"+j+positionEntity);
+//							logger.debug("positionEntity"+j+positionEntity);
 							techPathArray[i+1] = techPathArray[i+1].replace("("+findObjectKey+")", "");
-							logger.debug("techPathArray[i+1]"+(i+1)+techPathArray[i+1]);
+//							logger.debug("techPathArray[i+1]"+(i+1)+techPathArray[i+1]);
 							break;
 							
 						}
@@ -841,9 +844,9 @@ public class PreHireManagerController {
 					
 					
 					try{
-						logger.debug("Object no Array"+techPathArray[i]);
+//						logger.debug("Object no Array"+techPathArray[i]);
 						positionEntity = positionEntity.getJSONObject(techPathArray[i]);
-						logger.debug("Object no Array positionEntity"+positionEntity);
+//						logger.debug("Object no Array positionEntity"+positionEntity);
 					}
 					catch(JSONException exception)
 					{
@@ -855,13 +858,13 @@ public class PreHireManagerController {
 			else
 			{
 				try{
-					logger.debug("techPathArray["+i+"]"+techPathArray[i]);
+//					logger.debug("techPathArray["+i+"]"+techPathArray[i]);
 						if(techPathArray[i].contains("<locale>"))
 					 {
-							logger.debug("with label techPathArray["+i+"]"+techPathArray[i]);
+//							logger.debug("with label techPathArray["+i+"]"+techPathArray[i]);
 						 techPathArray[i] = techPathArray[i].replace("<locale>", compareMap.get("locale"));
 					 }
-						logger.debug("positionEntity.get(techPathArray[i]).toString()"+i+positionEntity.get(techPathArray[i]).toString());
+//						logger.debug("positionEntity.get(techPathArray[i]).toString()"+i+positionEntity.get(techPathArray[i]).toString());
 				return positionEntity.get(techPathArray[i]).toString();
 				}
 				catch(JSONException exception)
@@ -1021,10 +1024,10 @@ public class PreHireManagerController {
 		  EmpJobResponseObject.put("location", "NA");
 		  EmpJobResponseObject.put("eventReason", "CS_JobAbandonment");
 		  EmpJobResponseObject.getJSONObject("__metadata").put("uri", "EmpJob");
-		  HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("upsert", "?$format=json",EmpJobResponseObject.toString());
+		  HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("/upsert", "?$format=json",EmpJobResponseObject.toString());
 		String EmpJobPostResponseJson = EntityUtils.toString(EmpJobPostResponse.getEntity(), "UTF-8");
 		
-		logger.debug("responseJson to update locaton" + EmpJobPostResponseJson);
+//		logger.debug("responseJson to update locaton" + EmpJobPostResponseJson);
 		JSONObject EmpJobPostResponseObj = new JSONObject(EmpJobPostResponseJson);
 		String status =  EmpJobPostResponseObj.getJSONArray("d").getJSONObject(0).getString("status");
 		if(status.equalsIgnoreCase("OK")){
@@ -1042,7 +1045,7 @@ public class PreHireManagerController {
 	    	}
 //				logger.debug("replace vacantJsonString: "+vacantJsonString);
 			
-			 HttpResponse vacantResponse = destClient.callDestinationPOST("upsert", "?$format=json",vacantJsonString);
+			 HttpResponse vacantResponse = destClient.callDestinationPOST("/upsert", "?$format=json",vacantJsonString);
 			 String vacantResponseJson = EntityUtils.toString(vacantResponse.getEntity(), "UTF-8");
 			 return ResponseEntity.ok().body(vacantResponseJson);
 			}
@@ -1051,7 +1054,9 @@ public class PreHireManagerController {
 			return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	@PostMapping("/ConfirmHire")
-	public ResponseEntity <?> confirmlHire(@RequestBody String postJson) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException{
+	public ResponseEntity <?> confirmlHire(@RequestBody String postJson,HttpServletRequest request) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException{
+				String loggedInUser =  request.getUserPrincipal().getName();
+		
 				Map<String,String> map = new HashMap<String,String>();  
 		
 				// get post JSON Object
@@ -1095,7 +1100,7 @@ public class PreHireManagerController {
 		        
 		       
 			      
-					HttpResponse postresponse = destClient.callDestinationPOST("upsert", "?$format=json",jsonString);
+					HttpResponse postresponse = destClient.callDestinationPOST("/upsert", "?$format=json",jsonString);
 					String postresponseJson = EntityUtils.toString(postresponse.getEntity(), "UTF-8");
 					
 		        //updating the startDate and endDate to confirm the hire
@@ -1127,7 +1132,7 @@ public class PreHireManagerController {
 //					logger.debug("Entity: "+entity.getKey()+" postJsonString: "+postJsonString);
 					
 						
-						HttpResponse updateresponse = destClient.callDestinationPOST("upsert", "?$format=json&purgeType=full",postJsonString);
+						HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
 						String updateresponseJson = EntityUtils.toString(updateresponse.getEntity(), "UTF-8");
 						JSONObject updateresponseObject = new JSONObject(updateresponseJson);
 						String status =  updateresponseObject.getJSONArray("d").getJSONObject(0).getString("status");
@@ -1139,6 +1144,35 @@ public class PreHireManagerController {
 //					}
 						
 					}
+				
+				// call to SF to get MDF Object Fields to generate pes post
+				HttpResponse mdfFieldsResponse = destClient.callDestinationGET("", "");
+				String mdfFieldsResponseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
+				JSONObject mdfFieldsObject = new JSONObject(mdfFieldsResponseJson);
+				 mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+				
+				 Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
+				 Map<String,String[]> pexFormMap = new MultiValueMap<>();;
+					while(mdfFieldKeys.hasNext()) {
+					    String key = (String)mdfFieldKeys.next();
+					    if(key.contains("cust_ZZ_MDF2PEX_")){
+					    	String customField = mdfFieldsObject.getString(key);
+					    	String[] parts = customField.split("||");
+					    	pexFormMap.put(parts[1], new String[] {parts[2],parts[0]});
+					    }
+					    
+					}
+					
+					
+				
+				// call the Pex Interface 
+//				JSONObject empJobResponseJsonObject =  new JSONObject(entityResponseMap.get("EmpJob"));
+//				empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+//				PexClient pexClient = new PexClient();
+//				pexClient.setDestination(pexDestinationName);
+//				pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
+//				pexClient.callDestinationPOST("api/v3/forms/submit", "", pexPostJson);
+				
 				// call the SCPI Interface api
 				Thread thread = new Thread(new Runnable(){
 					  @Override

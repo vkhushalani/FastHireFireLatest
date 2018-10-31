@@ -119,7 +119,7 @@ public class ConstantManager {
 
 	public static String paramStartDateValue;
 	
-	public static final String customDateName = "custom10";
+	public static final String customDateName = "customString11";
 
 	public static String customDateValue;
 
