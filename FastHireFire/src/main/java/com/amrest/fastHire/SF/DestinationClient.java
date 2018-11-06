@@ -16,6 +16,7 @@ import javax.naming.NamingException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -111,6 +112,38 @@ public class DestinationClient {
 		StringEntity entity = new StringEntity(postJson);
 		logger.debug("postJson"+postJson );
 		request.setEntity(entity);
+		request.setHeader("Accept", "application/json");
+		request.setHeader("Content-type", "application/json");
+		
+		if(!this.getDestProperty("Authentication").equalsIgnoreCase("BasicAuthentication")){
+			for (AuthenticationHeader header : this.headers){
+				logger.debug("Header: "+ header.getName() + header.getValue());
+				request.addHeader(header.getName(), header.getValue());
+			}
+			}
+			else
+			{
+				String userCredentials = this.getDestProperty("User")+":"+this.getDestProperty("Password");
+				String basicAuth = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userCredentials.getBytes());
+				request.setHeader("Authorization", basicAuth);
+			}
+		
+		HttpResponse response = httpClient.execute(request);
+//		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
+		logger.debug("responseJson"+response );
+		return response;
+		
+	}
+	
+	public HttpResponse callDestinationDelete(String path,String filter) throws URISyntaxException, ClientProtocolException, IOException{
+		String urlString = this.getDestProperty("URL");
+		URL url= new URL(urlString+path+filter);
+		URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+		urlString = uri.toASCIIString();
+		logger.debug("urlString"+urlString );
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpDelete request = new HttpDelete(urlString);
+		
 		request.setHeader("Accept", "application/json");
 		request.setHeader("Content-type", "application/json");
 		

@@ -1103,93 +1103,166 @@ public class PreHireManagerController {
 					HttpResponse postresponse = destClient.callDestinationPOST("/upsert", "?$format=json",jsonString);
 					String postresponseJson = EntityUtils.toString(postresponse.getEntity(), "UTF-8");
 					
-		        //updating the startDate and endDate to confirm the hire
-				Map<String,String> entityMap = new HashMap<String,String>();  
-				Map<String,String> entityResponseMap = new HashMap<String,String>();
-				entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select= startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,location,holidayCalendarCode,company,eventReason");
-				entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency");
-				entityMap.put("EmpCompensation", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payGroup,eventReason");
-				entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,personIdExternal");
-				
-				// reading the records
-				for (Map.Entry<String,String> entity : entityMap.entrySet())  {
-					
-					HttpResponse getresponse = destClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
-					String getresponseJson = EntityUtils.toString(getresponse.getEntity(), "UTF-8");
-//					logger.debug("getresponseJson read"+getresponseJson);
-					entityResponseMap.put(entity.getKey(), getresponseJson);
-				}
-				for (Map.Entry<String,String> entity : entityMap.entrySet())  {
-		           
-					String getresponseJson  = entityResponseMap.get(entity.getKey());
-					JSONObject getresponseJsonObject =  new JSONObject(getresponseJson);
-//					logger.debug("getresponseJson"+getresponseJson);
-					
-//					if(getresponseJsonObject.getJSONObject("d").getJSONArray("results").length() !=0){
-					JSONObject getresultObj = getresponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-					getresultObj.put("startDate", map.get("startDate"));
-					String postJsonString = getresultObj.toString();	
-//					logger.debug("Entity: "+entity.getKey()+" postJsonString: "+postJsonString);
-					
-						
-						HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
-						String updateresponseJson = EntityUtils.toString(updateresponse.getEntity(), "UTF-8");
-						JSONObject updateresponseObject = new JSONObject(updateresponseJson);
-						String status =  updateresponseObject.getJSONArray("d").getJSONObject(0).getString("status");
-						if(!status.equalsIgnoreCase("OK")){
-							return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-									 
-						}
-//						logger.debug("updateresponseJson" + updateresponseJson);
-//					}
-						
-					}
-				
-				// call to SF to get MDF Object Fields to generate pes post
-				HttpResponse mdfFieldsResponse = destClient.callDestinationGET("", "");
-				String mdfFieldsResponseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
-				JSONObject mdfFieldsObject = new JSONObject(mdfFieldsResponseJson);
-				 mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-				
-				 Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
-				 Map<String,String[]> pexFormMap = new MultiValueMap<>();;
-					while(mdfFieldKeys.hasNext()) {
-					    String key = (String)mdfFieldKeys.next();
-					    if(key.contains("cust_ZZ_MDF2PEX_")){
-					    	String customField = mdfFieldsObject.getString(key);
-					    	String[] parts = customField.split("||");
-					    	pexFormMap.put(parts[1], new String[] {parts[2],parts[0]});
-					    }
-					    
-					}
-					
-					
-				
-				// call the Pex Interface 
-//				JSONObject empJobResponseJsonObject =  new JSONObject(entityResponseMap.get("EmpJob"));
-//				empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-//				PexClient pexClient = new PexClient();
-//				pexClient.setDestination(pexDestinationName);
-//				pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
-//				pexClient.callDestinationPOST("api/v3/forms/submit", "", pexPostJson);
-				
-				// call the SCPI Interface api
-				Thread thread = new Thread(new Runnable(){
-					  @Override
-					  public void run(){
+					Thread parentThread = new Thread(new Runnable(){	
+						@Override
+						  public void run(){
+							
+							try{
+					        //updating the startDate and endDate to confirm the hire
+							Map<String,String> entityMap = new HashMap<String,String>();  
+							Map<String,String> entityResponseMap = new HashMap<String,String>();
+							entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select= startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,location,holidayCalendarCode,company,eventReason");
+							entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency");
+							entityMap.put("EmpCompensation", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payGroup,eventReason");
+							entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,personIdExternal");
+							
+							// reading the records
+							for (Map.Entry<String,String> entity : entityMap.entrySet())  {
+								
+								HttpResponse getresponse = destClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
+								String getresponseJson = EntityUtils.toString(getresponse.getEntity(), "UTF-8");
+//								logger.debug("getresponseJson read"+getresponseJson);
+								entityResponseMap.put(entity.getKey(), getresponseJson);
+							}
+							for (Map.Entry<String,String> entity : entityMap.entrySet())  {
+					           
+								String getresponseJson  = entityResponseMap.get(entity.getKey());
+								JSONObject getresponseJsonObject =  new JSONObject(getresponseJson);
+//								logger.debug("getresponseJson"+getresponseJson);
+								
+								JSONObject getresultObj = getresponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+								getresultObj.put("startDate", map.get("startDate"));
+								String postJsonString = getresultObj.toString();	
+//								logger.debug("Entity: "+entity.getKey()+" postJsonString: "+postJsonString);
+								
+								HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
+//								logger.debug("updateresponse" + updateresponse);
+								}
+							
+							// call to SF to get MDF Object Fields to generate pes post
+							HttpResponse mdfFieldsResponse = destClient.callDestinationGET("/cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
+							String mdfFieldsResponseJson = EntityUtils.toString(mdfFieldsResponse.getEntity(), "UTF-8");
+							JSONObject mdfFieldsObject = new JSONObject(mdfFieldsResponseJson);
+							if(mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0){
+								
+							 mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+							
+							 logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
+							 
+							 Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
+							 Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String,ArrayList<String[]>>();
+							 ArrayList<String[]> fieldValues ;
+								while(mdfFieldKeys.hasNext()) {
+								    String key = (String)mdfFieldKeys.next();
+								    if(key.contains("cust_ZZ_MDF2PEX_")){
+								    	String customField = mdfFieldsObject.getString(key);
+								    	String[] parts = customField.split("\\|\\|");
+								    	if(parts.length == 3){
+								    	logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName: "+parts[0]);
+								    	fieldValues = pexFormMap.get(parts[1]);
+								    	if(fieldValues == null){
+								    		fieldValues = new ArrayList<String[]>();	
+								    	}
+								    	fieldValues.add(new String[] {parts[2], parts[0]});
+								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
+								    	pexFormMap.put(parts[1], fieldValues);
+								    	}
+								    }
+								    
+								}
+								
+								JSONObject empJobResponseJsonObject =  new JSONObject(entityResponseMap.get("EmpJob"));
+								empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+								logger.debug("empJobResponseJsonObject" + empJobResponseJsonObject.toString());
+								PexClient pexClient = new PexClient();
+								pexClient.setDestination(pexDestinationName);
+								pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
+								
+								for(String pexFormMapKey : pexFormMap.keySet()){
+									Map <String,String> pexFormJsonRepMap = new HashMap<String,String>();
+									pexFormJsonRepMap.put("candidateId", map.get("userId"));
+									pexFormJsonRepMap.put("formId", pexFormMapKey);
+									pexFormJsonRepMap.put("companyCode", empJobResponseJsonObject.getString("company"));
+									
+									JSONArray postFieldsArray = new JSONArray();
+									fieldValues = pexFormMap.get(pexFormMapKey);
+									for(String[] values : fieldValues){
+										logger.debug("post fields: "+values[0] +" : "+values[1]);
+										JSONObject postField = new JSONObject();
+										postField.put("fieldId", values[0]);
+										postField.put("value",mdfFieldsObject.getString(values[1]));
+										postFieldsArray.put(postField);
+									}
+									pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
+									logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
+									JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
+									String pexFormPostString = pexFormPostObj.toString();
+									
+									for (Map.Entry<String, String> entry : pexFormJsonRepMap.entrySet()) {
+										pexFormPostString = pexFormPostString.replaceAll("<"+entry.getKey()+">", entry.getValue());
+							    	}
+//									logger.debug("pexFormPostString : "+pexFormPostString);
+									final String finalPexFormPostString = pexFormPostString;
+									Thread pexThread = new Thread(new Runnable(){
+										 @Override
+										  public void run(){
+											
+											try {
+												
+												pexClient.callDestinationPOST("api/v3/forms/submit", "", finalPexFormPostString);
+											} catch (URISyntaxException | IOException e) {
+												// TODO Auto-generated catch block
+												e.printStackTrace();
+											} 
+											}});
+
+									pexThread.start();
+								}
+							
+							}
+							
+							// delete the MDF Object
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 							Calendar calendar = Calendar.getInstance();
 							String dateString = formatter.format(calendar.getTime()); 
-							dateString = dateString+"T00:00:00.000Z";
-							 DestinationClient scpiDestClient = new DestinationClient();
-							 scpiDestClient.setDestName(scpDestinationName);
-							 try {
-								scpiDestClient.setHeaderProvider();
-								scpiDestClient.setConfiguration();
-								scpiDestClient.setDestConfiguration();
-								 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
-								 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+dateString+"&$format=json");
-							} catch (NamingException e) {
+							final String finalDateString = dateString+"T00:00:00.000Z";
+							destClient.callDestinationDelete("cust_Additional_Information(effectiveStartDate=datetime'"+finalDateString+"',externalCode='"+map.get("userId")+"')","?$format=json");
+							// call the SCPI Interface api
+							Thread thread = new Thread(new Runnable(){
+								  @Override
+								  public void run(){
+										
+										 DestinationClient scpiDestClient = new DestinationClient();
+										 scpiDestClient.setDestName(scpDestinationName);
+										 try {
+											scpiDestClient.setHeaderProvider();
+											scpiDestClient.setConfiguration();
+											scpiDestClient.setDestConfiguration();
+											 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
+											 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+finalDateString+"&$format=json");
+										} catch (NamingException e) {
+											
+											e.printStackTrace();
+										} catch (ClientProtocolException e) {
+											
+											e.printStackTrace();
+										} catch (IOException e) {
+											
+											e.printStackTrace();
+										} catch (URISyntaxException e) {
+											
+											e.printStackTrace();
+										}
+										 
+										 
+								 
+								  }
+								});
+
+							thread.start();
+							
+							}
+							catch (NamingException e) {
 								
 								e.printStackTrace();
 							} catch (ClientProtocolException e) {
@@ -1202,13 +1275,12 @@ public class PreHireManagerController {
 								
 								e.printStackTrace();
 							}
-							 
-							 
-					 
-					  }
-					});
+							
+							
+						} });
+					
+					parentThread.start();
 
-				thread.start();
 				 return ResponseEntity.ok().body("Success");
 		        }
 				

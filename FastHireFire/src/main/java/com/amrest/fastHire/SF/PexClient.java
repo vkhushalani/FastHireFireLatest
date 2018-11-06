@@ -80,6 +80,7 @@ public class PexClient {
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet request = new HttpGet(urlString);
 		request.setHeader("Authorization", getJWTTokken());
+		logger.debug("JWT token : "+ getJWTTokken());
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		logger.debug("responseJson"+response );
@@ -101,7 +102,7 @@ public class PexClient {
 		request.setHeader("Accept", "application/json");
 		request.setHeader("Content-type", "application/json");
 		request.setHeader("Authorization", getJWTTokken());
-		
+		logger.debug("JWT token : "+ getJWTTokken());
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		logger.debug("responseJson"+response );

@@ -1,0 +1,7 @@
+{
+	"personId": "<candidateId>",
+	"formId": "<formId>",
+	"countryCode": "<companyCode>",
+	"fields": "<fieldsArray>",
+	"prehireData": true
+}
