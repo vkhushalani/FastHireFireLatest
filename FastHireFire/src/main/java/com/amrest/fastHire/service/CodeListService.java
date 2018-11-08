@@ -10,7 +10,7 @@ public interface CodeListService {
 	public CodeList create(CodeList item);
 	public CodeList findById(String id);
 	public List<CodeList> findByFieldId(String fieldId);
-	public CodeList findByCountryField(String fieldId,String countryId);
+	public List<CodeList> findByCountryField(String fieldId,String countryId);
 	public CodeList findByCountryFieldDependent(String fieldId,String countryId,String dependentFieldId, String dependentFieldValue);
 	public void deleteByObject(CodeList item);
 }

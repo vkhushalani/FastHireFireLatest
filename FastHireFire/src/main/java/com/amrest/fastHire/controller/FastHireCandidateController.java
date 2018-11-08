@@ -426,8 +426,36 @@ public class FastHireCandidateController {
 														logger.debug("value"+value);
 														if(value !=null){
 															if(mapTemplateFieldProperties.getField().getFieldType().equalsIgnoreCase("Codelist"))
-															{	String codeListId = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), map.get("country")).getId();
-															CodeListText clText = codeListTextService.findById(codeListId, map.get("locale"), value);	
+															{
+																
+																
+																List<CodeList> CodeList = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), map.get("country"));
+																String codeListId = null;
+																if(CodeList.size() == 1){
+																	codeListId = CodeList.get(0).getId();
+																}
+																else{
+																for(CodeList codeObject : CodeList){
+																	
+																	for(MapTemplateFieldProperties existingField : mapTemplateFieldPropertiesList){
+																		if(existingField.getField().getId().equalsIgnoreCase(codeObject.getDependentFieldId()))
+																		{
+																			if(existingField.getValue() != null && existingField.getValue().equalsIgnoreCase(codeObject.getDependentFieldValue()))
+																			{
+																				codeListId = codeObject.getId();
+																			
+																				break;
+																			}
+																		}
+																	}
+																	if(codeListId != null){
+																		break;
+																	}
+																	
+																	}
+																}
+																
+																CodeListText clText = codeListTextService.findById(codeListId, map.get("locale"), value);	
 																if( clText != null){
 																		value = clText.getDescription();
 																	}
@@ -572,16 +600,20 @@ public class FastHireCandidateController {
 												 break;
 											 case "Codelist":
 												 logger.debug("Codelist"+mapTemplateFieldProperties.getField().getName());
-												 CodeList codeList = codeListService.findByCountryField(mapTemplateFieldProperties.getField().getId(),  map.get("country"));
-												 if(codeList != null){
-												 List<CodeListText> codeListValues = codeListTextService.findByCodeListIdLang(codeList.getId(),  map.get("locale"));
-												 for(CodeListText value : codeListValues){
-													 DropDownKeyValue keyValue = new DropDownKeyValue();
-													 keyValue.setKey(value.getValue());
-													 keyValue.setValue(value.getDescription());
-													 dropDown.add(keyValue);
+												 List<CodeList> codeList = codeListService.findByCountryField(mapTemplateFieldProperties.getField().getId(), map.get("country"));
+												 logger.debug("here 7");
+												 if(codeList.size() != 0){
+														if(codeList.size() == 1){
+															List<CodeListText> codeListValues = codeListTextService.findByCodeListIdLang(codeList.get(0).getId(), map.get("locale"));
+															 for(CodeListText value : codeListValues){
+																 DropDownKeyValue keyValue = new DropDownKeyValue();
+																 keyValue.setKey(value.getValue());
+																 keyValue.setValue(value.getDescription());
+																 dropDown.add(keyValue);
+																}
 													 }
-												 }
+													
+												}
 												 break;
 									 		}
 									

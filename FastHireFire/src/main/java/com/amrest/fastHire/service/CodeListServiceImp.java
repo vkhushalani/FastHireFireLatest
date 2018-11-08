@@ -50,19 +50,16 @@ public class CodeListServiceImp implements CodeListService {
 	        return items;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public CodeList findByCountryField(String fieldId, String countryId) {
-		try
-		{
+	public List<CodeList> findByCountryField(String fieldId, String countryId) {
+		
 		Query query = em.createNamedQuery("CodeList.findByCountryField")
 				.setParameter("fieldId", fieldId)
 				.setParameter("countryId", countryId);
-		 CodeList item = (CodeList) query.getSingleResult();
+		 List<CodeList> item = query.getResultList();
 	        return item;
-		}
-	        catch(NoResultException e) {
-	            return null;
-	        }
+		
 	}
 
 	@Override

@@ -83,10 +83,10 @@ public class MapTemplateFieldPropertiesServiceImp implements MapTemplateFieldPro
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<MapTemplateFieldProperties> findByFieldIdVisibleManager(String fieldId, Boolean isVisibleCandidate) {
+	public List<MapTemplateFieldProperties> findByFieldIdVisibleManager(String fieldId, Boolean isVisibleManager) {
 		Query query = em.createNamedQuery("MapTemplateFieldProperties.findByFieldIdVisibleManager")
 				.setParameter("fieldId",fieldId)
-				.setParameter("isVisibleCandidate", isVisibleCandidate);
+				.setParameter("isVisibleManager", isVisibleManager);
 		List<MapTemplateFieldProperties> items =  query.getResultList();
 		return items;
 	}

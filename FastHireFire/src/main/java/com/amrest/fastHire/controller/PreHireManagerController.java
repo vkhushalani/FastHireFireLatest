@@ -327,8 +327,10 @@ public class PreHireManagerController {
 		compareMap.put("department", empJobResponseObject.getJSONObject("positionNav").getString("department"));
 		compareMap.put("country", empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
 		
+		
 		SFConstants employeeClassConstant = sfConstantsService.findById("employeeClassId");
 		SFConstants empStatusConstant = sfConstantsService.findById("emplStatusId");
+		
 		
 		HttpResponse positionResponse =  destClient.callDestinationGET("/Position", "?$filter=code eq '"+position+"'&$format=json&$select=code,vacant,location,payGrade,jobCode,standardHours,externalName_localized");
 		String positionResponseJsonString = EntityUtils.toString(positionResponse.getEntity(), "UTF-8");
@@ -352,10 +354,6 @@ public class PreHireManagerController {
 			compareMap.put("category", "INITIATE");
 			compareMap.put("candidateId", "");
 		}
-		
-		
-		
-		
 		
 		
 		// Get the Business Unit and Company Map
@@ -416,6 +414,7 @@ public class PreHireManagerController {
 				for(String entity : entities){
 					
 					SFAPI sfApi = sfAPIService.findById(entity, "GET");
+	
 					if(sfApi !=null &&sfApi.getTagSource().equalsIgnoreCase("UI")){
 						 
 						 DestinationClient destClientPos = new DestinationClient();
@@ -437,8 +436,9 @@ public class PreHireManagerController {
 //				logger.debug("call the entity URLs which dependent on other entities ");
 				// call the entity URLs which dependent on other entities
 				for(String entity : entities){
-					
+
 					SFAPI sfApi = sfAPIService.findById(entity, "GET");
+				
 					if(sfApi !=null && !sfApi.getTagSource().equalsIgnoreCase("UI"))
 					{
 						DestinationClient destClientPos = new DestinationClient();
@@ -506,7 +506,9 @@ public class PreHireManagerController {
 								
 								//setting field labels
 //								logger.debug("setting field labels"+mapTemplateFieldProperties.getField().getTechnicalName());
+				
 								FieldText fieldText = fieldTextService.findByFieldLanguage(mapTemplateFieldProperties.getFieldId(),compareMap.get("locale"));
+	
 								if(fieldText!=null){
 									
 									mapTemplateFieldProperties.getField().setName(fieldText.getName());
@@ -557,10 +559,70 @@ public class PreHireManagerController {
 //										logger.debug("value not null:"+value);
 										if(mapTemplateFieldProperties.getField().getFieldType().equalsIgnoreCase("Codelist"))
 										{	
-//											logger.debug("Inside Codelist "+mapTemplateFieldProperties.getField().getName());
+											logger.debug("Inside Codelist "+mapTemplateFieldProperties.getField().getName());
+										
 											
-											String codeListId = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), compareMap.get("country")).getId();
-										CodeListText clText = codeListTextService.findById(codeListId, compareMap.get("locale"), value);	
+											List<CodeList> CodeList = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), compareMap.get("country"));
+											String codeListId = null;
+											if(CodeList.size() == 1){
+												codeListId = CodeList.get(0).getId();
+											}
+											else{
+											for(CodeList codeObject : CodeList){
+												
+												for(MapTemplateFieldProperties existingField : mapTemplateFieldPropertiesList){
+													logger.debug("existingField Name: "+ existingField.getField().getName());
+													
+													logger.debug(" Existing Field TechName: "+ existingField.getField().getTechnicalName());
+													Field dependentField = fieldService.findById(codeObject.getDependentFieldId());
+													logger.debug("Dependent Field TecName: "+ dependentField.getTechnicalName());
+													if(existingField.getField().getTechnicalName().equalsIgnoreCase(dependentField.getTechnicalName()))
+													{
+														logger.debug(" Both Dependent and Existing Field Match "+existingField.getField().getTechnicalName());
+														logger.debug("existingField Value"+existingField.getValue());
+														logger.debug("Code List Object Dependent Value"+codeObject.getDependentFieldValue());
+														String existingFieldValue = null;
+														if(existingField.getField().getEntityName() != null){
+														 SFAPI existingFieldEntity = sfAPIService.findById(existingField.getField().getEntityName(),"GET");
+														 
+														 String dependentValuePath,dependentEname;
+														 if(existingFieldEntity.getTagSource().equalsIgnoreCase("UI")){
+															  dependentEname = existingField.getField().getEntityName();
+															  dependentValuePath = existingField.getField().getValueFromPath();
+														 }
+														 else
+														 {	dependentEname = existingFieldEntity.getTagSource();
+															  dependentValuePath =  existingFieldEntity.getTagSourceValuePath();
+														 }
+														 JSONObject dependentJsonObj = new JSONObject(responseMap.get(dependentEname));
+														 dependentJsonObj=  dependentJsonObj.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+														 existingFieldValue = getValueFromPathJson(dependentJsonObj,dependentValuePath,compareMap);
+														}
+														else
+														{
+															existingFieldValue = existingField.getValue();
+														}
+														logger.debug("existingFieldValue"+existingFieldValue);
+														if(existingFieldValue.equalsIgnoreCase(codeObject.getDependentFieldValue()))
+														{
+															logger.debug("Both Value Existing and Dependent Match "+existingFieldValue);
+															codeListId = codeObject.getId();
+														
+															break;
+														}
+													}
+												}
+												if(codeListId != null){
+													break;
+												}
+												
+												}
+											}
+											
+											
+											//here
+											CodeListText clText = codeListTextService.findById(codeListId, compareMap.get("locale"), value);	
+											
 											if( clText != null){
 													value = clText.getDescription();
 													}
@@ -709,16 +771,20 @@ public class PreHireManagerController {
 											 break;
 										 case "Codelist":
 //											 logger.debug("Codelist"+mapTemplateFieldProperties.getField().getName());
-											 CodeList codeList = codeListService.findByCountryField(mapTemplateFieldProperties.getField().getId(), compareMap.get("country"));
-											 if(codeList != null){
-											 List<CodeListText> codeListValues = codeListTextService.findByCodeListIdLang(codeList.getId(), compareMap.get("locale"));
-											 for(CodeListText value : codeListValues){
-												 DropDownKeyValue keyValue = new DropDownKeyValue();
-												 keyValue.setKey(value.getValue());
-												 keyValue.setValue(value.getDescription());
-												 dropDown.add(keyValue);
+					
+											 List<CodeList> codeList = codeListService.findByCountryField(mapTemplateFieldProperties.getField().getId(), compareMap.get("country"));
+											 if(codeList.size() != 0){
+													if(codeList.size() == 1){
+														List<CodeListText> codeListValues = codeListTextService.findByCodeListIdLang(codeList.get(0).getId(), compareMap.get("locale"));
+														 for(CodeListText value : codeListValues){
+															 DropDownKeyValue keyValue = new DropDownKeyValue();
+															 keyValue.setKey(value.getValue());
+															 keyValue.setValue(value.getDescription());
+															 dropDown.add(keyValue);
+															}
 												 }
-											 }
+												
+											}
 											 break;
 								 		}
 								
@@ -771,6 +837,7 @@ public class PreHireManagerController {
 //			 logger.debug("picklistUrlFilter:"+picklistUrlFilter);
 			 }
 				 else if(fieldDataFromSystem.getTagSourceFromField() != null){
+				
 					 Field dependentField = fieldService.findById(fieldDataFromSystem.getTagSourceFromField());
 					 String replaceValue = null;
 					 if(dependentField.getInitialValue() != null){
@@ -919,7 +986,6 @@ public class PreHireManagerController {
 		
 		map.put("fieldId", fieldId);
 		map.put("selectedValue", selectedValue);
-		map.put("fieldId", fieldId);
 		map.put("triggerFieldId", triggerFieldId);
 		
 		List<DropDownKeyValue> resultDropDown = new ArrayList<DropDownKeyValue>();
@@ -1139,6 +1205,7 @@ public class PreHireManagerController {
 //								logger.debug("updateresponse" + updateresponse);
 								}
 							
+							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 							// call to SF to get MDF Object Fields to generate pes post
 							HttpResponse mdfFieldsResponse = destClient.callDestinationGET("/cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
 							String mdfFieldsResponseJson = EntityUtils.toString(mdfFieldsResponse.getEntity(), "UTF-8");
@@ -1185,6 +1252,24 @@ public class PreHireManagerController {
 									pexFormJsonRepMap.put("companyCode", empJobResponseJsonObject.getString("company"));
 									
 									JSONArray postFieldsArray = new JSONArray();
+									String validFromDate = map.get("startDate");
+									Calendar cal = Calendar.getInstance();
+									String milliSec = validFromDate.substring(validFromDate.indexOf("(") + 1, validFromDate.indexOf(")"));
+									long milliSecLong = Long.valueOf(milliSec).longValue();
+									cal.setTimeInMillis(milliSecLong);
+									validFromDate = formatter.format(cal.getTime());
+									validFromDate = validFromDate+"T00:00:00.000Z";
+									// valid from and valid to dates.
+									JSONObject validFromPostField = new JSONObject();
+									validFromPostField.put("fieldId", "valid_from");
+									validFromPostField.put("value",validFromDate);
+									postFieldsArray.put(validFromPostField);
+									
+									JSONObject validToPostField = new JSONObject();
+									validToPostField.put("fieldId", "valid_to");
+									validToPostField.put("value","9999-12-31T00:00:00.000Z");
+									postFieldsArray.put(validToPostField);
+									
 									fieldValues = pexFormMap.get(pexFormMapKey);
 									for(String[] values : fieldValues){
 										logger.debug("post fields: "+values[0] +" : "+values[1]);
@@ -1218,15 +1303,13 @@ public class PreHireManagerController {
 
 									pexThread.start();
 								}
-							
+								// delete the MDF Object
+								destClient.callDestinationDelete(mdfFieldsObject.getJSONObject("__metadata").getString("uri"),"?$format=json");
 							}
 							
-							// delete the MDF Object
-							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-							Calendar calendar = Calendar.getInstance();
-							String dateString = formatter.format(calendar.getTime()); 
-							final String finalDateString = dateString+"T00:00:00.000Z";
-							destClient.callDestinationDelete("cust_Additional_Information(effectiveStartDate=datetime'"+finalDateString+"',externalCode='"+map.get("userId")+"')","?$format=json");
+							
+							
+							
 							// call the SCPI Interface api
 							Thread thread = new Thread(new Runnable(){
 								  @Override
@@ -1239,6 +1322,11 @@ public class PreHireManagerController {
 											scpiDestClient.setConfiguration();
 											scpiDestClient.setDestConfiguration();
 											 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
+											 
+											 Calendar calendar = Calendar.getInstance();
+												String dateString = formatter.format(calendar.getTime()); 
+												final String finalDateString = dateString+"T00:00:00.000Z";
+											 
 											 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+finalDateString+"&$format=json");
 										} catch (NamingException e) {
 											
