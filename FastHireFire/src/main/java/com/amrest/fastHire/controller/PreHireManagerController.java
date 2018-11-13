@@ -571,16 +571,16 @@ public class PreHireManagerController {
 											for(CodeList codeObject : CodeList){
 												
 												for(MapTemplateFieldProperties existingField : mapTemplateFieldPropertiesList){
-													logger.debug("existingField Name: "+ existingField.getField().getName());
+//													logger.debug("existingField Name: "+ existingField.getField().getName());
 													
-													logger.debug(" Existing Field TechName: "+ existingField.getField().getTechnicalName());
+//													logger.debug(" Existing Field TechName: "+ existingField.getField().getTechnicalName());
 													Field dependentField = fieldService.findById(codeObject.getDependentFieldId());
-													logger.debug("Dependent Field TecName: "+ dependentField.getTechnicalName());
+//													logger.debug("Dependent Field TecName: "+ dependentField.getTechnicalName());
 													if(existingField.getField().getTechnicalName().equalsIgnoreCase(dependentField.getTechnicalName()))
 													{
-														logger.debug(" Both Dependent and Existing Field Match "+existingField.getField().getTechnicalName());
-														logger.debug("existingField Value"+existingField.getValue());
-														logger.debug("Code List Object Dependent Value"+codeObject.getDependentFieldValue());
+//														logger.debug(" Both Dependent and Existing Field Match "+existingField.getField().getTechnicalName());
+//														logger.debug("existingField Value"+existingField.getValue());
+//														logger.debug("Code List Object Dependent Value"+codeObject.getDependentFieldValue());
 														String existingFieldValue = null;
 														if(existingField.getField().getEntityName() != null){
 														 SFAPI existingFieldEntity = sfAPIService.findById(existingField.getField().getEntityName(),"GET");
@@ -602,10 +602,10 @@ public class PreHireManagerController {
 														{
 															existingFieldValue = existingField.getValue();
 														}
-														logger.debug("existingFieldValue"+existingFieldValue);
+//														logger.debug("existingFieldValue"+existingFieldValue);
 														if(existingFieldValue.equalsIgnoreCase(codeObject.getDependentFieldValue()))
 														{
-															logger.debug("Both Value Existing and Dependent Match "+existingFieldValue);
+//															logger.debug("Both Value Existing and Dependent Match "+existingFieldValue);
 															codeListId = codeObject.getId();
 														
 															break;
@@ -1284,8 +1284,15 @@ public class PreHireManagerController {
 									String pexFormPostString = pexFormPostObj.toString();
 									
 									for (Map.Entry<String, String> entry : pexFormJsonRepMap.entrySet()) {
-										pexFormPostString = pexFormPostString.replaceAll("<"+entry.getKey()+">", entry.getValue());
-							    	}
+										if(!entry.getKey().equalsIgnoreCase("fieldsArray")){
+											pexFormPostString = pexFormPostString.replaceAll("<"+entry.getKey()+">", entry.getValue());
+										}
+										else
+										{
+											pexFormPostString = pexFormPostString.replaceAll("\"<"+entry.getKey()+">\"", entry.getValue());
+											
+										}
+									}
 //									logger.debug("pexFormPostString : "+pexFormPostString);
 									final String finalPexFormPostString = pexFormPostString;
 									Thread pexThread = new Thread(new Runnable(){
@@ -1294,7 +1301,9 @@ public class PreHireManagerController {
 											
 											try {
 												
-												pexClient.callDestinationPOST("api/v3/forms/submit", "", finalPexFormPostString);
+												HttpResponse pexPostResponse = pexClient.callDestinationPOST("api/v3/forms/submit", "", finalPexFormPostString);
+												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
+												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
 											} catch (URISyntaxException | IOException e) {
 												// TODO Auto-generated catch block
 												e.printStackTrace();
