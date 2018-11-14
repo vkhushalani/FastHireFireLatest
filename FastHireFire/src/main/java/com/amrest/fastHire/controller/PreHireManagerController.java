@@ -83,6 +83,7 @@ public class PreHireManagerController {
 	 public static final String pexDestinationName = "FastHirePEX";
 	 
 	 public static final Integer  padStartDate  = 15;
+	 public static final Integer  confirmStartDateDiffDays  =  2;
 	 
 	Logger logger = LoggerFactory.getLogger(PreHireManagerController.class);
 	
@@ -549,6 +550,7 @@ public class PreHireManagerController {
 										String milliSec = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
 //										logger.debug("Endate Milli Sec: "+milliSec);
 										long milliSecLong = Long.valueOf(milliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
+										milliSecLong = milliSecLong + TimeUnit.DAYS.toMillis(confirmStartDateDiffDays);
 										milliSec = Objects.toString(milliSecLong,null);
 //										logger.debug("New milliSec Milli Sec: "+milliSec);
 										value = value.replace(value.substring(value.indexOf("(") + 1, value.lastIndexOf(")")), milliSec);
