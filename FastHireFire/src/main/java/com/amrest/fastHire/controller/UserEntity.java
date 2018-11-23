@@ -2,6 +2,7 @@ package com.amrest.fastHire.controller;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -10,9 +11,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
 
+import javax.naming.NamingException;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.util.EntityUtils;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.amrest.fastHire.POJO.Detail;
 import com.amrest.fastHire.POJO.Field;
+import com.amrest.fastHire.SF.DestinationClient;
 import com.amrest.fastHire.connections.HttpConnectionPOST;
+import com.amrest.fastHire.model.SFConstants;
+import com.amrest.fastHire.service.SFConstantsService;
 import com.amrest.fastHire.utilities.CommonFunctions;
 import com.amrest.fastHire.utilities.ConstantManager;
 import com.amrest.fastHire.utilities.URLManager;
@@ -33,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class UserEntity {
 
 	private static final String configName = "sfconfigname";
+	public static final String destinationName = "prehiremgrSFTest";
 	private static final Logger logger = LoggerFactory.getLogger(UserEntity.class);
 
 	private String paramName = null;
@@ -41,10 +55,13 @@ public class UserEntity {
 	private String emailValue = null;
 	private String lastNameValue = null;
 	private String firstNameValue = null;
-	
+	private String defaultLanguage = null;
+	private String loggedInUser = null;
+	@Autowired
+	SFConstantsService sfConstantsService;
 	@PostMapping(value = ConstantManager.userEntity, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String userEntity(@RequestBody String request) throws ParseException {
-		
+	public String userEntity(@RequestBody String request,HttpServletRequest httprequest) throws ParseException, ClientProtocolException, IOException, URISyntaxException, NamingException {
+		 loggedInUser =  httprequest.getUserPrincipal().getName();
 		parseRequest(request);
 		URLManager genURL = new URLManager(getClass().getSimpleName(), configName);
 		String urlToCall = genURL.formURLToCall();
@@ -97,6 +114,7 @@ public class UserEntity {
 						firstNameValue = field.getValue().toString();
 						logger.error("firstNameValue"+firstNameValue);
 					}
+					
 				}
 			}
 		} catch (IOException e) {
@@ -105,7 +123,7 @@ public class UserEntity {
 
 	}
 	@SuppressWarnings("unchecked")
-	private String createBody(String userID) {
+	private String createBody(String userID) throws ClientProtocolException, IOException, URISyntaxException, NamingException {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
@@ -119,6 +137,30 @@ public class UserEntity {
 		obj.put("email",emailValue);
 		obj.put("lastName", lastNameValue);
 		obj.put("firstName", firstNameValue);
+		
+		// call empJOB to get logged in user country 
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		// get the Emjob Details of the logged In user
+		
+		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
+		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
+		JSONObject empJobResponseObject = (JSONObject) JSONValue.parse(empJobResponseJsonString);
+		empJobResponseObject = (JSONObject) empJobResponseObject.get("d");
+		JSONArray empJSONArray = (JSONArray) empJobResponseObject.get("results");
+		empJobResponseObject = (JSONObject) empJSONArray.get(0);
+//		empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country")
+		empJobResponseObject = (JSONObject) empJobResponseObject.get("positionNav");
+		empJobResponseObject = (JSONObject) empJobResponseObject.get("companyNav");
+		String country = (String) empJobResponseObject.get("country");
+		SFConstants defaultLanguage = sfConstantsService.findById("defaultLocale_"+country);
+		obj.put("defaultLocale", defaultLanguage.getValue());
 		logger.debug("input object"+obj.toJSONString());
 		return obj.toJSONString();
 	}
