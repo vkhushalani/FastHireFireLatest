@@ -60,6 +60,16 @@ public class EmpJob {
 
 	private String paramWorkSchName = null;
 	private String paramWorkSchValue = null;
+	
+	private String paramContractEDateName = null;
+	private String paramContractEDateValue = null;
+	
+	private String paramcontractTypeName = null;
+	private String paramcontractTypeValue = null;
+	
+	private String paramFirmSubCategoryName = null;
+	private String paramFirmSubCategoryValue = null;
+	
 
 	private final String sDate = "startdate";
 	private final String empType = "employmenttype";
@@ -67,6 +77,11 @@ public class EmpJob {
 	private final String holCalCode = "holidaycalendarcode";
 	private final String timeTypeCode = "timetypeprofilecode";
 	private final String workSchCode = "workschedulecode";
+	private String contractEndDate = "contractEndDate";
+	private String contractType = "contractType";
+	private String customString1 = "customString1";
+
+
 
 	private String jobCode = null;
 	private String company = null;
@@ -79,7 +94,7 @@ public class EmpJob {
 	private String standardHours = null;
 	private String parentCode = null;
 	private String managerId = null;
-
+	
 	private static String datePattern = "dd/MM/yyyy";
 
 	@PostMapping(value = ConstantManager.empJob, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -274,6 +289,28 @@ public class EmpJob {
 						logger.error(paramWorkSchValue.toString());
 
 					}
+					else if (name.toLowerCase().equals(contractEndDate.toLowerCase())) {
+						paramContractEDateName = name;
+						paramContractEDateValue = field.getValue().toString();
+						paramContractEDateValue = dateFormatted(paramContractEDateValue);
+						logger.error(paramEmpName.toString());
+						logger.error(paramEmpValue.toString());
+
+					} 
+					else if (name.toLowerCase().equals(contractType.toLowerCase())) {
+						 paramcontractTypeName = name;
+						 paramcontractTypeValue = field.getValue().toString();
+						logger.error(paramEmpName.toString());
+						logger.error(paramEmpValue.toString());
+
+					} 
+					else if (name.toLowerCase().equals(customString1.toLowerCase())) {
+						paramFirmSubCategoryName = name;
+						paramFirmSubCategoryValue = field.getValue().toString();
+						logger.error(paramEmpName.toString());
+						logger.error(paramEmpValue.toString());
+
+					} 
 				}
 			}
 
@@ -313,6 +350,9 @@ public class EmpJob {
 		obj.put(paramWorkSchName, paramWorkSchValue);
 		obj.put("standardHours", standardHours);
 		obj.put("managerId", managerId);
+		obj.put(paramContractEDateName, paramContractEDateValue);
+		obj.put(paramcontractTypeName, paramcontractTypeValue);
+		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
 		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
 		logger.error(obj.toJSONString());
 		return obj.toJSONString();

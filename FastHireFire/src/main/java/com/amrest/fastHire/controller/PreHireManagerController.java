@@ -564,6 +564,7 @@ public class PreHireManagerController {
 									 value = getValueFromPathJson(positionEntity,mapTemplateFieldProperties.getField().getValueFromPath(),compareMap);}
 									else
 									{
+										
 										value = getValueFromPathJson(positionEntity,"customString11",compareMap);
 										
 										String milliSec = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
@@ -1198,11 +1199,11 @@ public class PreHireManagerController {
 					        //updating the startDate and endDate to confirm the hire
 							Map<String,String> entityMap = new HashMap<String,String>();  
 							Map<String,String> entityResponseMap = new HashMap<String,String>();
-							entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select= startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,location,holidayCalendarCode,company,eventReason");
+							entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select= startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
 							entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency");
 							entityMap.put("EmpCompensation", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payGroup,eventReason");
 							entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,personIdExternal");
-							entityMap.put("PaymentInformationV3", "$format=json&$filter=worker eq '"+map.get("userId")+"'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
+							entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '"+map.get("userId")+"'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 							
 							// reading the records
 							for (Map.Entry<String,String> entity : entityMap.entrySet())  {
@@ -1217,10 +1218,10 @@ public class PreHireManagerController {
 								String getresponseJson  = entityResponseMap.get(entity.getKey());
 								JSONObject getresponseJsonObject =  new JSONObject(getresponseJson);
 //								logger.debug("getresponseJson"+getresponseJson);
-								
+								if(getresponseJsonObject.getJSONObject("d").getJSONArray("results").length() !=0){
 								JSONObject getresultObj = getresponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 								if(entity.getKey().equalsIgnoreCase("PaymentInformationV3")){
-									getresultObj.put("startDate", map.get("startDate"));
+									getresultObj.put("effectiveStartDate", map.get("startDate"));
 									JSONObject payemntInfoDetail = getresultObj.getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0);
 									payemntInfoDetail.put("PaymentInformationV3_effectiveStartDate",map.get("startDate"));
 									getresultObj.put("toPaymentInformationDetailV3", payemntInfoDetail);
@@ -1229,11 +1230,13 @@ public class PreHireManagerController {
 								else{
 								getresultObj.put("startDate", map.get("startDate"));
 								}
+								
 								String postJsonString = getresultObj.toString();	
 //								logger.debug("Entity: "+entity.getKey()+" postJsonString: "+postJsonString);
 								
 								HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
 //								logger.debug("updateresponse" + updateresponse);
+								}
 								}
 							
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
