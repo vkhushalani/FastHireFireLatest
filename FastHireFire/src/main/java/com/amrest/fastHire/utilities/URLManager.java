@@ -182,6 +182,10 @@ public class URLManager {
 		case "CustPersonIdGen":
 			urlMaker = new URLMaker(controllerClass);
 			dUrl = dUrl + urlMaker.urlToMake;
+			break;
+		case "CustPersonIdGenPost":
+			urlMaker = new URLMaker(controllerClass);
+			dUrl = dUrl + urlMaker.urlToMake;
 			break;	
 			
 		case "UserEntity":

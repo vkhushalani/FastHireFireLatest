@@ -191,6 +191,10 @@ public class URLMaker {
 		case "CustPersonIdGen":
 			urlToMake = urlToMake + "cust_personIdGenerate?$format=json";
 			break;
+		
+		case "CustPersonIdGenPost":
+			urlToMake = urlToMake + "upsert?$format=json";;
+			break;
 
 		case "UserEntity":
 			urlToMake = urlToMake + "upsert?$format=json&sendWelcomeMessage=true";
