@@ -1094,7 +1094,7 @@ public class PreHireManagerController {
 				destClient.setHeaders(destClient.getDestProperty("Authentication"));
 
 				 // get the json string for vacant position 
-				 JSONObject iAnctiveCandidateJson =  readJSONFile("/JSONFiles/IactiveCandidate.json");
+				 JSONObject iAnctiveCandidateJson =  readJSONFile("/JSONFiles/InactiveCandidate.json");
 				 
 				 if(iAnctiveCandidateJson !=null){
 						
@@ -1243,7 +1243,13 @@ public class PreHireManagerController {
 								if(getresultObj.getString("countryOfCompany") !=null){
 									 SFConstants employeeClassConst = sfConstantsService.findById("employeeClassId_"+getresultObj.getString("countryOfCompany"));
 									 getresultObj.put("employeeClass", employeeClassConst.getValue());
-									 }
+							
+								}
+								
+								// remove countryOfCompany due to un upsertable field
+								getresultObj.remove("countryOfCompany");
+								
+							
 							}
 							else{
 							getresultObj.put("startDate", map.get("startDate"));

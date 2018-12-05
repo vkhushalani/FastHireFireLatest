@@ -115,7 +115,7 @@ public class CustPersonIdGen {
 	private String checkResp(String userID) {
 		JSONObject obj = new JSONObject();
 		if (userID != null && userID.length() > 0) {
-			obj.put("message", "SUCCESS");
+			obj.put("message", userID);
 		} else {
 			obj.put("message", "ERROR");
 		}
