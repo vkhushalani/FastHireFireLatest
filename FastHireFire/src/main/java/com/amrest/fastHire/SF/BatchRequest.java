@@ -1,27 +1,38 @@
 package com.amrest.fastHire.SF;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.olingo.odata2.api.batch.BatchException;
+import org.apache.olingo.odata2.api.client.batch.BatchChangeSet;
+import org.apache.olingo.odata2.api.client.batch.BatchChangeSetPart;
 import org.apache.olingo.odata2.api.client.batch.BatchPart;
 import org.apache.olingo.odata2.api.client.batch.BatchQueryPart;
+import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
+import org.apache.olingo.odata2.api.ep.EntityProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +47,8 @@ public class BatchRequest {
 	private String BOUNDARY = "batch_123";
 	private DestinationConfiguration destConfiguration;
 	private List<BatchPart> batchParts = new ArrayList<BatchPart>();
+	private BatchChangeSet changeSet = BatchChangeSet.newBuilder().build();
+	private List<BatchSingleResponse> responses ;
 	
 	public void configureDestination(String destName) throws NamingException {
 		Context ctx = new InitialContext();
@@ -55,7 +68,7 @@ public class BatchRequest {
 	
 			return urlString;
 	 }
-	public List<AuthenticationHeader> getAuthHeaders(String type) throws NamingException{
+	private List<AuthenticationHeader> getAuthHeaders(String type) throws NamingException{
 		
 		List<AuthenticationHeader> headers = null;
 		
@@ -69,12 +82,28 @@ public class BatchRequest {
 		}
 		return headers;
 	}
-	public void createQueryPart(String method,String uri,String contentId){
-		BatchQueryPart request = BatchQueryPart.method("GET").uri("$metadata").build();
+	public void createQueryPart(String uri,String contentId){
+		BatchQueryPart request = BatchQueryPart.method("GET").uri(uri).contentId(contentId).build();
 		batchParts.add(request);
 	}
+	
+	public void createChangeRequest(String method,String uri,String contentId,String postJson){
+		Map<String, String> changeSetHeaders = new HashMap<String, String>();
+		changeSetHeaders.put("content-type", "application/json;odata=verbose");
+		BatchChangeSetPart changeRequest = BatchChangeSetPart.method(method)
+		.uri(uri)
+		.headers(changeSetHeaders)
+		.body(postJson)
+		.contentId(contentId)
+		.build();
+		changeSet.add(changeRequest);
+	}
+	public void addChangeSet(){
+		batchParts.add(changeSet);
+	}
+	
 	@SuppressWarnings({ "deprecation", "resource" })
-	public String fetchXCSFRToken() throws ClientProtocolException, IOException, URISyntaxException, NamingException{
+	private String fetchXCSFRToken() throws ClientProtocolException, IOException, URISyntaxException, NamingException{
 		
 		String urlString = this.createUri("","");
 		logger.debug("GEt urlString"+urlString );
@@ -103,14 +132,21 @@ public class BatchRequest {
 	}
 	
 	@SuppressWarnings({ "deprecation", "resource" })
-	public HttpResponse callBatchPOST(String path,String filter,String postJson) throws URISyntaxException, ClientProtocolException, IOException, NamingException{
+	public void callBatchPOST(String path,String filter) throws URISyntaxException, ClientProtocolException, IOException, NamingException, BatchException, UnsupportedOperationException{
 		String urlString = this.createUri(path,filter);
 		logger.debug("urlString"+urlString );
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPost request = new HttpPost(urlString);
 		
-		StringEntity entity = new StringEntity(postJson);
-		logger.debug("postJson"+postJson );
+		InputStream payload = EntityProvider.writeBatchRequest(batchParts, BOUNDARY);
+		
+		StringWriter writer = new StringWriter();
+		IOUtils.copy(payload, writer, null);
+		String theString = writer.toString();
+
+		
+		InputStreamEntity entity = new InputStreamEntity(payload);
+		logger.debug("postJson"+theString);
 		request.setEntity(entity);
 		request.setHeader("Accept", "application/json");
 		request.setHeader("Content-type", "multipart/mixed; boundary="+BOUNDARY);
@@ -131,9 +167,20 @@ public class BatchRequest {
 			}
 		
 		HttpResponse response = httpClient.execute(request);
+		HttpEntity responseEntity = response.getEntity();
+		logger.debug("Content Type: "+responseEntity.getContentType().getValue());
+		this.setResponses(EntityProvider.parseBatchResponse(responseEntity.getContent(), responseEntity.getContentType().getValue()));
 		logger.debug("responseJson"+response );
-		return response;
 		
+		
+	}
+
+	public List<BatchSingleResponse> getResponses() {
+		return responses;
+	}
+
+	private void setResponses(List<BatchSingleResponse> responses) {
+		this.responses = responses;
 	}
 	
 	

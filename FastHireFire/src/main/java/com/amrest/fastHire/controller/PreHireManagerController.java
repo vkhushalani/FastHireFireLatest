@@ -1,6 +1,7 @@
 package com.amrest.fastHire.controller;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,13 +21,22 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.apache.olingo.odata2.api.batch.BatchException;
+import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,8 +44,12 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,7 +57,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
+import com.amrest.fastHire.SF.BatchRequest;
 import com.amrest.fastHire.SF.DestinationClient;
 import com.amrest.fastHire.SF.PexClient;
 import com.amrest.fastHire.service.BusinessUnitService;
@@ -1181,7 +1197,7 @@ public class PreHireManagerController {
 			return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	@PostMapping("/ConfirmHire")
-	public ResponseEntity <?> confirmlHire(@RequestBody String postJson,HttpServletRequest request) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException{
+	public ResponseEntity <?> confirmlHire(@RequestBody String postJson,HttpServletRequest request,HttpServletResponse response) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException, BatchException, UnsupportedOperationException{
 				String loggedInUser =  request.getUserPrincipal().getName();
 		
 				Map<String,String> map = new HashMap<String,String>();  
@@ -1207,23 +1223,39 @@ public class PreHireManagerController {
 						Map<String,String> entityMap = new HashMap<String,String>();  
 						Map<String,String> entityResponseMap = new HashMap<String,String>();
 						
-						
 						entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency");
 						entityMap.put("EmpCompensation", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payGroup,eventReason");
 						entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,personIdExternal");
 						entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '"+map.get("userId")+"'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 						entityMap.put("PerPersonal", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 						entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
-						entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select= startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+						entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+						entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth");
+						entityMap.put("PerEmail", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,emailAddress");
+						entityMap.put("cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
+						
 						// reading the records
+						
+						// call Get Batch with all entities
+						
+						JSONObject docGenerationObject = new JSONObject();
 						for (Map.Entry<String,String> entity : entityMap.entrySet())  {
 							
 							HttpResponse getresponse = destClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
 							String getresponseJson = EntityUtils.toString(getresponse.getEntity(), "UTF-8");
 //							logger.debug("getresponseJson read"+getresponseJson);
 							entityResponseMap.put(entity.getKey(), getresponseJson);
+							JSONObject docPerObject =  new JSONObject(getresponseJson);
+							if(docPerObject.getJSONObject("d").getJSONArray("results").length() !=0){
+							docGenerationObject.put(entity.getKey(), docPerObject.getJSONObject("d").getJSONArray("results").getJSONObject(0));}
+							
 						}
 						for (Map.Entry<String,String> entity : entityMap.entrySet())  {
+							
+							if(!(entity.getKey().equalsIgnoreCase("PerPerson") 
+									|| entity.getKey().equalsIgnoreCase("PerEmail")
+									|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")))
+							{
 				           
 							String getresponseJson  = entityResponseMap.get(entity.getKey());
 							JSONObject getresponseJsonObject =  new JSONObject(getresponseJson);
@@ -1248,6 +1280,7 @@ public class PreHireManagerController {
 								
 								// remove countryOfCompany due to un upsertable field
 								getresultObj.remove("countryOfCompany");
+								getresultObj.remove("jobTitle");
 								
 							
 							}
@@ -1261,10 +1294,13 @@ public class PreHireManagerController {
 							HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
 							logger.debug(entity.getKey() + " updateresponse" + updateresponse);
 							}
+							}
 						}
-				
-					
-					
+						
+						
+						
+						
+						
 					Thread parentThread = new Thread(new Runnable(){	
 						@Override
 						  public void run(){
@@ -1274,9 +1310,9 @@ public class PreHireManagerController {
 							
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 							// call to SF to get MDF Object Fields to generate pes post
-							HttpResponse mdfFieldsResponse = destClient.callDestinationGET("/cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
-							String mdfFieldsResponseJson = EntityUtils.toString(mdfFieldsResponse.getEntity(), "UTF-8");
-							JSONObject mdfFieldsObject = new JSONObject(mdfFieldsResponseJson);
+//							HttpResponse mdfFieldsResponse = destClient.callDestinationGET("/cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
+//							String mdfFieldsResponseJson = EntityUtils.toString(mdfFieldsResponse.getEntity(), "UTF-8");
+							JSONObject mdfFieldsObject = new JSONObject(entityResponseMap.get("cust_Additional_Information"));
 							if(mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0){
 								
 							 mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
@@ -1444,11 +1480,46 @@ public class PreHireManagerController {
 						} });
 					
 					parentThread.start();
-
-				 return ResponseEntity.ok().body("Success");
-		       
+					  
+//					response.setContentType("application/pdf");
+//
+//	                    String timeStamp = new SimpleDateFormat("HH_mm_ss_SSS").format(new Date());
+//
+//	                    String originHeader = request.getHeader("host");
+//
+//	                    response.setHeader("Access-Control-Allow-Origin", originHeader);
+//
+//	                    response.addHeader("Content-Disposition", "attachment; filename=" + "GeneratedDoc-" + timeStamp);
+//
+//	                    byte[] is = restTemplateResponse.getBody();
+//
+//	                    InputStream inputStream = new ByteArrayInputStream(is);
+//
+//	                    IOUtils.copy(inputStream, response.getOutputStream());
+//
+//	                    response.flushBuffer();
+//				 return ResponseEntity.ok().body("Success");
+					ResponseEntity<byte[]> restTemplateResponse= generateDoc(docGenerationObject.toString());
+					return restTemplateResponse;
 				
 		
+	}
+	
+	@GetMapping("/Batch")
+	public ResponseEntity <?> callSampleBatch() throws NamingException, ClientProtocolException, URISyntaxException, IOException, BatchException, UnsupportedOperationException{
+	
+		BatchRequest batchRequest= new BatchRequest();
+		batchRequest.configureDestination(destinationName);
+		batchRequest.createQueryPart("/PicklistOption?$format=json&$filter=picklist/picklistId eq 'salutation' and status eq 'ACTIVE'&$expand=picklist,picklistLabels&$select=id,externalCode,picklistLabels/locale,picklistLabels/label", "1");
+		batchRequest.createQueryPart("/PicklistOption?$format=json&$filter=picklist/picklistId eq 'EMPLOYMENTTYPE' and status eq 'ACTIVE' and parentPicklistOption/externalCode eq 'HUN'&$expand=picklist,picklistLabels,parentPicklistOption&$select=externalCode,picklistLabels", "2");
+		batchRequest.callBatchPOST("/$batch", "");
+		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+		for (BatchSingleResponse response : batchResponses) {
+			logger.debug("batch Response: " + response.getStatusCode() + ";"+response.getBody()+";"+response.getContentId());
+		      
+		}
+		
+		return ResponseEntity.ok().body("Success bacth");
 	}
 	
 	public JSONObject  readJSONFile(String FilePath) throws IOException{ 
@@ -1470,4 +1541,135 @@ public class PreHireManagerController {
 		}
 		return jsonObject;
 	}
+
+    public ResponseEntity<byte[]> generateDoc(String reqString)
+
+                                    throws IOException, NamingException {
+
+                    logger.error("Doc Genetration: gotRequest");
+
+                    JSONObject reqObject = new JSONObject(reqString);
+
+                    JSONObject reqBodyObj = new JSONObject();
+
+                    reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
+
+                    reqBodyObj.put("CompanyCode", reqObject.getJSONObject("EmpJob").getString("company"));
+                    reqBodyObj.put("Gcc", "Z05");
+
+                    reqBodyObj.put("HrisId", reqObject.getJSONObject("PerPerson").getString("personIdExternal"));
+
+                    reqBodyObj.put("OutputType", "pdf");
+
+                    reqBodyObj.put("Email", reqObject.getJSONObject("PerEmail").getString("emailAddress"));
+                    
+                    logger.debug(""+String.valueOf(reqObject.getJSONObject("PerPerson").get("placeOfBirth")));
+
+                    JSONArray parameters = new JSONArray();
+
+                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_LAST_NAME").put("Value",
+
+                                                    reqObject.getJSONObject("PerPersonal").getString("lastName")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_FIRST_NAME").put("Value",
+
+                                                    reqObject.getJSONObject("PerPersonal").getString("firstName")));
+                    
+                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_PLACE_OF_BIRTH").put("Value",
+                    		
+                    		String.valueOf(reqObject.getJSONObject("PerPerson").get("placeOfBirth")).equalsIgnoreCase("null") ? "" : 
+                                                    reqObject.getJSONObject("PerPerson").getString("placeOfBirth")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_DATE_OF_BIRTH").put("Value",
+                    								
+                                                    reqObject.getJSONObject("PerPerson").getString("dateOfBirth")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUNAM").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUNAM")).equalsIgnoreCase("null") ? "" : 
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUNAM")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUVOR").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUVOR")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_SVNUM").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_SVNUM")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_STRNR").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_EMPLOYMENTINFO_START_DATE").put("Value",
+                                                    reqObject.getJSONObject("EmpJob").getString("startDate")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_JOBINFO_JOB_TITLE").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("EmpJob").get("jobTitle")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("EmpJob").getString("jobTitle")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_JOBINFO_PAY_GRADE").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("EmpJob").get("payGrade")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("EmpJob").getString("payGrade")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_PAYCOMPONENTRECURRING_P02HU_0010_PAYCOMPVALUE").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("EmpPayCompRecurring").get("paycompvalue")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ROUTINGNUMBER").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").get("routingNumber")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("routingNumber")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ACCOUNTNUMBER").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").get("accountNumber")).equalsIgnoreCase("null") ? "" :
+                    			reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("accountNumber")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS1").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address1")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address1")));
+
+                    parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
+                    		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address2")));
+
+                    reqBodyObj.put("parameters", parameters);
+
+                    ClientHttpRequestFactory requestFactory = getClientHttpRequestFactory();
+
+                    RestTemplate restTemplate = new RestTemplate(requestFactory);
+
+                    HttpEntity<String> restrequest = new HttpEntity<String>(reqBodyObj.toString());
+                    
+                    DestinationClient docDestination = new DestinationClient();
+                    docDestination.setDestName("DocumentGeneration");
+                    docDestination.setConfiguration();
+                    docDestination.setDestConfiguration();
+                    String url = docDestination.getDestProperty("URL");
+                    
+
+                    ResponseEntity<byte[]> restTemplateResponse = restTemplate.exchange(url, HttpMethod.POST, restrequest,
+
+                                                    byte[].class);
+                    
+                    return restTemplateResponse;
+
+                  
+                    // return restTemplateResponse;
+
+    }
+
+
+
+    private ClientHttpRequestFactory getClientHttpRequestFactory() {
+
+                    int timeout = 90000;
+
+                    RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
+
+                                                    .setSocketTimeout(timeout).build();
+
+                    CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+
+                    return new HttpComponentsClientHttpRequestFactory(client);
+
+    }
 }
