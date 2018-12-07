@@ -1585,20 +1585,24 @@ public class PreHireManagerController {
                                                     reqObject.getJSONObject("PerPerson").getString("dateOfBirth")));
 
                     parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUNAM").put("Value",
+                    		reqObject.has("cust_Additional_Information") ?
                     		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUNAM")).equalsIgnoreCase("null") ? "" : 
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUNAM")));
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUNAM"):""));
 
                     parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUVOR").put("Value",
+                    		reqObject.has("cust_Additional_Information") ?
                     		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUVOR")));
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUVOR"):""));
 
                     parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_SVNUM").put("Value",
+                    		reqObject.has("cust_Additional_Information") ?
                     		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_SVNUM")));
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_SVNUM"):""));
 
                     parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_STRNR").put("Value",
+                    		reqObject.has("cust_Additional_Information") ?
                     		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR")));
+                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR"):""));
 
                     parameters.put(new JSONObject().put("Key", "CS_EMPLOYMENTINFO_START_DATE").put("Value",
                                                     reqObject.getJSONObject("EmpJob").getString("startDate")));
@@ -1612,24 +1616,29 @@ public class PreHireManagerController {
                                                     reqObject.getJSONObject("EmpJob").getString("payGrade")));
 
                     parameters.put(new JSONObject().put("Key", "CS_PAYCOMPONENTRECURRING_P02HU_0010_PAYCOMPVALUE").put("Value",
+                    		reqObject.has("EmpPayCompRecurring") ? 
                     		String.valueOf(reqObject.getJSONObject("EmpPayCompRecurring").get("paycompvalue")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")));
+                                                    reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue") : ""));
 
                     parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ROUTINGNUMBER").put("Value",
+                    		reqObject.has("PaymentInformationV3") ? 
                     		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").get("routingNumber")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("routingNumber")));
+                                                    reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("routingNumber") : ""));
 
                     parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ACCOUNTNUMBER").put("Value",
+                    		reqObject.has("PaymentInformationV3") ? 
                     		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").get("accountNumber")).equalsIgnoreCase("null") ? "" :
-                    			reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("accountNumber")));
+                    			reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("accountNumber") : ""));
 
                     parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS1").put("Value",
+                    		reqObject.has("PerAddressDEFLT") ? 
                     		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address1")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address1")));
+                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address1"):""));
 
                     parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
+                    		reqObject.has("PerAddressDEFLT") ? 
                     		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address2")));
+                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address2"):""));
 
                     reqBodyObj.put("parameters", parameters);
 
