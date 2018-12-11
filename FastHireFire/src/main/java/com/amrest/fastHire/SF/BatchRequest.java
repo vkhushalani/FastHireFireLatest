@@ -140,16 +140,16 @@ public class BatchRequest {
 		
 		InputStream payload = EntityProvider.writeBatchRequest(batchParts, BOUNDARY);
 		
-		StringWriter writer = new StringWriter();
-		IOUtils.copy(payload, writer, null);
-		String theString = writer.toString();
+//		StringWriter writer = new StringWriter();
+//		IOUtils.copy(payload, writer, null);
+//		String theString = writer.toString();
 
 		
 		InputStreamEntity entity = new InputStreamEntity(payload);
-		logger.debug("postJson"+theString);
+//		logger.debug("postJson"+theString);
 		request.setEntity(entity);
 		request.setHeader("Accept", "application/json");
-		request.setHeader("Content-type", "multipart/mixed; boundary="+BOUNDARY);
+		request.setHeader("Content-Type", "multipart/mixed; boundary="+BOUNDARY);
 		request.setHeader("x-csrf-token",this.fetchXCSFRToken());
 		
 		if(!this.getDestProperty("Authentication").equalsIgnoreCase("BasicAuthentication")){
@@ -169,6 +169,7 @@ public class BatchRequest {
 		HttpResponse response = httpClient.execute(request);
 		HttpEntity responseEntity = response.getEntity();
 		logger.debug("Content Type: "+responseEntity.getContentType().getValue());
+		logger.debug("responseEntity.getContent()" + responseEntity.getContent());
 		this.setResponses(EntityProvider.parseBatchResponse(responseEntity.getContent(), responseEntity.getContentType().getValue()));
 		logger.debug("responseJson"+response );
 		
@@ -181,6 +182,10 @@ public class BatchRequest {
 
 	private void setResponses(List<BatchSingleResponse> responses) {
 		this.responses = responses;
+	}
+	
+	public void initializeBatchParts(){
+		this.batchParts = new ArrayList<BatchPart>(); 
 	}
 	
 	

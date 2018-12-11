@@ -37,6 +37,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.olingo.odata2.api.batch.BatchException;
 import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
+import org.apache.olingo.odata2.api.commons.HttpHeaders;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -1219,6 +1220,10 @@ public class PreHireManagerController {
 					 destClient.setDestConfiguration();
 					 destClient.setHeaders(destClient.getDestProperty("Authentication"));
 					 
+					 // batch intitialization
+//					 BatchRequest batchRequest= new BatchRequest();
+//						batchRequest.configureDestination(destinationName);
+					 
 					  //updating the startDate and endDate to confirm the hire
 						Map<String,String> entityMap = new HashMap<String,String>();  
 						Map<String,String> entityResponseMap = new HashMap<String,String>();
@@ -1233,12 +1238,37 @@ public class PreHireManagerController {
 						entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth");
 						entityMap.put("PerEmail", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,emailAddress");
 						entityMap.put("cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
+						entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
 						
-						// reading the records
+						// reading the records and creating batch post body
 						
-						// call Get Batch with all entities
-						
+//						for (Map.Entry<String,String> entity : entityMap.entrySet())  { 
+//							batchRequest.createQueryPart("/"+entity.getKey()+ entity.getValue(), entity.getKey());
+//						}
+//						
+//						// call Get Batch with all entities
+//						
+//						batchRequest.callBatchPOST("/$batch", "");
+//						
 						JSONObject docGenerationObject = new JSONObject();
+//						// reading batch response by content ID
+//						List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+//						for (BatchSingleResponse batchResponse : batchResponses) {
+//							logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
+//							
+//							JSONObject batchObject =  new JSONObject(batchResponse.getBody());
+//							if(batchObject.getJSONObject("d").getJSONArray("results").length() !=0){
+//								batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+//								String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
+//								String enityKey = batchResponseType.split("\\.")[1];
+//							logger.debug("enityKey" + enityKey);
+//							entityResponseMap.put(enityKey, batchResponse.getBody());
+//
+//							docGenerationObject.put(enityKey, batchObject);
+//							}
+//							}
+						
+						
 						for (Map.Entry<String,String> entity : entityMap.entrySet())  {
 							
 							HttpResponse getresponse = destClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
@@ -1250,14 +1280,16 @@ public class PreHireManagerController {
 							docGenerationObject.put(entity.getKey(), docPerObject.getJSONObject("d").getJSONArray("results").getJSONObject(0));}
 							
 						}
-						for (Map.Entry<String,String> entity : entityMap.entrySet())  {
+						for (Map.Entry<String,String> entity : entityMap.entrySet())  {	
 							
 							if(!(entity.getKey().equalsIgnoreCase("PerPerson") 
 									|| entity.getKey().equalsIgnoreCase("PerEmail")
-									|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")))
+									|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
+									|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate")))
 							{
 				           
 							String getresponseJson  = entityResponseMap.get(entity.getKey());
+							if(getresponseJson != null){
 							JSONObject getresponseJsonObject =  new JSONObject(getresponseJson);
 //							logger.debug("getresponseJson"+getresponseJson);
 							if(getresponseJsonObject.getJSONObject("d").getJSONArray("results").length() !=0){
@@ -1288,18 +1320,28 @@ public class PreHireManagerController {
 							getresultObj.put("startDate", map.get("startDate"));
 							}
 							
-							String postJsonString = getresultObj.toString();	
+							String postJsonString = getresultObj.toString();
+							
+							//creating post batch
+//							batchRequest.initializeBatchParts();
+//							batchRequest.createChangeRequest("POST", "/upsert?$format=json&purgeType=full",entity.getKey() , postJsonString);
+							
 //							logger.debug("Entity: "+entity.getKey()+" postJsonString: "+postJsonString);
 							
 							HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
-							logger.debug(entity.getKey() + " updateresponse" + updateresponse);
-							}
+//							logger.debug(entity.getKey() + " updateresponse" + updateresponse);
+									}
+								}
 							}
 						}
 						
 						
-						
-						
+//						batchRequest.callBatchPOST("/$batch", "");
+//						batchResponses = batchRequest.getResponses();
+//						for (BatchSingleResponse batchResponse : batchResponses) {
+//							logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
+//							}
+							
 						
 					Thread parentThread = new Thread(new Runnable(){	
 						@Override
@@ -1310,12 +1352,13 @@ public class PreHireManagerController {
 							
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 							// call to SF to get MDF Object Fields to generate pes post
-//							HttpResponse mdfFieldsResponse = destClient.callDestinationGET("/cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
-//							String mdfFieldsResponseJson = EntityUtils.toString(mdfFieldsResponse.getEntity(), "UTF-8");
+
 							JSONObject mdfFieldsObject = new JSONObject(entityResponseMap.get("cust_Additional_Information"));
+							JSONObject mdfFieldsObject2 = new JSONObject(entityResponseMap.get("cust_personIdGenerate"));
 							if(mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0){
 								
 							 mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+							 mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 							
 							 logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
 							 
@@ -1333,7 +1376,26 @@ public class PreHireManagerController {
 								    	if(fieldValues == null){
 								    		fieldValues = new ArrayList<String[]>();	
 								    	}
-								    	fieldValues.add(new String[] {parts[2], parts[0]});
+								    	fieldValues.add(new String[] {parts[2], parts[0],"cust_Additional_Information"});
+								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
+								    	pexFormMap.put(parts[1], fieldValues);
+								    	}
+								    }
+								    
+								}
+							  mdfFieldKeys = mdfFieldsObject2.keys();
+							 while(mdfFieldKeys.hasNext()) {
+								    String key = (String)mdfFieldKeys.next();
+								    if(key.contains("cust_ZZ_MDF2PEX_")){
+								    	String customField = mdfFieldsObject2.getString(key);
+								    	String[] parts = customField.split("\\|\\|");
+								    	if(parts.length == 3){
+								    	logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName: "+parts[0]);
+								    	fieldValues = pexFormMap.get(parts[1]);
+								    	if(fieldValues == null){
+								    		fieldValues = new ArrayList<String[]>();	
+								    	}
+								    	fieldValues.add(new String[] {parts[2], parts[0],"cust_personIdGenerate"});
 								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
 								    	pexFormMap.put(parts[1], fieldValues);
 								    	}
@@ -1378,8 +1440,14 @@ public class PreHireManagerController {
 										logger.debug("post fields: "+values[0] +" : "+values[1]);
 										JSONObject postField = new JSONObject();
 										postField.put("fieldId", values[0]);
+							 			if(values[2].equalsIgnoreCase("cust_personIdGenerate"))
+							 			{
+							 				postField.put("value",mdfFieldsObject2.getString(values[1]));
+							 			}
+							 			else{
 										postField.put("value",mdfFieldsObject.getString(values[1]));
-										postFieldsArray.put(postField);
+										}
+							 				postFieldsArray.put(postField);
 									}
 									pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
 									logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
@@ -1480,25 +1548,7 @@ public class PreHireManagerController {
 						} });
 					
 					parentThread.start();
-					  
-//					response.setContentType("application/pdf");
-//
-//	                    String timeStamp = new SimpleDateFormat("HH_mm_ss_SSS").format(new Date());
-//
-//	                    String originHeader = request.getHeader("host");
-//
-//	                    response.setHeader("Access-Control-Allow-Origin", originHeader);
-//
-//	                    response.addHeader("Content-Disposition", "attachment; filename=" + "GeneratedDoc-" + timeStamp);
-//
-//	                    byte[] is = restTemplateResponse.getBody();
-//
-//	                    InputStream inputStream = new ByteArrayInputStream(is);
-//
-//	                    IOUtils.copy(inputStream, response.getOutputStream());
-//
-//	                    response.flushBuffer();
-//				 return ResponseEntity.ok().body("Success");
+
 					ResponseEntity<byte[]> restTemplateResponse= generateDoc(docGenerationObject.toString());
 					return restTemplateResponse;
 				
@@ -1545,6 +1595,8 @@ public class PreHireManagerController {
     public ResponseEntity<byte[]> generateDoc(String reqString)
 
                                     throws IOException, NamingException {
+    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+    	Date date = new Date();
 
                     logger.error("Doc Genetration: gotRequest");
 
@@ -1579,10 +1631,11 @@ public class PreHireManagerController {
                     		
                     		String.valueOf(reqObject.getJSONObject("PerPerson").get("placeOfBirth")).equalsIgnoreCase("null") ? "" : 
                                                     reqObject.getJSONObject("PerPerson").getString("placeOfBirth")));
-
-                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_DATE_OF_BIRTH").put("Value",
-                    								
-                                                    reqObject.getJSONObject("PerPerson").getString("dateOfBirth")));
+                    
+                    String DOB = reqObject.getJSONObject("PerPerson").getString("dateOfBirth");
+                    DOB = DOB.substring(DOB.indexOf("(") + 1, DOB.indexOf(")"));
+                    Date dobDate = new Date(Long.parseLong(DOB)*1000);
+                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_DATE_OF_BIRTH").put("Value",sdf.format(dobDate)));
 
                     parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUNAM").put("Value",
                     		reqObject.has("cust_Additional_Information") ?
@@ -1603,9 +1656,12 @@ public class PreHireManagerController {
                     		reqObject.has("cust_Additional_Information") ?
                     		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
                                                     reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR"):""));
-
+                    		
+                    String sDateString = reqObject.getJSONObject("EmpJob").getString("startDate");
+                    sDateString = sDateString.substring(sDateString.indexOf("(") + 1, sDateString.indexOf(")"));
+                    Date sDate = new Date(Long.parseLong(sDateString)*1000);
                     parameters.put(new JSONObject().put("Key", "CS_EMPLOYMENTINFO_START_DATE").put("Value",
-                                                    reqObject.getJSONObject("EmpJob").getString("startDate")));
+                                                    sdf.format(sDate)));
 
                     parameters.put(new JSONObject().put("Key", "CS_JOBINFO_JOB_TITLE").put("Value",
                     		String.valueOf(reqObject.getJSONObject("EmpJob").get("jobTitle")).equalsIgnoreCase("null") ? "" :
@@ -1622,13 +1678,13 @@ public class PreHireManagerController {
 
                     parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ROUTINGNUMBER").put("Value",
                     		reqObject.has("PaymentInformationV3") ? 
-                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").get("routingNumber")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("routingNumber") : ""));
+                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).get("routingNumber")).equalsIgnoreCase("null") ? "" :
+                                                    reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).getString("routingNumber") : ""));
 
                     parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ACCOUNTNUMBER").put("Value",
                     		reqObject.has("PaymentInformationV3") ? 
-                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").get("accountNumber")).equalsIgnoreCase("null") ? "" :
-                    			reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getString("accountNumber") : ""));
+                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).get("accountNumber")).equalsIgnoreCase("null") ? "" :
+                    			reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).getString("accountNumber") : ""));
 
                     parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS1").put("Value",
                     		reqObject.has("PerAddressDEFLT") ? 
