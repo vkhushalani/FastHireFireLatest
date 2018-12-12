@@ -1260,7 +1260,10 @@ public class PreHireManagerController {
 							String enityKey = batchResponseType.split("\\.")[1];
 						logger.debug("enityKey" + enityKey);
 						entityResponseMap.put(enityKey, batchResponse.getBody());
-
+						
+						if(enityKey.equalsIgnoreCase("EmpJob")){
+							batchObject.put("startDate", map.get("startDate"));
+						}
 						docGenerationObject.put(enityKey, batchObject);
 						}
 						}
@@ -1624,7 +1627,7 @@ public class PreHireManagerController {
                     
                     String DOB = reqObject.getJSONObject("PerPerson").getString("dateOfBirth");
                     DOB = DOB.substring(DOB.indexOf("(") + 1, DOB.indexOf(")"));
-                    Date dobDate = new Date(Long.parseLong(DOB)*1000);
+                    Date dobDate = new Date(Long.parseLong(DOB));
                     parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_DATE_OF_BIRTH").put("Value",sdf.format(dobDate)));
 
                     parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUNAM").put("Value",
@@ -1649,7 +1652,7 @@ public class PreHireManagerController {
                     		
                     String sDateString = reqObject.getJSONObject("EmpJob").getString("startDate");
                     sDateString = sDateString.substring(sDateString.indexOf("(") + 1, sDateString.indexOf(")"));
-                    Date sDate = new Date(Long.parseLong(sDateString)*1000);
+                    Date sDate = new Date(Long.parseLong(sDateString));
                     parameters.put(new JSONObject().put("Key", "CS_EMPLOYMENTINFO_START_DATE").put("Value",
                                                     sdf.format(sDate)));
 
@@ -1726,7 +1729,7 @@ public class PreHireManagerController {
 
     private ClientHttpRequestFactory getClientHttpRequestFactory() {
 
-                    int timeout = 90000;
+                    int timeout = 60000;
 
                     RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
 
