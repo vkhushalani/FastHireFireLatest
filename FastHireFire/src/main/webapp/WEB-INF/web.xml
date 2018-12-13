@@ -58,6 +58,15 @@
 			<role-name>Manager</role-name>
 		</auth-constraint>
 	</security-constraint>
+	<security-constraint>
+		<web-resource-collection>
+			<web-resource-name>Cloud Admin App Services</web-resource-name>
+			<url-pattern>/FastHireAdmin/*</url-pattern>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>AmrestAccountAdmin</role-name>
+		</auth-constraint>
+	</security-constraint>
 	<security-role>
 		<description>All Users</description>
 		<role-name>Everyone</role-name>
@@ -65,6 +74,10 @@
 	<security-role>
 		<description>Manager</description>
 		<role-name>Manager</role-name>
+	</security-role>
+	<security-role>
+		<description>Amrest Account Admin</description>
+		<role-name>AmrestAccountAdmin</role-name>
 	</security-role>
 	<login-config>
 		<auth-method>FORM</auth-method>
