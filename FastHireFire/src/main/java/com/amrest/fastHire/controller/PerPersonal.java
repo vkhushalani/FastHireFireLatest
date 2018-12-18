@@ -89,29 +89,29 @@ public class PerPersonal {
 					if (techName.toLowerCase().equals(gender.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 					} else if (techName.toLowerCase().equals(nationality.toLowerCase())) {
 						paramNationalityName = techName;
 						paramNationalityValue = field.getValue().toString();
-						logger.error(paramNationalityName.toString());
-						logger.error(paramNationalityValue.toString());
+//						logger.error(paramNationalityName.toString());
+//						logger.error(paramNationalityValue.toString());
 					} else if (techName.toLowerCase().equals(firstName.toLowerCase())) {
 						paramFirstName = techName;
 						paramFirstNameValue = field.getValue().toString();
-						logger.error(paramFirstName.toString());
-						logger.error(paramFirstNameValue.toString());
+//						logger.error(paramFirstName.toString());
+//						logger.error(paramFirstNameValue.toString());
 					} else if (techName.toLowerCase().equals(lastName.toLowerCase())) {
 						paramLastName = techName;
 						paramLastNameValue = field.getValue().toString();
-						logger.error(paramLastName.toString());
-						logger.error(paramLastNameValue.toString());
+//						logger.error(paramLastName.toString());
+//						logger.error(paramLastNameValue.toString());
 					}
 					else if (techName.toLowerCase().equals(prefLang.toLowerCase())) {
 						paramPrefLang = techName;
 						paramPrefLangValue = field.getValue().toString();
-						logger.error(paramPrefLang.toString());
-						logger.error(paramPrefLangValue.toString());
+//						logger.error(paramPrefLang.toString());
+//						logger.error(paramPrefLangValue.toString());
 					}
 				}
 			}
@@ -137,7 +137,7 @@ public class PerPersonal {
 		obj.put(paramFirstName, paramFirstNameValue);
 		obj.put(paramLastName, paramLastNameValue);
 		obj.put(paramPrefLang, paramPrefLangValue);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

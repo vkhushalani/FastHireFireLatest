@@ -142,7 +142,7 @@ public class EmpJob {
 		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "/Position?$filter=code%20eq%20'" + position
 				+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
 		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
-		logger.error(urlToCall);
+//		logger.error(urlToCall);
 		
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
@@ -159,7 +159,7 @@ public class EmpJob {
 			JSONObject metaData = (JSONObject) jsonObject.get("__metadata");
 			ConstantManager.metaDataUpdatePosVac = metaData.get("uri").toString();
 			
-			logger.error(jsonObject.toJSONString());
+//			logger.error(jsonObject.toJSONString());
 
 			if (jsonObject.get("jobCode") != null) {
 				jobCode = jsonObject.get("jobCode").toString();
@@ -256,59 +256,59 @@ public class EmpJob {
 						
 						
 
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 					} else if (name.toLowerCase().equals(empType.toLowerCase())) {
 						paramEmpName = name;
 						paramEmpValue = field.getValue().toString();
-						logger.error(paramEmpName.toString());
-						logger.error(paramEmpValue.toString());
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
 
 					} else if (name.toLowerCase().equals(posType.toLowerCase())) {
 						paramPositionName = name;
 						paramPositionValue = field.getValue().toString();
-						logger.error(paramPositionName.toString());
-						logger.error(paramPositionValue.toString());
+//						logger.error(paramPositionName.toString());
+//						logger.error(paramPositionValue.toString());
 
 					} else if (name.toLowerCase().equals(holCalCode.toLowerCase())) {
 						paramHolCodeName = name;
 						paramHolNameValue = field.getValue().toString();
-						logger.error(paramHolCodeName.toString());
-						logger.error(paramHolNameValue.toString());
+//						logger.error(paramHolCodeName.toString());
+//						logger.error(paramHolNameValue.toString());
 
 					} else if (name.toLowerCase().equals(timeTypeCode.toLowerCase())) {
 						paramTimeTypeName = name;
 						paramTimeTypeValue = field.getValue().toString();
-						logger.error(paramTimeTypeName.toString());
-						logger.error(paramTimeTypeValue.toString());
+//						logger.error(paramTimeTypeName.toString());
+//						logger.error(paramTimeTypeValue.toString());
 
 					} else if (name.toLowerCase().equals(workSchCode.toLowerCase())) {
 						paramWorkSchName = name;
 						paramWorkSchValue = field.getValue().toString();
-						logger.error(paramWorkSchName.toString());
-						logger.error(paramWorkSchValue.toString());
+//						logger.error(paramWorkSchName.toString());
+//						logger.error(paramWorkSchValue.toString());
 
 					}
 					else if (name.toLowerCase().equals(contractEndDate.toLowerCase())) {
 						paramContractEDateName = name;
 						paramContractEDateValue = field.getValue().toString();
 						paramContractEDateValue = dateFormatted(paramContractEDateValue);
-						logger.error(paramEmpName.toString());
-						logger.error(paramEmpValue.toString());
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
 
 					} 
 					else if (name.toLowerCase().equals(contractType.toLowerCase())) {
 						 paramcontractTypeName = name;
 						 paramcontractTypeValue = field.getValue().toString();
-						logger.error(paramEmpName.toString());
-						logger.error(paramEmpValue.toString());
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
 
 					} 
 					else if (name.toLowerCase().equals(customString1.toLowerCase())) {
 						paramFirmSubCategoryName = name;
 						paramFirmSubCategoryValue = field.getValue().toString();
-						logger.error(paramEmpName.toString());
-						logger.error(paramEmpValue.toString());
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
 
 					} 
 				}
@@ -354,7 +354,7 @@ public class EmpJob {
 		obj.put(paramcontractTypeName, paramcontractTypeValue);
 		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
 		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

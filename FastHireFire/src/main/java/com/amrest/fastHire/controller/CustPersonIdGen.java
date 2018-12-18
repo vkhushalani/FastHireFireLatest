@@ -51,7 +51,7 @@ public class CustPersonIdGen {
 		jsonObj = (JSONObject) jsonObj.get("d");
 		this.userID = jsonObj.get("externalCode").toString();
 		ConstantManager.userID = this.userID;
-		logger.error("User ID" + this.userID);
+//		logger.error("User ID" + this.userID);
 		return checkResp(this.userID);
 	}
 	
@@ -79,7 +79,7 @@ public class CustPersonIdGen {
 			for (int i = 0; i < detail.length; i++) {
 				List<Field> group = detail[i].getFields();
 				for (Field field : group) {
-					logger.error("Heiii" + field.getField().getTechnicalName().toString());
+//					logger.error("Heiii" + field.getField().getTechnicalName().toString());
 					String techName = field.getField().getTechnicalName().toString();
 
 					if (techName.toLowerCase().equals(cust_FEOR1.toLowerCase())) {
@@ -87,8 +87,8 @@ public class CustPersonIdGen {
 						paramValue = field.getValue().toString();
 						
 						
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 						break;
 					}
 				}
@@ -107,7 +107,7 @@ public class CustPersonIdGen {
 		jsonObj.put("uri", "cust_personIdGenerate('"+ConstantManager.userID+"')");
 		obj.put("__metadata", jsonObj);
 		obj.put(paramName,paramValue);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

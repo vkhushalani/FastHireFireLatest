@@ -51,7 +51,7 @@ public class PositionVacancy {
 		obj.put("__metadata", jsonObj);
 
 		obj.put("vacant", false);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

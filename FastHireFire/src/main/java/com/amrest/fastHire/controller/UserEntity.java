@@ -85,7 +85,7 @@ public class UserEntity {
 			for (int i = 0; i < detail.length; i++) {
 				List<Field> group = detail[i].getFields();
 				for (Field field : group) {
-					logger.error("Heiii" + field.getField().getTechnicalName().toString());
+//					logger.error("Heiii" + field.getField().getTechnicalName().toString());
 					String techName = field.getField().getTechnicalName().toString();
 
 					if (techName.toLowerCase().equals(sDate.toLowerCase())) {
@@ -97,24 +97,27 @@ public class UserEntity {
 						c.setTime(sdf.parse(paramValue));
 						c.add(Calendar.DAY_OF_MONTH, ConstantManager.padStartDate);
 						ConstantManager.customDateValue = dateFormatted(sdf.format(c.getTime()));
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 						break;
 					}
 					else if(techName.equalsIgnoreCase("emailAddress")){
 						emailValue =  field.getValue().toString();
-						logger.error("emailValue"+emailValue);
+//						logger.error("emailValue"+emailValue);
 					}
 					else if(techName.equalsIgnoreCase("lastName")){
 						lastNameValue = field.getValue().toString();	
-						logger.error("lastNameValue"+lastNameValue);
+//						logger.error("lastNameValue"+lastNameValue);
 					}
 										
 					else if(techName.equalsIgnoreCase("firstName")){
 						firstNameValue = field.getValue().toString();
-						logger.error("firstNameValue"+firstNameValue);
+//						logger.error("firstNameValue"+firstNameValue);
 					}
-					
+//					else if(techName.equalsIgnoreCase("nativePreferredLang")){
+//						defaultLanguage = field.getValue().toString();
+////						logger.error("defaultLanguage"+defaultLanguage);
+//					}
 				}
 			}
 		} catch (IOException e) {
@@ -137,6 +140,7 @@ public class UserEntity {
 		obj.put("email",emailValue);
 		obj.put("lastName", lastNameValue);
 		obj.put("firstName", firstNameValue);
+//		obj.put("defaultLocale", defaultLanguage);
 		
 		// call empJOB to get logged in user country 
 		
@@ -165,7 +169,7 @@ public class UserEntity {
 		return obj.toJSONString();
 	}
 	private String dateFormatted(String startDate) {
-		logger.error("Start Date" + startDate);
+//		logger.error("Start Date" + startDate);
 		String timeStamp = " 00:00:00:000";
 		String receivedTimetamp = startDate + timeStamp;
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss:SSS");

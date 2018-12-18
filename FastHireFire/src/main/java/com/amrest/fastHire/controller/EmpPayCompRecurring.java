@@ -78,23 +78,23 @@ public class EmpPayCompRecurring {
 					if (techName.toLowerCase().equals(payComponent.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 					} else if (techName.toLowerCase().equals(payCompValue.toLowerCase())) {
 						paramCompName = techName;
 						paramCompValue = field.getValue().toString();
-						logger.error(paramCompName.toString());
-						logger.error(paramCompValue.toString());
+//						logger.error(paramCompName.toString());
+//						logger.error(paramCompValue.toString());
 					} else if (techName.toLowerCase().equals(currencyCode.toLowerCase())) {
 						paramCurrencyName = techName;
 						paramCurrencyValue = field.getValue().toString();
-						logger.error(paramCurrencyName.toString());
-						logger.error(paramCurrencyValue.toString());
+//						logger.error(paramCurrencyName.toString());
+//						logger.error(paramCurrencyValue.toString());
 					} else if (techName.toLowerCase().equals(frequency.toLowerCase())) {
 						paramFrequencyName = techName;
 						paramFrequencyValue = field.getValue().toString();
-						logger.error(paramFrequencyName.toString());
-						logger.error(paramFrequencyValue.toString());
+//						logger.error(paramFrequencyName.toString());
+//						logger.error(paramFrequencyValue.toString());
 					}
 				}
 			}
@@ -123,7 +123,7 @@ public class EmpPayCompRecurring {
 		obj.put(paramCompName, paramCompValue);
 		obj.put(paramCurrencyName, paramCurrencyValue);
 		obj.put(paramFrequencyName, paramFrequencyValue);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

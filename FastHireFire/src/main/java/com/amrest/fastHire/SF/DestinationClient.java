@@ -1,8 +1,6 @@
 package com.amrest.fastHire.SF;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -21,7 +19,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +97,7 @@ public class DestinationClient {
 		return response;
 	}
 	
+	@SuppressWarnings({ "resource", "deprecation" })
 	public HttpResponse callDestinationPOST(String path,String filter,String postJson) throws URISyntaxException, ClientProtocolException, IOException{
 		String urlString = this.getDestProperty("URL");
 		URL url= new URL(urlString+path+filter);

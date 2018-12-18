@@ -1,6 +1,7 @@
 package com.amrest.fastHire.controller;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +49,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -96,6 +98,7 @@ public class PreHireManagerController {
 	 public static final String destinationName = "prehiremgrSFTest";
 	 public static final String scpDestinationName = "scpiBasic";
 	 public static final String pexDestinationName = "FastHirePEX";
+	 public static final String docdestinationName =  "DocumentGeneration";
 	 
 	 public static final Integer  padStartDate  = 15;
 	 public static final Integer  confirmStartDateDiffDays  =  2;
@@ -1195,6 +1198,8 @@ public class PreHireManagerController {
 //		}
 			return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 	}
+	
+	@Transactional(timeout = 300)
 	@PostMapping("/ConfirmHire")
 	public ResponseEntity <?> confirmlHire(@RequestBody String postJson,HttpServletRequest request) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException, BatchException, UnsupportedOperationException{
 				String loggedInUser =  request.getUserPrincipal().getName();
@@ -1226,7 +1231,7 @@ public class PreHireManagerController {
 					Map<String,String> entityMap = new HashMap<String,String>();  
 					Map<String,String> entityResponseMap = new HashMap<String,String>();
 					
-					entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency");
+					entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency,notes");
 					entityMap.put("EmpCompensation", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,payGroup,eventReason");
 					entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=userId,startDate,personIdExternal");
 					entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '"+map.get("userId")+"'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
@@ -1251,14 +1256,14 @@ public class PreHireManagerController {
 					
 					List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 					for (BatchSingleResponse batchResponse : batchResponses) {
-						logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
+//						logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
 						
 						JSONObject batchObject =  new JSONObject(batchResponse.getBody());
 						if(batchObject.getJSONObject("d").getJSONArray("results").length() !=0){
 							batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 							String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
 							String enityKey = batchResponseType.split("\\.")[1];
-						logger.debug("enityKey" + enityKey);
+//						logger.debug("enityKey" + enityKey);
 						entityResponseMap.put(enityKey, batchResponse.getBody());
 						
 						if(enityKey.equalsIgnoreCase("EmpJob")){
@@ -1267,18 +1272,7 @@ public class PreHireManagerController {
 						docGenerationObject.put(enityKey, batchObject);
 						}
 						}
-//					
-//					for (Map.Entry<String,String> entity : entityMap.entrySet())  {
-//						
-//						HttpResponse getresponse = destClient.callDestinationGET("/"+entity.getKey(), entity.getValue());
-//						String getresponseJson = EntityUtils.toString(getresponse.getEntity(), "UTF-8");
-////						logger.debug("getresponseJson read"+getresponseJson);
-//						entityResponseMap.put(entity.getKey(), getresponseJson);
-//						JSONObject docPerObject =  new JSONObject(getresponseJson);
-//						if(docPerObject.getJSONObject("d").getJSONArray("results").length() !=0){
-//						docGenerationObject.put(entity.getKey(), docPerObject.getJSONObject("d").getJSONArray("results").getJSONObject(0));}
-//						
-//					}
+
 					
 					// update the employee class to an actual one
 					
@@ -1337,6 +1331,10 @@ public class PreHireManagerController {
 										
 									
 									}
+									else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")){
+										getresultObj.put("startDate", map.get("startDate"));
+										getresultObj.put("notes", "Date updated");
+									}
 									else{
 									getresultObj.put("startDate", map.get("startDate"));
 									}
@@ -1361,7 +1359,7 @@ public class PreHireManagerController {
 							 mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 							 mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 							
-							 logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
+//							 logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
 							 
 							 Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
 							 Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String,ArrayList<String[]>>();
@@ -1372,13 +1370,13 @@ public class PreHireManagerController {
 								    	String customField = mdfFieldsObject.getString(key);
 								    	String[] parts = customField.split("\\|\\|");
 								    	if(parts.length == 3){
-								    	logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName: "+parts[0]);
+//								    	logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName: "+parts[0]);
 								    	fieldValues = pexFormMap.get(parts[1]);
 								    	if(fieldValues == null){
 								    		fieldValues = new ArrayList<String[]>();	
 								    	}
 								    	fieldValues.add(new String[] {parts[2], parts[0],"cust_Additional_Information"});
-								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
+//								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
 								    	pexFormMap.put(parts[1], fieldValues);
 								    	}
 								    }
@@ -1391,13 +1389,13 @@ public class PreHireManagerController {
 								    	String customField = mdfFieldsObject2.getString(key);
 								    	String[] parts = customField.split("\\|\\|");
 								    	if(parts.length == 3){
-								    	logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName: "+parts[0]);
+//								    	logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName: "+parts[0]);
 								    	fieldValues = pexFormMap.get(parts[1]);
 								    	if(fieldValues == null){
 								    		fieldValues = new ArrayList<String[]>();	
 								    	}
 								    	fieldValues.add(new String[] {parts[2], parts[0],"cust_personIdGenerate"});
-								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
+//								    	logger.debug("pexFormMap fieldValues: "+fieldValues.get(0));
 								    	pexFormMap.put(parts[1], fieldValues);
 								    	}
 								    }
@@ -1406,7 +1404,7 @@ public class PreHireManagerController {
 								
 								JSONObject empJobResponseJsonObject =  new JSONObject(entityResponseMap.get("EmpJob"));
 								empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-								logger.debug("empJobResponseJsonObject" + empJobResponseJsonObject.toString());
+//								logger.debug("empJobResponseJsonObject" + empJobResponseJsonObject.toString());
 								PexClient pexClient = new PexClient();
 								pexClient.setDestination(pexDestinationName);
 								pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
@@ -1438,7 +1436,7 @@ public class PreHireManagerController {
 									
 									fieldValues = pexFormMap.get(pexFormMapKey);
 									for(String[] values : fieldValues){
-										logger.debug("post fields: "+values[0] +" : "+values[1]);
+//										logger.debug("post fields: "+values[0] +" : "+values[1]);
 										JSONObject postField = new JSONObject();
 										postField.put("fieldId", values[0]);
 							 			if(values[2].equalsIgnoreCase("cust_personIdGenerate"))
@@ -1451,7 +1449,7 @@ public class PreHireManagerController {
 							 				postFieldsArray.put(postField);
 									}
 									pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
-									logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
+//									logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
 									JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
 									String pexFormPostString = pexFormPostObj.toString();
 									
@@ -1475,7 +1473,7 @@ public class PreHireManagerController {
 												
 												HttpResponse pexPostResponse = pexClient.callDestinationPOST("api/v3/forms/submit", "", finalPexFormPostString);
 												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
-												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
+//												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
 											} catch (URISyntaxException | IOException e) {
 												// TODO Auto-generated catch block
 												e.printStackTrace();
@@ -1492,43 +1490,43 @@ public class PreHireManagerController {
 							
 							
 							// call the SCPI Interface api
-							Thread thread = new Thread(new Runnable(){
-								  @Override
-								  public void run(){
-										
-										 DestinationClient scpiDestClient = new DestinationClient();
-										 scpiDestClient.setDestName(scpDestinationName);
-										 try {
-											scpiDestClient.setHeaderProvider();
-											scpiDestClient.setConfiguration();
-											scpiDestClient.setDestConfiguration();
-											 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
-											 
-											 Calendar calendar = Calendar.getInstance();
-												String dateString = formatter.format(calendar.getTime()); 
-												final String finalDateString = dateString+"T00:00:00.000Z";
-											 
-											 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+finalDateString+"&$format=json");
-										} catch (NamingException e) {
-											
-											e.printStackTrace();
-										} catch (ClientProtocolException e) {
-											
-											e.printStackTrace();
-										} catch (IOException e) {
-											
-											e.printStackTrace();
-										} catch (URISyntaxException e) {
-											
-											e.printStackTrace();
-										}
-										 
-										 
-								 
-								  }
-								});
+//							Thread thread = new Thread(new Runnable(){
+//								  @Override
+//								  public void run(){
+//										
+//										 DestinationClient scpiDestClient = new DestinationClient();
+//										 scpiDestClient.setDestName(scpDestinationName);
+//										 try {
+//											scpiDestClient.setHeaderProvider();
+//											scpiDestClient.setConfiguration();
+//											scpiDestClient.setDestConfiguration();
+//											 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
+//											 
+//											 Calendar calendar = Calendar.getInstance();
+//												String dateString = formatter.format(calendar.getTime()); 
+//												final String finalDateString = dateString+"T00:00:00.000Z";
+//											 
+//											 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+finalDateString+"&$format=json");
+//										} catch (NamingException e) {
+//											
+//											e.printStackTrace();
+//										} catch (ClientProtocolException e) {
+//											
+//											e.printStackTrace();
+//										} catch (IOException e) {
+//											
+//											e.printStackTrace();
+//										} catch (URISyntaxException e) {
+//											
+//											e.printStackTrace();
+//										}
+//										 
+//										 
+//								 
+//								  }
+//								});
 
-							thread.start();
+//							thread.start();
 							
 							}
 							catch (NamingException e) {
@@ -1549,12 +1547,13 @@ public class PreHireManagerController {
 						} });
 					
 					parentThread.start();
-
-					ResponseEntity<byte[]> restTemplateResponse= generateDoc(docGenerationObject.toString());
-					if(restTemplateResponse == null){
+					
+					logger.debug("Start Generation Doc:" + docGenerationObject.toString());
+					ResponseEntity<byte[]> ByteResponse= generateDoc(docGenerationObject.toString());
+					if(ByteResponse == null){
 						return  new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 					}
-					return restTemplateResponse;
+					  return ByteResponse;
 				
 		
 	}
@@ -1581,10 +1580,10 @@ public class PreHireManagerController {
 		return jsonObject;
 	}
 
-    public ResponseEntity<byte[]> generateDoc(String reqString) throws NamingException
+    public ResponseEntity<byte[]> generateDoc(String reqString) throws NamingException, IOException, URISyntaxException
 
                                      {
-    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
    
 
                     logger.error("Doc Genetration: gotRequest");
@@ -1608,7 +1607,7 @@ public class PreHireManagerController {
                     reqBodyObj.put("OutputFileName", "Contract.pdf");
                     reqBodyObj.put("FileType", "PERSONAL");
                     
-                    logger.debug(""+String.valueOf(reqObject.getJSONObject("PerPerson").get("placeOfBirth")));
+                    
 
                     JSONArray parameters = new JSONArray();
 
@@ -1697,11 +1696,26 @@ public class PreHireManagerController {
 
                     HttpEntity<String> restrequest = new HttpEntity<String>(reqBodyObj.toString());
                     
+                    String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+
+                    
+                    logger.debug("before Call doc generation"+reqBodyObj.toString());
+                    logger.debug("Timestamp"+timeStamp);
+                    
                     DestinationClient docDestination = new DestinationClient();
-                    docDestination.setDestName("DocumentGeneration");
+                    docDestination.setDestName(docdestinationName);
+                    docDestination.setHeaderProvider();
                     docDestination.setConfiguration();
                     docDestination.setDestConfiguration();
+                    docDestination.setHeaders(docDestination.getDestProperty("Authentication"));
                     String url = docDestination.getDestProperty("URL");
+//                    HttpResponse docGenerationResponse = docDestination.callDestinationPOST("", "", reqBodyObj.toString());
+                    
+                    
+//                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                    docGenerationResponse.getEntity().writeTo(baos);
+//                    byte[] bytes = baos.toByteArray();
+                   
                     ResponseEntity<byte[]> restTemplateResponse = null;
                     logger.debug("doc URL:" +  url);
                     logger.debug("reqBodyObj" + reqBodyObj.toString());
@@ -1713,15 +1727,16 @@ public class PreHireManagerController {
                     }
                     catch (HttpStatusCodeException exception) {
                         int statusCode = exception.getStatusCode().value();
-                       if(statusCode == 404){
+                        logger.debug("Status Code : "+statusCode);
+                       if(statusCode == 404 || statusCode == 504){
                     	   restTemplateResponse = null;
                        }
                     }
-                   
-                    return restTemplateResponse;
+                    logger.debug("After doc generation"+timeStamp);
+//                    return bytes;
 
                   
-                    // return restTemplateResponse;
+                     return restTemplateResponse;
 
     }
 
@@ -1729,7 +1744,7 @@ public class PreHireManagerController {
 
     private ClientHttpRequestFactory getClientHttpRequestFactory() {
 
-                    int timeout = 60000;
+                    int timeout = 5*60*1000;
 
                     RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
 
@@ -1741,20 +1756,5 @@ public class PreHireManagerController {
 
     }
     
-    @GetMapping("/Batch")
-	public ResponseEntity <?> callSampleBatch() throws NamingException, ClientProtocolException, URISyntaxException, IOException, BatchException, UnsupportedOperationException{
-	
-		BatchRequest batchRequest= new BatchRequest();
-		batchRequest.configureDestination(destinationName);
-		batchRequest.createQueryPart("/PicklistOption?$format=json&$filter=picklist/picklistId eq 'salutation' and status eq 'ACTIVE'&$expand=picklist,picklistLabels&$select=id,externalCode,picklistLabels/locale,picklistLabels/label", "1");
-		batchRequest.createQueryPart("/PicklistOption?$format=json&$filter=picklist/picklistId eq 'EMPLOYMENTTYPE' and status eq 'ACTIVE' and parentPicklistOption/externalCode eq 'HUN'&$expand=picklist,picklistLabels,parentPicklistOption&$select=externalCode,picklistLabels", "2");
-		batchRequest.callBatchPOST("/$batch", "");
-		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
-		for (BatchSingleResponse response : batchResponses) {
-			logger.debug("batch Response: " + response.getStatusCode() + ";"+response.getBody()+";"+response.getContentId());
-		      
-		}
-		
-		return ResponseEntity.ok().body("Success bacth");
-	}
+
 }

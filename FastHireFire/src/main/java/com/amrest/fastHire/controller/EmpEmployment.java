@@ -70,7 +70,7 @@ public class EmpEmployment {
 			for (int i = 0; i < detail.length; i++) {
 				List<Field> group = detail[i].getFields();
 				for (Field field : group) {
-					logger.error("Heiii" + field.getField().getTechnicalName().toString());
+//					logger.error("Heiii" + field.getField().getTechnicalName().toString());
 					String techName = field.getField().getTechnicalName().toString();
 
 					if (techName.toLowerCase().equals(sDate.toLowerCase())) {
@@ -78,8 +78,8 @@ public class EmpEmployment {
 						paramValue = field.getValue().toString();
 						
 						
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 						break;
 					}
 				}
@@ -110,12 +110,12 @@ public class EmpEmployment {
 		obj.put(paramName, dateFormatted(sdf.format(now.getTime())));
 		obj.put("personIdExternal", userID);
 		obj.put("userId", userID);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 
 	private String dateFormatted(String startDate) {
-		logger.error("Start Date" + startDate);
+//		logger.error("Start Date" + startDate);
 		String timeStamp = " 00:00:00:000";
 		String receivedTimetamp = startDate + timeStamp;
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss:SSS");

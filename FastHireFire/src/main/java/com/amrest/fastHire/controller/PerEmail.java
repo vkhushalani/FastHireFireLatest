@@ -66,8 +66,8 @@ public class PerEmail {
 					if (techName.toLowerCase().equals(email.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 						break;
 					}
 				}
@@ -94,7 +94,7 @@ public class PerEmail {
 		obj.put("personIdExternal", userID);
 		obj.put("isPrimary", true);
 		obj.put(paramName, paramValue);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

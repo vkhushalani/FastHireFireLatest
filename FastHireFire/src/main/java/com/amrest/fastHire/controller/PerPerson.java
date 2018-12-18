@@ -71,8 +71,8 @@ public class PerPerson {
 						paramName = techName;
 						paramValue = field.getValue().toString();
 						paramValue = dateFormatted(paramValue);
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 						break;
 					}
 				}
@@ -98,7 +98,7 @@ public class PerPerson {
 		obj.put("personIdExternal", userID);
 		obj.put("userId", userID);
 		obj.put(paramName, paramValue);
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 

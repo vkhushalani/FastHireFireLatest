@@ -66,8 +66,8 @@ public class EmpCompensation {
 					if (techName.toLowerCase().equals(payGroup.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						logger.error(paramName.toString());
-						logger.error(paramValue.toString());
+//						logger.error(paramName.toString());
+//						logger.error(paramValue.toString());
 						break;
 					}
 				}
@@ -97,7 +97,7 @@ public class EmpCompensation {
 		obj.put("userId", userID);
 		obj.put(paramName, paramValue);
 		obj.put("eventReason", "HIRNEW");
-		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
 
