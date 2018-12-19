@@ -67,6 +67,7 @@ import com.amrest.fastHire.service.BusinessUnitService;
 import com.amrest.fastHire.service.CodeListService;
 import com.amrest.fastHire.service.CodeListTextService;
 import com.amrest.fastHire.service.FieldDataFromSystemService;
+import com.amrest.fastHire.service.FieldGroupTextService;
 import com.amrest.fastHire.service.FieldService;
 import com.amrest.fastHire.service.MapCountryBusinessUnitService;
 import com.amrest.fastHire.service.MapCountryBusinessUnitTemplateService;
@@ -82,6 +83,7 @@ import com.amrest.fastHire.model.CodeList;
 import com.amrest.fastHire.model.CodeListText;
 import com.amrest.fastHire.model.Field;
 import com.amrest.fastHire.model.FieldDataFromSystem;
+import com.amrest.fastHire.model.FieldGroupText;
 import com.amrest.fastHire.model.FieldText;
 import com.amrest.fastHire.model.MapCountryBusinessUnit;
 import com.amrest.fastHire.model.MapCountryBusinessUnitTemplate;
@@ -99,6 +101,7 @@ public class PreHireManagerController {
 	 public static final String scpDestinationName = "scpiBasic";
 	 public static final String pexDestinationName = "FastHirePEX";
 	 public static final String docdestinationName =  "DocumentGeneration";
+	 String timeStamp;
 	 
 	 public static final Integer  padStartDate  = 15;
 	 public static final Integer  confirmStartDateDiffDays  =  2;
@@ -137,8 +140,12 @@ public class PreHireManagerController {
 	
 	@Autowired
 	FieldService fieldService;
+	
 	@Autowired
 	SFConstantsService sfConstantsService;
+	
+	@Autowired
+	FieldGroupTextService fieldGroupTextService;
 	
 	@GetMapping(value = "/UserDetails")
 	public ResponseEntity <?> getUserDetails(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
@@ -531,7 +538,12 @@ public class PreHireManagerController {
 							// setting the field Group
 //							logger.debug("setting the field Group"+tFieldGroup.getFieldGroup().getName());
 							tFieldGroup.getFieldGroup().setFieldGroupSeq(tFieldGroup.getFieldGroupSeq());
-						    String jsonString = gson.toJson(tFieldGroup.getFieldGroup());
+							FieldGroupText fieldGroupText = fieldGroupTextService.findByFieldGroupLanguage(tFieldGroup.getFieldGroupId(),compareMap.get("locale"));
+							if(fieldGroupText !=null){
+								tFieldGroup.getFieldGroup().setDescription(fieldGroupText.getDescription());
+							}
+						    
+							String jsonString = gson.toJson(tFieldGroup.getFieldGroup());
 							fieldObject.put("fieldGroup",new JSONObject(jsonString));
 							
 //							logger.debug("creating the fields entity in the json per field group"+tFieldGroup.getFieldGroup().getName());
@@ -602,7 +614,7 @@ public class PreHireManagerController {
 //										logger.debug("value not null:"+value);
 										if(mapTemplateFieldProperties.getField().getFieldType().equalsIgnoreCase("Codelist"))
 										{	
-											logger.debug("Inside Codelist "+mapTemplateFieldProperties.getField().getName());
+//											logger.debug("Inside Codelist "+mapTemplateFieldProperties.getField().getName());
 										
 											
 											List<CodeList> CodeList = codeListService.findByCountryField(mapTemplateFieldProperties.getFieldId(), compareMap.get("country"));
@@ -1249,8 +1261,13 @@ public class PreHireManagerController {
 						batchRequest.createQueryPart("/"+entity.getKey()+ entity.getValue(), entity.getKey());
 					}
 					
+					timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+					logger.debug("Before Batch Call GET"+ timeStamp);
 					// call Get Batch with all entities
 					batchRequest.callBatchPOST("/$batch", "");
+					
+					timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+					logger.debug("After Batch Call GET"+ timeStamp);
 					
 					JSONObject docGenerationObject = new JSONObject();
 					
@@ -1286,14 +1303,24 @@ public class PreHireManagerController {
 					 resultObj.remove("countryOfCompany");
 					 resultObj.remove("jobTitle");
 					 
+					 timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+						logger.debug("Before employee class update"+ timeStamp);
+					 
 					HttpResponse postresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",resultObj.toString());	
-						
+					
+					
+					timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+					logger.debug("After employee class update"+ timeStamp);
+					
 					Thread parentThread = new Thread(new Runnable(){	
 						@Override
 						  public void run(){
 							
 							try{
 								 //updating the startDate and endDate to confirm the hire
+								
+								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+								logger.debug("before SF Updates"+ timeStamp);
 								
 								for (Map.Entry<String,String> entity : entityMap.entrySet())  {	
 									
@@ -1349,6 +1376,8 @@ public class PreHireManagerController {
 									}
 								}
 							
+								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+								logger.debug("After SF Updates"+ timeStamp);
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 							// call to SF to get MDF Object Fields to generate pes post
 
@@ -1470,10 +1499,15 @@ public class PreHireManagerController {
 										  public void run(){
 											
 											try {
+												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+												logger.debug("Before PEX Updates"+ timeStamp);
 												
 												HttpResponse pexPostResponse = pexClient.callDestinationPOST("api/v3/forms/submit", "", finalPexFormPostString);
 												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
 //												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
+												
+												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+												logger.debug("After Pex Updates"+ timeStamp);
 											} catch (URISyntaxException | IOException e) {
 												// TODO Auto-generated catch block
 												e.printStackTrace();
@@ -1483,7 +1517,11 @@ public class PreHireManagerController {
 									pexThread.start();
 								}
 								// delete the MDF Object
+								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+								logger.debug("Before MDF DELETE "+ timeStamp);
 								destClient.callDestinationDelete(mdfFieldsObject.getJSONObject("__metadata").getString("uri"),"?$format=json");
+								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+								logger.debug("After MDF Delete"+ timeStamp);
 							}
 							
 							
@@ -1696,7 +1734,7 @@ public class PreHireManagerController {
 
                     HttpEntity<String> restrequest = new HttpEntity<String>(reqBodyObj.toString());
                     
-                    String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+                     timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
                     
                     logger.debug("before Call doc generation"+reqBodyObj.toString());
@@ -1732,6 +1770,7 @@ public class PreHireManagerController {
                     	   restTemplateResponse = null;
                        }
                     }
+                    timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
                     logger.debug("After doc generation"+timeStamp);
 //                    return bytes;
 
