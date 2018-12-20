@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.apache.http.HttpResponse;
@@ -25,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.amrest.fastHire.SF.DestinationClient;
 import com.amrest.fastHire.SF.UrlClient;
+import com.sap.cloud.account.Account;
+import com.sap.cloud.account.TenantContext;
 
 @RestController
 @RequestMapping("/FastHireAdmin")
@@ -40,9 +44,12 @@ public class SCPOperations {
 		String aToken = tokenResponseObject.getString("access_token");
 		String tokenType = tokenResponseObject.getString("token_type");
 		
+		// get the subscribed account details
+		Account subscribedAccount = getSubscribedAccount();
+		
 		UrlClient client= new UrlClient();
 		String cloudHost = System.getenv("HC_HOST");
-		String cloudAccount = System.getenv("HC_ACCOUNT");
+		String cloudAccount = subscribedAccount.getId();
 		client.setBaseUrl("https://api."+cloudHost+"/authorization/v1");
 		client.setPath("/accounts/"+cloudAccount+"/groups");
 		client.setFilter("");
@@ -61,6 +68,12 @@ public class SCPOperations {
 		
 	}
 	
+	private Account getSubscribedAccount() throws NamingException {
+		Context ctx = new InitialContext();
+		TenantContext tenantctx = (TenantContext) ctx.lookup("java:comp/env/TenantContext");
+		return tenantctx.getTenant().getAccount();
+	}
+
 	@PostMapping("/AssignUserToGroup")
 	public ResponseEntity <?> assignUserToGroup(@RequestBody String postJson) throws NamingException, ClientProtocolException, URISyntaxException, IOException{
 		
@@ -75,6 +88,9 @@ public class SCPOperations {
 				    map.put(key, postObject.getString(key));
 				}
 				
+				// get the subscribed account details
+				Account subscribedAccount = getSubscribedAccount();
+				
 				// get auth Token
 				JSONObject tokenResponseObject = getoAuthToken();
 				String aToken = tokenResponseObject.getString("access_token");
@@ -84,7 +100,7 @@ public class SCPOperations {
 				// set the url client 
 				UrlClient client= new UrlClient();
 				String cloudHost = System.getenv("HC_HOST");
-				String cloudAccount = System.getenv("HC_ACCOUNT");
+				String cloudAccount = subscribedAccount.getId();
 				client.setBaseUrl("https://api."+cloudHost+"/authorization/v1");
 				client.setPath("/accounts/"+cloudAccount+"/groups/users/");
 				client.setFilter("?groupName="+map.get("GroupName"));
@@ -131,6 +147,9 @@ public class SCPOperations {
 				    map.put(key, postObject.getString(key));
 				}
 				
+				// get the subscribed account details
+				Account subscribedAccount = getSubscribedAccount();
+				
 				// get auth Token
 				JSONObject tokenResponseObject = getoAuthToken();
 				String aToken = tokenResponseObject.getString("access_token");
@@ -140,7 +159,7 @@ public class SCPOperations {
 				// set the url client 
 				UrlClient client= new UrlClient();
 				String cloudHost = System.getenv("HC_HOST");
-				String cloudAccount = System.getenv("HC_ACCOUNT");
+				String cloudAccount = subscribedAccount.getId();
 				client.setBaseUrl("https://api."+cloudHost+"/authorization/v1");
 				client.setPath("/accounts/"+cloudAccount+"/groups/users/");
 				client.setTokenType(tokenType);

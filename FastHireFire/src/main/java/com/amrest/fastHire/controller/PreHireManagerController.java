@@ -6,11 +6,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -66,6 +69,9 @@ import com.amrest.fastHire.SF.PexClient;
 import com.amrest.fastHire.service.BusinessUnitService;
 import com.amrest.fastHire.service.CodeListService;
 import com.amrest.fastHire.service.CodeListTextService;
+import com.amrest.fastHire.service.ContractCriteriaService;
+import com.amrest.fastHire.service.ContractService;
+import com.amrest.fastHire.service.CountryService;
 import com.amrest.fastHire.service.FieldDataFromSystemService;
 import com.amrest.fastHire.service.FieldGroupTextService;
 import com.amrest.fastHire.service.FieldService;
@@ -81,6 +87,8 @@ import com.amrest.fastHire.service.FieldTextService;
 import com.google.gson.Gson;
 import com.amrest.fastHire.model.CodeList;
 import com.amrest.fastHire.model.CodeListText;
+import com.amrest.fastHire.model.Contract;
+import com.amrest.fastHire.model.ContractCriteria;
 import com.amrest.fastHire.model.Field;
 import com.amrest.fastHire.model.FieldDataFromSystem;
 import com.amrest.fastHire.model.FieldGroupText;
@@ -146,6 +154,12 @@ public class PreHireManagerController {
 	
 	@Autowired
 	FieldGroupTextService fieldGroupTextService;
+	
+	@Autowired
+	ContractService contractService;
+	
+	@Autowired
+	ContractCriteriaService contractCriteriaService;
 	
 	@GetMapping(value = "/UserDetails")
 	public ResponseEntity <?> getUserDetails(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
@@ -1213,7 +1227,7 @@ public class PreHireManagerController {
 	
 	@Transactional(timeout = 300)
 	@PostMapping("/ConfirmHire")
-	public ResponseEntity <?> confirmlHire(@RequestBody String postJson,HttpServletRequest request) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException, BatchException, UnsupportedOperationException{
+	public ResponseEntity <?> confirmlHire(@RequestBody String postJson,HttpServletRequest request) throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException, java.text.ParseException, BatchException, UnsupportedOperationException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
 				String loggedInUser =  request.getUserPrincipal().getName();
 		
 				Map<String,String> map = new HashMap<String,String>();  
@@ -1249,7 +1263,7 @@ public class PreHireManagerController {
 					entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '"+map.get("userId")+"'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 					entityMap.put("PerPersonal", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 					entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
-					entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$select=jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+					entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country&$select=jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
 					entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth");
 					entityMap.put("PerEmail", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,emailAddress");
 					entityMap.put("cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
@@ -1302,6 +1316,7 @@ public class PreHireManagerController {
 						 }
 					 resultObj.remove("countryOfCompany");
 					 resultObj.remove("jobTitle");
+					 resultObj.remove("positionNav");
 					 
 					 timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 						logger.debug("Before employee class update"+ timeStamp);
@@ -1355,6 +1370,7 @@ public class PreHireManagerController {
 										// remove countryOfCompany due to un upsertable field
 										getresultObj.remove("countryOfCompany");
 										getresultObj.remove("jobTitle");
+										getresultObj.remove("positionNav");
 										
 									
 									}
@@ -1618,21 +1634,49 @@ public class PreHireManagerController {
 		return jsonObject;
 	}
 
-    public ResponseEntity<byte[]> generateDoc(String reqString) throws NamingException, IOException, URISyntaxException
+    public ResponseEntity<byte[]> generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
 
                                      {
     	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
    
 
-                    logger.error("Doc Genetration: gotRequest");
+//                    logger.debug("Doc Genetration: gotRequest");
 
                     JSONObject reqObject = new JSONObject(reqString);
 
                     JSONObject reqBodyObj = new JSONObject();
+                    
+                    
+                    String company = reqObject.getJSONObject("EmpJob").getString("company");
+                    String country = reqObject.getJSONObject("EmpJob").getJSONObject("positionNav").getJSONObject("companyNav").getString("country");
+                    List<ContractCriteria> contractCriteriaList = contractCriteriaService.findByCountryCompany(country, company);
+                    
+                    Collections.sort(contractCriteriaList);
+                    String templateID = "";
+                    int iterator = 0;
+                    for(ContractCriteria contractCriteria : contractCriteriaList){
+                    	// need to add code for function
+                    	String criteriaValue;
+                    	String entityName = contractCriteria.getEntityName();
+                    	if(entityName.contains("()")){
+                    		// call function else
+                    		// criteriaValue =
+//                    		Method m = this.getClass().getMethod(entityName);
+//                    		m.invoke(this);
+                    	}
+                    	
+                    	 criteriaValue = reqObject.getJSONObject(entityName).getString(contractCriteria.getField());
+                    	templateID = templateID + criteriaValue ;
+                    	iterator = iterator +1;
+                    	if(iterator != contractCriteriaList.size()){
+                    		templateID = templateID + "|";
+                    	}
+                    }
+                    Contract contract = contractService.findById(templateID);
+                    reqBodyObj.put("TemplateName", contract.getTemplate());
+//                    reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
 
-                    reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
-
-                    reqBodyObj.put("CompanyCode", reqObject.getJSONObject("EmpJob").getString("company"));
+                    reqBodyObj.put("CompanyCode", company);
                     reqBodyObj.put("CompanyCode", "US001");
                     reqBodyObj.put("Gcc", "Z05");
 
@@ -1747,12 +1791,7 @@ public class PreHireManagerController {
                     docDestination.setDestConfiguration();
                     docDestination.setHeaders(docDestination.getDestProperty("Authentication"));
                     String url = docDestination.getDestProperty("URL");
-//                    HttpResponse docGenerationResponse = docDestination.callDestinationPOST("", "", reqBodyObj.toString());
-                    
-                    
-//                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//                    docGenerationResponse.getEntity().writeTo(baos);
-//                    byte[] bytes = baos.toByteArray();
+
                    
                     ResponseEntity<byte[]> restTemplateResponse = null;
                     logger.debug("doc URL:" +  url);
