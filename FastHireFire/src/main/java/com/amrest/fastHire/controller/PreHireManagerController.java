@@ -1,7 +1,6 @@
 package com.amrest.fastHire.controller;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,11 +8,14 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,11 +49,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -1263,7 +1268,7 @@ public class PreHireManagerController {
 					entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '"+map.get("userId")+"'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 					entityMap.put("PerPersonal", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 					entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
-					entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country&$select=jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+					entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
 					entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth");
 					entityMap.put("PerEmail", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,emailAddress");
 					entityMap.put("cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
@@ -1299,6 +1304,10 @@ public class PreHireManagerController {
 						
 						if(enityKey.equalsIgnoreCase("EmpJob")){
 							batchObject.put("startDate", map.get("startDate"));
+							if(batchObject.getString("countryOfCompany") !=null){
+								 SFConstants employeeClassConst = sfConstantsService.findById("employeeClassId_"+batchObject.getString("countryOfCompany"));
+								 batchObject.put("employeeClass", employeeClassConst.getValue());
+								 }
 						}
 						docGenerationObject.put(enityKey, batchObject);
 						}
@@ -1603,12 +1612,16 @@ public class PreHireManagerController {
 					parentThread.start();
 					
 					logger.debug("Start Generation Doc:" + docGenerationObject.toString());
-					ResponseEntity<byte[]> ByteResponse= generateDoc(docGenerationObject.toString());
-					if(ByteResponse == null){
+					ResponseEntity<String> response= generateDoc(docGenerationObject.toString());
+					if(response == null){
 						return  new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-					}
-					  return ByteResponse;
-				
+					};
+					  String stringBody = response.getBody();
+					  logger.debug("stringBody: " + stringBody);
+					 JSONObject docJson=  new JSONObject(stringBody);
+					 byte[] b =docJson.getString("document").getBytes(StandardCharsets.UTF_8);
+					 
+					 return ResponseEntity.ok().body(b);
 		
 	}
 	
@@ -1634,47 +1647,53 @@ public class PreHireManagerController {
 		return jsonObject;
 	}
 
-    public ResponseEntity<byte[]> generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+    public ResponseEntity<String> generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
 
                                      {
     	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
    
 
-//                    logger.debug("Doc Genetration: gotRequest");
+                    logger.debug("Doc Genetration: gotRequest");
 
                     JSONObject reqObject = new JSONObject(reqString);
 
                     JSONObject reqBodyObj = new JSONObject();
                     
-                    
+                    // choosing the template name for the file generation
                     String company = reqObject.getJSONObject("EmpJob").getString("company");
                     String country = reqObject.getJSONObject("EmpJob").getJSONObject("positionNav").getJSONObject("companyNav").getString("country");
                     List<ContractCriteria> contractCriteriaList = contractCriteriaService.findByCountryCompany(country, company);
                     
                     Collections.sort(contractCriteriaList);
-                    String templateID = "";
-                    int iterator = 0;
+                    String templateID = country.toUpperCase() + "|"+company.toUpperCase() + "|" + "CONFIRM";
+                    
                     for(ContractCriteria contractCriteria : contractCriteriaList){
-                    	// need to add code for function
+                    
                     	String criteriaValue;
                     	String entityName = contractCriteria.getEntityName();
-                    	if(entityName.contains("()")){
-                    		// call function else
-                    		// criteriaValue =
-//                    		Method m = this.getClass().getMethod(entityName);
-//                    		m.invoke(this);
+                    	String field = contractCriteria.getField();
+                    	if(entityName.equalsIgnoreCase("Custom")){
+                    		String para = field.substring(field.indexOf("(") + 1, field.indexOf(")"));
+                    		Method m = this.getClass().getDeclaredMethod(field.replace("("+para+")", ""),String.class);
+                    		Object rValue = m.invoke(this,reqObject.getJSONObject(para).toString());
+                    		criteriaValue = (String) rValue;
                     	}
-                    	
-                    	 criteriaValue = reqObject.getJSONObject(entityName).getString(contractCriteria.getField());
+                    	else{
+                    	 criteriaValue = reqObject.getJSONObject(entityName).getString(field);
+                    	}
+                    	criteriaValue.toUpperCase();
+                    	templateID = templateID + "|";
                     	templateID = templateID + criteriaValue ;
-                    	iterator = iterator +1;
-                    	if(iterator != contractCriteriaList.size()){
-                    		templateID = templateID + "|";
-                    	}
+                    	
+                    			logger.debug("templateID " + templateID);
                     }
                     Contract contract = contractService.findById(templateID);
-                    reqBodyObj.put("TemplateName", contract.getTemplate());
-//                    reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
+                    if(contract !=null){
+                    	logger.debug("contract.getTemplate()" + contract.getTemplate());
+                    reqBodyObj.put("TemplateName", contract.getTemplate());}
+                    else{
+                    reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
+                    }
 
                     reqBodyObj.put("CompanyCode", company);
                     reqBodyObj.put("CompanyCode", "US001");
@@ -1776,7 +1795,7 @@ public class PreHireManagerController {
 
                     RestTemplate restTemplate = new RestTemplate(requestFactory);
 
-                    HttpEntity<String> restrequest = new HttpEntity<String>(reqBodyObj.toString());
+                    
                     
                      timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
@@ -1793,13 +1812,17 @@ public class PreHireManagerController {
                     String url = docDestination.getDestProperty("URL");
 
                    
-                    ResponseEntity<byte[]> restTemplateResponse = null;
+                    ResponseEntity<String> restTemplateResponse = null;
                     logger.debug("doc URL:" +  url);
                     logger.debug("reqBodyObj" + reqBodyObj.toString());
                     try {
-                     restTemplateResponse = restTemplate.exchange(url, HttpMethod.POST, restrequest,
-
-                                                    byte[].class);
+                    	HttpHeaders headers = new HttpHeaders();
+                        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+                        headers.setContentType(MediaType.APPLICATION_JSON);
+                        restTemplate.getMessageConverters()
+                        .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+                        HttpEntity<String> restrequest = new HttpEntity<String>(reqBodyObj.toString(),headers);
+                     restTemplateResponse = restTemplate.exchange(url, HttpMethod.POST, restrequest, String.class);
                     logger.debug("doc Response body:" +  restTemplateResponse.getBody());
                     }
                     catch (HttpStatusCodeException exception) {
@@ -1833,6 +1856,36 @@ public class PreHireManagerController {
                     return new HttpComponentsClientHttpRequestFactory(client);
 
     }
+    
+    // age calculation function
+    String calculate_age(String entityString){
+    	logger.debug("Start Calculate Age");
+    	String returnString;
+    	JSONObject entityObj = new JSONObject(entityString);
+    	logger.debug("entityObj Object calc" + entityObj);
+    	String dob = entityObj.getString("dateOfBirth");
+    	logger.debug("dob calc" + dob);
+    	String dobms = dob.substring(dob.indexOf("(") + 1, dob.indexOf(")"));
+    	Date dobDate = new Date(Long.parseLong(dobms));
+    	Date today = new Date();
+    	
+    	long diffInMillies = Math.abs(today.getTime() - dobDate.getTime());
+    	logger.debug("diffInMillies" + diffInMillies);
+    	long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+    	long age = diff / 365;
+    	logger.debug("age" + age);
+
+		if(age < 18)
+		{returnString = "<18";}
+		else
+		{
+			returnString = ">=18";
+		}
+		logger.debug("End Calculate Age" + returnString);
+		return returnString;
+    	
+    }
+    
     
 
 }

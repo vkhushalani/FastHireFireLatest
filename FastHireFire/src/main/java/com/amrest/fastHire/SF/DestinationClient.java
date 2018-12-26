@@ -94,6 +94,7 @@ public class DestinationClient {
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		logger.debug("responseJson"+response );
+		logger.debug("Get urlString" + urlString +"responseJson " +  response );
 		return response;
 	}
 	
@@ -129,6 +130,7 @@ public class DestinationClient {
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
 		logger.debug("responseJson"+response );
+		logger.debug("Post urlString" + urlString +"responseJson " +  response );
 		return response;
 		
 	}
@@ -138,7 +140,7 @@ public class DestinationClient {
 		URL url= new URL(urlString+path+filter);
 		URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
 		urlString = uri.toASCIIString();
-		logger.debug("urlString"+urlString );
+		
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpDelete request = new HttpDelete(urlString);
 		
@@ -147,7 +149,7 @@ public class DestinationClient {
 		
 		if(!this.getDestProperty("Authentication").equalsIgnoreCase("BasicAuthentication")){
 			for (AuthenticationHeader header : this.headers){
-				logger.debug("Header: "+ header.getName() + header.getValue());
+				logger.debug("Delete Header: "+ header.getName() + header.getValue());
 				request.addHeader(header.getName(), header.getValue());
 			}
 			}
@@ -160,7 +162,8 @@ public class DestinationClient {
 		
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
-		logger.debug("responseJson"+response );
+		
+		logger.debug("Delete urlString" + urlString +"responseJson " +  response );
 		return response;
 		
 	}
