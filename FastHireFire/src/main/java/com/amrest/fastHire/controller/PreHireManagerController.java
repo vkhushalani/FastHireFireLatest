@@ -1612,16 +1612,24 @@ public class PreHireManagerController {
 					parentThread.start();
 					
 					logger.debug("Start Generation Doc:" + docGenerationObject.toString());
-					ResponseEntity<String> response= generateDoc(docGenerationObject.toString());
-					if(response == null){
+					HttpResponse response= generateDoc(docGenerationObject.toString());
+					if(response.getStatusLine().getStatusCode() != 200){
 						return  new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
 					};
-					  String stringBody = response.getBody();
-					  logger.debug("stringBody: " + stringBody);
-					 JSONObject docJson=  new JSONObject(stringBody);
-					 byte[] b =docJson.getString("document").getBytes(StandardCharsets.UTF_8);
+					String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+//					  String stringBody = response.getBody();
+					  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+					 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
 					 
-					 return ResponseEntity.ok().body(b);
+					 
+					 if(docJson.getString("status").equalsIgnoreCase("FAILED")) {
+						 return  new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
+					 }
+					 
+					 logger.debug("docJson.document " + docJson.getString("document"));
+					 byte[] b =docJson.getString("document").getBytes(StandardCharsets.UTF_8);
+					 logger.debug("bytes " + b);
+					 return ResponseEntity.ok().body(docJson.getString("document"));
 		
 	}
 	
@@ -1647,7 +1655,7 @@ public class PreHireManagerController {
 		return jsonObject;
 	}
 
-    public ResponseEntity<String> generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+    public HttpResponse generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
 
                                      {
     	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
@@ -1708,8 +1716,6 @@ public class PreHireManagerController {
                     reqBodyObj.put("OutputFileName", "Contract.pdf");
                     reqBodyObj.put("FileType", "PERSONAL");
                     
-                    
-
                     JSONArray parameters = new JSONArray();
 
                     parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_LAST_NAME").put("Value",
@@ -1789,14 +1795,7 @@ public class PreHireManagerController {
                     		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase("null") ? "" :
                                                     reqObject.getJSONObject("PerAddressDEFLT").getString("address2"):""));
 
-                    reqBodyObj.put("parameters", parameters);
-
-                    ClientHttpRequestFactory requestFactory = getClientHttpRequestFactory();
-
-                    RestTemplate restTemplate = new RestTemplate(requestFactory);
-
-                    
-                    
+                    reqBodyObj.put("parameters", parameters);                    
                      timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
                     
@@ -1809,53 +1808,31 @@ public class PreHireManagerController {
                     docDestination.setConfiguration();
                     docDestination.setDestConfiguration();
                     docDestination.setHeaders(docDestination.getDestProperty("Authentication"));
-                    String url = docDestination.getDestProperty("URL");
-
-                   
-                    ResponseEntity<String> restTemplateResponse = null;
-                    logger.debug("doc URL:" +  url);
+                    
                     logger.debug("reqBodyObj" + reqBodyObj.toString());
-                    try {
-                    	HttpHeaders headers = new HttpHeaders();
-                        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-                        headers.setContentType(MediaType.APPLICATION_JSON);
-                        restTemplate.getMessageConverters()
-                        .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
-                        HttpEntity<String> restrequest = new HttpEntity<String>(reqBodyObj.toString(),headers);
-                     restTemplateResponse = restTemplate.exchange(url, HttpMethod.POST, restrequest, String.class);
-                    logger.debug("doc Response body:" +  restTemplateResponse.getBody());
-                    }
-                    catch (HttpStatusCodeException exception) {
-                        int statusCode = exception.getStatusCode().value();
-                        logger.debug("Status Code : "+statusCode);
-                       if(statusCode == 404 || statusCode == 504){
-                    	   restTemplateResponse = null;
-                       }
-                    }
+                    HttpResponse docResponse = docDestination.callDestinationPOST("", "", reqBodyObj.toString());
                     timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
                     logger.debug("After doc generation"+timeStamp);
-//                    return bytes;
 
-                  
-                     return restTemplateResponse;
+                     return docResponse;
 
     }
 
 
 
-    private ClientHttpRequestFactory getClientHttpRequestFactory() {
-
-                    int timeout = 5*60*1000;
-
-                    RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
-
-                                                    .setSocketTimeout(timeout).build();
-
-                    CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
-
-                    return new HttpComponentsClientHttpRequestFactory(client);
-
-    }
+//    private ClientHttpRequestFactory getClientHttpRequestFactory() {
+//
+//                    int timeout = 5*60*1000;
+//
+//                    RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
+//
+//                                                    .setSocketTimeout(timeout).build();
+//
+//                    CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+//
+//                    return new HttpComponentsClientHttpRequestFactory(client);
+//
+//    }
     
     // age calculation function
     String calculate_age(String entityString){

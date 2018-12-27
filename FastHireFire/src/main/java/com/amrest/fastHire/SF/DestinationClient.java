@@ -104,21 +104,26 @@ public class DestinationClient {
 		URL url= new URL(urlString+path+filter);
 		URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
 		urlString = uri.toASCIIString();
-		logger.debug("urlString"+urlString );
+		logger.debug("urlString"+urlString);
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPost request = new HttpPost(urlString);
 		
-		StringEntity entity = new StringEntity(postJson);
+		StringEntity entity = new StringEntity(postJson,"UTF-8");
 		logger.debug("postJson"+postJson );
 		request.setEntity(entity);
 		request.setHeader("Accept", "application/json");
 		request.setHeader("Content-type", "application/json");
 		
+		logger.debug("this.getDestProperty"+this.getDestProperty("Authentication"));
+		
 		if(!this.getDestProperty("Authentication").equalsIgnoreCase("BasicAuthentication")){
+			logger.debug("this.headers" + this.headers);
+			if(this.headers != null){
 			for (AuthenticationHeader header : this.headers){
+				
 				logger.debug("Header: "+ header.getName() + header.getValue());
 				request.addHeader(header.getName(), header.getValue());
-			}
+			}}
 			}
 			else
 			{
@@ -129,7 +134,7 @@ public class DestinationClient {
 		
 		HttpResponse response = httpClient.execute(request);
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
-		logger.debug("responseJson"+response );
+		logger.debug("responseJson"+response);
 		logger.debug("Post urlString" + urlString +"responseJson " +  response );
 		return response;
 		
