@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 
-
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.config.RequestConfig;
@@ -1627,9 +1627,10 @@ public class PreHireManagerController {
 					 }
 					 
 					 logger.debug("docJson.document " + docJson.getString("document"));
-					 byte[] b =docJson.getString("document").getBytes(StandardCharsets.UTF_8);
-					 logger.debug("bytes " + b);
-					 return ResponseEntity.ok().body(docJson.getString("document"));
+					 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+//					 byte[] b =docJson.getString("document").getBytes(StandardCharsets.UTF_8);
+					 logger.debug("bytes " + decodedString);
+					 return ResponseEntity.ok().body(decodedString);
 		
 	}
 	
