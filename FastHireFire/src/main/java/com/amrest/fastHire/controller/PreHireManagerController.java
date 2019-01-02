@@ -5,16 +5,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -34,9 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+
 import org.apache.http.util.EntityUtils;
 import org.apache.olingo.odata2.api.batch.BatchException;
 import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
@@ -48,15 +45,11 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.StringHttpMessageConverter;
+
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,8 +58,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
 
 import com.amrest.fastHire.SF.BatchRequest;
 import com.amrest.fastHire.SF.DestinationClient;
@@ -74,9 +65,9 @@ import com.amrest.fastHire.SF.PexClient;
 import com.amrest.fastHire.service.BusinessUnitService;
 import com.amrest.fastHire.service.CodeListService;
 import com.amrest.fastHire.service.CodeListTextService;
+import com.amrest.fastHire.service.ConfirmStatusService;
 import com.amrest.fastHire.service.ContractCriteriaService;
 import com.amrest.fastHire.service.ContractService;
-import com.amrest.fastHire.service.CountryService;
 import com.amrest.fastHire.service.FieldDataFromSystemService;
 import com.amrest.fastHire.service.FieldGroupTextService;
 import com.amrest.fastHire.service.FieldService;
@@ -92,6 +83,7 @@ import com.amrest.fastHire.service.FieldTextService;
 import com.google.gson.Gson;
 import com.amrest.fastHire.model.CodeList;
 import com.amrest.fastHire.model.CodeListText;
+import com.amrest.fastHire.model.ConfirmStatus;
 import com.amrest.fastHire.model.Contract;
 import com.amrest.fastHire.model.ContractCriteria;
 import com.amrest.fastHire.model.Field;
@@ -165,6 +157,9 @@ public class PreHireManagerController {
 	
 	@Autowired
 	ContractCriteriaService contractCriteriaService;
+	
+	@Autowired
+	ConfirmStatusService confirmStatusService;
 	
 	@GetMapping(value = "/UserDetails")
 	public ResponseEntity <?> getUserDetails(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
@@ -274,6 +269,7 @@ public class PreHireManagerController {
 			pos.setDayDiff(null);
 			pos.setVacant(true);
 			pos.setStartDate(null);
+			pos.setStatuses(null);
 			returnPositions.add(pos);
 			
 		}
@@ -288,7 +284,7 @@ public class PreHireManagerController {
 				+ "department eq '"+paraMap.get("department")+"' and "
 				+ "emplStatusNav/id ne '"+empStatusConstant.getValue()+"' "
 				+ "and userNav/userId ne null &$expand=positionNav,userNav,"
-				+ "positionNav/employeeClassNav"
+				+ "positionNav/employeeClassNav,userNav/personKeyNav"
 				+ "&$select=userId,startDate,customString11,position,"
 				+ "positionNav/externalName_localized,"
 				+ "positionNav/externalName_defaultValue,"
@@ -296,7 +292,8 @@ public class PreHireManagerController {
 				+ "userNav/userId,userNav/username,userNav/defaultFullName,"
 				+ "userNav/firstName,userNav/lastName,"
 				+ "positionNav/employeeClassNav/label_localized,"
-				+ "positionNav/employeeClassNav/label_defaultValue");
+				+ "positionNav/employeeClassNav/label_defaultValue,"
+				+ "userNav/personKeyNav/perPersonUuid");
 		
 		String ongoingPosResponseJsonString = EntityUtils.toString(ongoingPosResponse.getEntity(), "UTF-8");
 		JSONObject ongoingPosResponseObject = new JSONObject(ongoingPosResponseJsonString);
@@ -333,9 +330,28 @@ public class PreHireManagerController {
 			long diffInMillies =  Math.abs(smilliSecLong - today.getTime());
 			long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
 			pos.setDayDiff(Objects.toString(diff,null)); // calculate day difference
+			
+			String personId = ongoingPos.getJSONObject("userNav").getJSONObject("personKeyNav").getString("perPersonUuid");
+			ConfirmStatus confirmStatus = confirmStatusService.findById(personId);
+				if(confirmStatus !=null){
+					Map<String,Boolean> statusMap =  new HashMap<String,Boolean>(); 
+					
+						statusMap.put("SFFlag", confirmStatus.getSfEntityFlag());
+						statusMap.put("PexFlag", confirmStatus.getPexUpdateFlag());
+						statusMap.put("DocFlag", confirmStatus.getDocGenFlag());
+						pos.setStatuses(statusMap);
+					
+				}
+				else
+				{
+					pos.setStatuses(null);
+				}
 			returnPositions.add(pos);}
 			
 		}
+		
+		// add the item till the DB has an entry of ongoing 
+		
 		
 		// return the JSON Object
 		return ResponseEntity.ok().body(returnPositions);
@@ -1269,7 +1285,7 @@ public class PreHireManagerController {
 					entityMap.put("PerPersonal", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 					entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
 					entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
-					entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth");
+					entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
 					entityMap.put("PerEmail", "?$filter=personIdExternal eq '"+map.get("userId")+"'&$format=json&$select=personIdExternal,emailAddress");
 					entityMap.put("cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'");
 					entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
@@ -1287,6 +1303,8 @@ public class PreHireManagerController {
 					
 					timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 					logger.debug("After Batch Call GET"+ timeStamp);
+					
+					// creating map for other requests.
 					
 					JSONObject docGenerationObject = new JSONObject();
 					
@@ -1312,36 +1330,21 @@ public class PreHireManagerController {
 						docGenerationObject.put(enityKey, batchObject);
 						}
 						}
-
-					
-					// update the employee class to an actual one
-					
-					 JSONObject responseObject = new JSONObject(entityResponseMap.get("EmpJob"));
-					 JSONObject resultObj = responseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-					
-					 if(resultObj.getString("countryOfCompany") !=null){
-						 SFConstants employeeClassConst = sfConstantsService.findById("employeeClassId_"+resultObj.getString("countryOfCompany"));
-						 resultObj.put("employeeClass", employeeClassConst.getValue());
-						 }
-					 resultObj.remove("countryOfCompany");
-					 resultObj.remove("jobTitle");
-					 resultObj.remove("positionNav");
-					 
-					 timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-						logger.debug("Before employee class update"+ timeStamp);
-					 
-					HttpResponse postresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",resultObj.toString());	
-					
-					
-					timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-					logger.debug("After employee class update"+ timeStamp);
+					// creating entry for the confirm status flags update
+					String personId =docGenerationObject.getJSONObject("PerPerson").getString("perPersonUuid");
+					ConfirmStatus confirmStatus = new ConfirmStatus();
+					confirmStatus.setId(personId);
+					confirmStatusService.create(confirmStatus);
 					
 					Thread parentThread = new Thread(new Runnable(){	
 						@Override
 						  public void run(){
 							
 							try{
-								 //updating the startDate and endDate to confirm the hire
+								
+								
+								
+								 //updating the startDate and employeeClass to confirm the hire
 								
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("before SF Updates"+ timeStamp);
@@ -1363,9 +1366,9 @@ public class PreHireManagerController {
 									
 									if(entity.getKey().equalsIgnoreCase("PaymentInformationV3")){
 										getresultObj.put("effectiveStartDate", map.get("startDate"));
-										JSONObject payemntInfoDetail = getresultObj.getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0);
-										payemntInfoDetail.put("PaymentInformationV3_effectiveStartDate",map.get("startDate"));
-										getresultObj.put("toPaymentInformationDetailV3", payemntInfoDetail);
+										JSONObject paymentInfoDetail = getresultObj.getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0);
+										paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",map.get("startDate"));
+										getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
 										
 									}
 									else if (entity.getKey().equalsIgnoreCase("EmpJob")){
@@ -1393,18 +1396,20 @@ public class PreHireManagerController {
 									
 									String postJsonString = getresultObj.toString();
 									
-									
 									HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
 //									logger.debug(entity.getKey() + " updateresponse" + updateresponse);
 											}
 										}
 									}
 								}
-							
+								confirmStatus.setSfEntityFlag(true);
+								confirmStatusService.update(confirmStatus);
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("After SF Updates"+ timeStamp);
+							
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-							// call to SF to get MDF Object Fields to generate pes post
+							
+							// updating the SF mdf to the pex 
 
 							JSONObject mdfFieldsObject = new JSONObject(entityResponseMap.get("cust_Additional_Information"));
 							JSONObject mdfFieldsObject2 = new JSONObject(entityResponseMap.get("cust_personIdGenerate"));
@@ -1531,6 +1536,8 @@ public class PreHireManagerController {
 												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
 //												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
 												
+												confirmStatus.setPexUpdateFlag(true);
+												confirmStatusService.update(confirmStatus);
 												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 												logger.debug("After Pex Updates"+ timeStamp);
 											} catch (URISyntaxException | IOException e) {
@@ -1540,6 +1547,45 @@ public class PreHireManagerController {
 											}});
 
 									pexThread.start();
+									
+									Thread docGenThread = new Thread(new Runnable(){
+										 @Override
+										  public void run(){
+											
+											try {
+//												logger.debug("Start Generation Doc:" + docGenerationObject.toString());
+												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+												logger.debug("Before Doc Gen "+ timeStamp);
+												HttpResponse response= generateDoc(docGenerationObject.toString());
+												if(response.getStatusLine().getStatusCode() == 200){
+													String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+//													  String stringBody = response.getBody();
+//													  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+													 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
+													 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
+//														 logger.debug("docJson.document " + docJson.getString("document"));
+//														 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+														 confirmStatus.setDocGenFlag(true);
+														 confirmStatus.setDocument(docJson.getString("document"));
+														confirmStatusService.update(confirmStatus);
+//														 logger.debug("bytes " + decodedString);
+													 }
+												};
+												
+												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+												logger.debug("After Doc Gen "+ timeStamp);
+												 
+												
+												 
+												
+											} catch (URISyntaxException | IOException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NamingException e) {
+												// TODO Auto-generated catch block
+												e.printStackTrace();
+											} 
+											}});
+									
+									docGenThread.start();
+									
 								}
 								// delete the MDF Object
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
@@ -1549,47 +1595,6 @@ public class PreHireManagerController {
 								logger.debug("After MDF Delete"+ timeStamp);
 							}
 							
-							
-							
-							
-							// call the SCPI Interface api
-//							Thread thread = new Thread(new Runnable(){
-//								  @Override
-//								  public void run(){
-//										
-//										 DestinationClient scpiDestClient = new DestinationClient();
-//										 scpiDestClient.setDestName(scpDestinationName);
-//										 try {
-//											scpiDestClient.setHeaderProvider();
-//											scpiDestClient.setConfiguration();
-//											scpiDestClient.setDestConfiguration();
-//											 scpiDestClient.setHeaders(scpiDestClient.getDestProperty("Authentication"));
-//											 
-//											 Calendar calendar = Calendar.getInstance();
-//												String dateString = formatter.format(calendar.getTime()); 
-//												final String finalDateString = dateString+"T00:00:00.000Z";
-//											 
-//											 HttpResponse scpiResponse = scpiDestClient.callDestinationGET("", "?PersonId="+map.get("userId")+"&TimeStamp="+finalDateString+"&$format=json");
-//										} catch (NamingException e) {
-//											
-//											e.printStackTrace();
-//										} catch (ClientProtocolException e) {
-//											
-//											e.printStackTrace();
-//										} catch (IOException e) {
-//											
-//											e.printStackTrace();
-//										} catch (URISyntaxException e) {
-//											
-//											e.printStackTrace();
-//										}
-//										 
-//										 
-//								 
-//								  }
-//								});
-
-//							thread.start();
 							
 							}
 							catch (NamingException e) {
@@ -1611,30 +1616,18 @@ public class PreHireManagerController {
 					
 					parentThread.start();
 					
-					logger.debug("Start Generation Doc:" + docGenerationObject.toString());
-					HttpResponse response= generateDoc(docGenerationObject.toString());
-					if(response.getStatusLine().getStatusCode() != 200){
-						return  new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-					};
-					String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
-//					  String stringBody = response.getBody();
-					  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
-					 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
-					 
-					 
-					 if(docJson.getString("status").equalsIgnoreCase("FAILED")) {
-						 return  new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-					 }
-					 
-					 logger.debug("docJson.document " + docJson.getString("document"));
-					 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
-//					 byte[] b =docJson.getString("document").getBytes(StandardCharsets.UTF_8);
-					 logger.debug("bytes " + decodedString);
-					 return ResponseEntity.ok().body(decodedString);
+	
+					 return ResponseEntity.ok().body("Success");
 		
 	}
 	
-	
+	@GetMapping(value = "/DocDownload/{personId}")
+	public ResponseEntity <?> downloadDocument(@PathVariable("personId") String personId) throws UnsupportedEncodingException{
+		ConfirmStatus confirmStatus = confirmStatusService.findById(personId);
+		byte[] decodedString = Base64.decodeBase64(new String(confirmStatus.getDocument()).getBytes("UTF-8"));
+		confirmStatusService.deleteByObject(confirmStatus);
+		return ResponseEntity.ok().body(decodedString);
+	}
 	
 	public JSONObject  readJSONFile(String FilePath) throws IOException{ 
 		JSONObject jsonObject = null;
@@ -1819,39 +1812,24 @@ public class PreHireManagerController {
 
     }
 
-
-
-//    private ClientHttpRequestFactory getClientHttpRequestFactory() {
-//
-//                    int timeout = 5*60*1000;
-//
-//                    RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
-//
-//                                                    .setSocketTimeout(timeout).build();
-//
-//                    CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
-//
-//                    return new HttpComponentsClientHttpRequestFactory(client);
-//
-//    }
     
     // age calculation function
     String calculate_age(String entityString){
-    	logger.debug("Start Calculate Age");
+//    	logger.debug("Start Calculate Age");
     	String returnString;
     	JSONObject entityObj = new JSONObject(entityString);
-    	logger.debug("entityObj Object calc" + entityObj);
+//    	logger.debug("entityObj Object calc" + entityObj);
     	String dob = entityObj.getString("dateOfBirth");
-    	logger.debug("dob calc" + dob);
+//    	logger.debug("dob calc" + dob);
     	String dobms = dob.substring(dob.indexOf("(") + 1, dob.indexOf(")"));
     	Date dobDate = new Date(Long.parseLong(dobms));
     	Date today = new Date();
     	
     	long diffInMillies = Math.abs(today.getTime() - dobDate.getTime());
-    	logger.debug("diffInMillies" + diffInMillies);
+//    	logger.debug("diffInMillies" + diffInMillies);
     	long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
     	long age = diff / 365;
-    	logger.debug("age" + age);
+//    	logger.debug("age" + age);
 
 		if(age < 18)
 		{returnString = "<18";}
@@ -1859,7 +1837,7 @@ public class PreHireManagerController {
 		{
 			returnString = ">=18";
 		}
-		logger.debug("End Calculate Age" + returnString);
+//		logger.debug("End Calculate Age" + returnString);
 		return returnString;
     	
     }

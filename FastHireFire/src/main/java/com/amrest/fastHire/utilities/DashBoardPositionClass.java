@@ -1,5 +1,7 @@
 package com.amrest.fastHire.utilities;
 
+import java.util.Map;
+
 public class DashBoardPositionClass {
 	
 	private String positionTitle;
@@ -13,6 +15,7 @@ public class DashBoardPositionClass {
 	private String employeeClassName;
 	private String dayDiff;
 	private Boolean vacant;
+	private Map<String,Boolean> statuses;
 	
 	public String getPositionTitle() {
 		return positionTitle;
@@ -80,5 +83,12 @@ public class DashBoardPositionClass {
 	public void setLastUpdatedDate(String lastUpdatedDate) {
 		this.lastUpdatedDate = lastUpdatedDate;
 	}
+	public Map<String,Boolean> getStatuses() {
+		return statuses;
+	}
+	public void setStatuses(Map<String,Boolean> statuses) {
+		this.statuses = statuses;
+	}
+
 
 }
