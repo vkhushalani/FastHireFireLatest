@@ -6,10 +6,14 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.amrest.fastHire.model.ConfirmStatus;
+import com.amrest.fastHire.model.ContractCriteria;
 
+@Transactional
+@Component
 public class ConfirmStatusServiceImp implements ConfirmStatusService {
 
 	@PersistenceContext
@@ -27,6 +31,16 @@ public class ConfirmStatusServiceImp implements ConfirmStatusService {
 	public ConfirmStatus findById(String id) {
 		ConfirmStatus item = em.find(ConfirmStatus.class, id);
 		return item;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<ConfirmStatus> findByCountryDepartment(String company , String department) {
+		Query query = em.createNamedQuery("ConfirmStatus.findByCountryDepartment")
+				.setParameter("department", department)
+				.setParameter("company", company);
+		 List<ConfirmStatus> items = query.getResultList();
+	        return items;
 	}
 
 	@Override

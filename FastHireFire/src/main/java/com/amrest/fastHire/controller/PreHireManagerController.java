@@ -308,7 +308,13 @@ public class PreHireManagerController {
 			
 			JSONObject ongoingPos = ongoingPosResultArray.getJSONObject(i);
 //			logger.debug("userNav"+ongoingPos.get("userNav"));
+		
 			if(!ongoingPos.get("userNav").toString().equalsIgnoreCase("null")){
+				
+			String personuuId = ongoingPos.getJSONObject("userNav").getJSONObject("personKeyNav").getString("perPersonUuid");
+			ConfirmStatus confirmStatus = confirmStatusService.findById(personuuId);
+			if(confirmStatus == null){
+				
 			DashBoardPositionClass pos = new DashBoardPositionClass();
 			pos.setPayGrade(ongoingPos.getJSONObject("positionNav").getString("payGrade"));
 			pos.setPositionCode(ongoingPos.getString("position"));
@@ -331,28 +337,69 @@ public class PreHireManagerController {
 			long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
 			pos.setDayDiff(Objects.toString(diff,null)); // calculate day difference
 			
-			String personId = ongoingPos.getJSONObject("userNav").getJSONObject("personKeyNav").getString("perPersonUuid");
-			ConfirmStatus confirmStatus = confirmStatusService.findById(personId);
-				if(confirmStatus !=null){
-					Map<String,Boolean> statusMap =  new HashMap<String,Boolean>(); 
-					
-						statusMap.put("SFFlag", confirmStatus.getSfEntityFlag());
-						statusMap.put("PexFlag", confirmStatus.getPexUpdateFlag());
-						statusMap.put("DocFlag", confirmStatus.getDocGenFlag());
-						pos.setStatuses(statusMap);
-					
-				}
-				else
-				{
-					pos.setStatuses(null);
-				}
-			returnPositions.add(pos);}
+			
+				
+				
+			returnPositions.add(pos);
+			}}
 			
 		}
 		
 		// add the item till the DB has an entry of ongoing 
 		
+		List<ConfirmStatus> confirmStatuses =  confirmStatusService.findByCountryDepartment(paraMap.get("company"), paraMap.get("department"));
 		
+		for(ConfirmStatus confirmStatus : confirmStatuses){
+			HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=perPersonUuid eq '"+confirmStatus.getId()+"'&$format=json&$expand=personalInfoNav&$select=personIdExternal,personalInfoNav/firstName,personalInfoNav/lastName");
+			String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
+			JSONObject personResponseObject = new JSONObject(personResponseString); 
+			String personId = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0).getString("personIdExternal");
+			HttpResponse empResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+personId+"'&$format=json"
+					+ "&$expand=positionNav,userNav,"
+				+ "positionNav/employeeClassNav,userNav/personKeyNav"
+				+ "&$select=userId,startDate,customString11,position,"
+				+ "positionNav/externalName_localized,"
+				+ "positionNav/externalName_defaultValue,"
+				+ "positionNav/payGrade,positionNav/jobTitle,"
+				+ "userNav/userId,userNav/username,userNav/defaultFullName,"
+				+ "userNav/firstName,userNav/lastName,"
+				+ "positionNav/employeeClassNav/label_localized,"
+				+ "positionNav/employeeClassNav/label_defaultValue");
+			
+			String empResponseJsonString = EntityUtils.toString(empResponse.getEntity(), "UTF-8");
+			JSONObject empResponseObject = new JSONObject(empResponseJsonString);
+			JSONObject empResultObject = empResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+			
+			DashBoardPositionClass pos = new DashBoardPositionClass();
+			pos.setPayGrade(empResultObject.getJSONObject("positionNav").getString("payGrade"));
+			pos.setPositionCode(empResultObject.getString("position"));
+			pos.setPositionTitle(empResultObject.getJSONObject("positionNav").getString("externalName_localized") !=null ? empResultObject.getJSONObject("positionNav").getString("externalName_localized"):empResultObject.getJSONObject("positionNav").getString("externalName_defaultValue"));
+			pos.setEmployeeClassName(empResultObject.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_localized") !=null ? empResultObject.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_localized"): empResultObject.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_defaultValue"));
+			pos.setUserFirstName(empResultObject.getJSONObject("userNav").getString("firstName"));
+			pos.setUserLastName(empResultObject.getJSONObject("userNav").getString("lastName"));
+			pos.setUserId(empResultObject.getJSONObject("userNav").getString("userId"));
+			pos.setVacant(false);
+			
+			String startDate = empResultObject.getString("customString11");
+			String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
+			long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
+			smilliSec = Objects.toString(smilliSecLong,null);
+			startDate = startDate.replace(startDate.substring(startDate.indexOf("(") + 1, startDate.lastIndexOf(")")), smilliSec);
+			pos.setStartDate(startDate);
+			
+			long diffInMillies =  Math.abs(smilliSecLong - today.getTime());
+			long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+			pos.setDayDiff(Objects.toString(diff,null)); // calculate day difference
+			
+			Map<String,String> statusMap =  new HashMap<String,String>(); 
+					
+			statusMap.put("SFFlag", confirmStatus.getSfEntityFlag());
+			statusMap.put("PexFlag", confirmStatus.getPexUpdateFlag());
+			statusMap.put("DocFlag", confirmStatus.getDocGenFlag());
+			pos.setStatuses(statusMap);
+			
+			returnPositions.add(pos);
+		}
 		// return the JSON Object
 		return ResponseEntity.ok().body(returnPositions);
 		
@@ -1332,8 +1379,12 @@ public class PreHireManagerController {
 						}
 					// creating entry for the confirm status flags update
 					String personId =docGenerationObject.getJSONObject("PerPerson").getString("perPersonUuid");
+					String company =docGenerationObject.getJSONObject("EmpJob").getString("company");
+					String department =docGenerationObject.getJSONObject("EmpJob").getString("department");
 					ConfirmStatus confirmStatus = new ConfirmStatus();
 					confirmStatus.setId(personId);
+					confirmStatus.setCompany(company);
+					confirmStatus.setDepartment(department);
 					confirmStatusService.create(confirmStatus);
 					
 					Thread parentThread = new Thread(new Runnable(){	
@@ -1402,7 +1453,7 @@ public class PreHireManagerController {
 										}
 									}
 								}
-								confirmStatus.setSfEntityFlag(true);
+								confirmStatus.setSfEntityFlag("SUCCESS");
 								confirmStatusService.update(confirmStatus);
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("After SF Updates"+ timeStamp);
@@ -1536,7 +1587,7 @@ public class PreHireManagerController {
 												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
 //												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
 												
-												confirmStatus.setPexUpdateFlag(true);
+												confirmStatus.setPexUpdateFlag("SUCCESS");
 												confirmStatusService.update(confirmStatus);
 												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 												logger.debug("After Pex Updates"+ timeStamp);
@@ -1548,43 +1599,7 @@ public class PreHireManagerController {
 
 									pexThread.start();
 									
-									Thread docGenThread = new Thread(new Runnable(){
-										 @Override
-										  public void run(){
-											
-											try {
-//												logger.debug("Start Generation Doc:" + docGenerationObject.toString());
-												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-												logger.debug("Before Doc Gen "+ timeStamp);
-												HttpResponse response= generateDoc(docGenerationObject.toString());
-												if(response.getStatusLine().getStatusCode() == 200){
-													String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
-//													  String stringBody = response.getBody();
-//													  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
-													 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
-													 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
-//														 logger.debug("docJson.document " + docJson.getString("document"));
-//														 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
-														 confirmStatus.setDocGenFlag(true);
-														 confirmStatus.setDocument(docJson.getString("document"));
-														confirmStatusService.update(confirmStatus);
-//														 logger.debug("bytes " + decodedString);
-													 }
-												};
-												
-												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-												logger.debug("After Doc Gen "+ timeStamp);
-												 
-												
-												 
-												
-											} catch (URISyntaxException | IOException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NamingException e) {
-												// TODO Auto-generated catch block
-												e.printStackTrace();
-											} 
-											}});
 									
-									docGenThread.start();
 									
 								}
 								// delete the MDF Object
@@ -1595,7 +1610,48 @@ public class PreHireManagerController {
 								logger.debug("After MDF Delete"+ timeStamp);
 							}
 							
+							Thread docGenThread = new Thread(new Runnable(){
+								 @Override
+								  public void run(){
+									
+									try {
+//										logger.debug("Start Generation Doc:" + docGenerationObject.toString());
+										timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+										logger.debug("Before Doc Gen "+ timeStamp);
+										HttpResponse response= generateDoc(docGenerationObject.toString());
+										if(response.getStatusLine().getStatusCode() == 200){
+											String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+//											  String stringBody = response.getBody();
+											  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+											 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
+											 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
+												 logger.debug("docJson.document " + docJson.getString("document"));
+//												 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+												 confirmStatus.setDocGenFlag("SUCCESS");
+												 confirmStatus.setDocument(docJson.getString("document"));
+												
+//												 logger.debug("bytes " + decodedString);
+											 }
+											 else
+											 {
+												 confirmStatus.setDocGenFlag("FAILED");
+											 }
+											 confirmStatusService.update(confirmStatus);
+										};
+										
+										timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+										logger.debug("After Doc Gen "+ timeStamp);
+										 
+										
+										 
+										
+									} catch (URISyntaxException | IOException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NamingException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									} 
+									}});
 							
+							docGenThread.start();
 							}
 							catch (NamingException e) {
 								

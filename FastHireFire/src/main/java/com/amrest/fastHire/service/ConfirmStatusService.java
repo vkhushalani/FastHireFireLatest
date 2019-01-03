@@ -8,6 +8,7 @@ public interface ConfirmStatusService {
 	
 	public List<ConfirmStatus> findAll();
 	public ConfirmStatus findById(String id);
+	public List<ConfirmStatus> findByCountryDepartment(String company , String department);
 	public ConfirmStatus update(ConfirmStatus item);
 	public ConfirmStatus create(ConfirmStatus item);
 	public void deleteByObject(ConfirmStatus item);

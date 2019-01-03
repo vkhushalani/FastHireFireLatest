@@ -10,7 +10,8 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "\"com.amrest.ph.db::Table.FHD_CONFIRM_STATUS\"", schema = "AMREST_PREHIRE")
 @NamedQueries({ 
-		@NamedQuery(name = "ConfirmStatus.findAll", query = "SELECT f FROM CodeListText f"),
+		@NamedQuery(name = "ConfirmStatus.findAll", query = "SELECT cs FROM ConfirmStatus cs"),
+		@NamedQuery(name = "ConfirmStatus.findByCountryDepartment", query = "SELECT cs FROM ConfirmStatus cs where cs.company = :company AND cs.department= :department")
 		
 })
 public class ConfirmStatus {
@@ -19,17 +20,23 @@ public class ConfirmStatus {
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(164)")
 	private String id;
 	
-	@Column(name = "\"SF_ENTITY\"", columnDefinition = "BOOLEAN")
-	private Boolean sfEntityFlag = false;
+	@Column(name = "\"SF_ENTITY\"", columnDefinition = "VARCHAR(16)")
+	private String sfEntityFlag = "BEGIN";
 	
-	@Column(name = "\"PEX\"", columnDefinition = "BOOLEAN)")
-	private Boolean pexUpdateFlag = false;
+	@Column(name = "\"PEX\"", columnDefinition = "VARCHAR(16)")
+	private String pexUpdateFlag = "BEGIN";
 	
-	@Column(name = "\"DOC_GEN\"", columnDefinition = "BOOLEAN")
-	private Boolean docGenFlag = false;
-
+	@Column(name = "\"DOC_GEN\"", columnDefinition = "VARCHAR(16)")
+	private String docGenFlag = "BEGIN";
+	
 	@Column(name = "\"DOCUMENT\"", columnDefinition = "BLOB")
-	private String document;	
+	private String document;
+	
+	@Column(name = "\"COMPANY\"", columnDefinition = "VARCHAR(32)")
+	private String company;
+
+	@Column(name = "\"DEPARTMENT\"", columnDefinition = "VARCHAR(32)")
+	private String department;	
 	
 	public String getId() {
 		return id;
@@ -39,19 +46,19 @@ public class ConfirmStatus {
 		this.id = id;
 	}
 
-	public Boolean getSfEntityFlag() {
+	public String getSfEntityFlag() {
 		return sfEntityFlag;
 	}
 
-	public void setSfEntityFlag(Boolean sfEntityFlag) {
+	public void setSfEntityFlag(String sfEntityFlag) {
 		this.sfEntityFlag = sfEntityFlag;
 	}
 
-	public Boolean getPexUpdateFlag() {
+	public String getPexUpdateFlag() {
 		return pexUpdateFlag;
 	}
 
-	public void setPexUpdateFlag(Boolean pexUpdateFlag) {
+	public void setPexUpdateFlag(String pexUpdateFlag) {
 		this.pexUpdateFlag = pexUpdateFlag;
 	}
 
@@ -63,12 +70,28 @@ public class ConfirmStatus {
 		this.document = document;
 	}
 
-	public Boolean getDocGenFlag() {
+	public String getDocGenFlag() {
 		return docGenFlag;
 	}
 
-	public void setDocGenFlag(Boolean docGenFlag) {
+	public void setDocGenFlag(String docGenFlag) {
 		this.docGenFlag = docGenFlag;
+	}
+
+	public String getCompany() {
+		return company;
+	}
+
+	public void setCompany(String company) {
+		this.company = company;
+	}
+
+	public String getDepartment() {
+		return department;
+	}
+
+	public void setDepartment(String department) {
+		this.department = department;
 	}
 
 

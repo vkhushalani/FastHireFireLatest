@@ -15,7 +15,7 @@ public class DashBoardPositionClass {
 	private String employeeClassName;
 	private String dayDiff;
 	private Boolean vacant;
-	private Map<String,Boolean> statuses;
+	private Map<String,String> statuses;
 	
 	public String getPositionTitle() {
 		return positionTitle;
@@ -83,10 +83,10 @@ public class DashBoardPositionClass {
 	public void setLastUpdatedDate(String lastUpdatedDate) {
 		this.lastUpdatedDate = lastUpdatedDate;
 	}
-	public Map<String,Boolean> getStatuses() {
+	public Map<String,String> getStatuses() {
 		return statuses;
 	}
-	public void setStatuses(Map<String,Boolean> statuses) {
+	public void setStatuses(Map<String,String> statuses) {
 		this.statuses = statuses;
 	}
 
