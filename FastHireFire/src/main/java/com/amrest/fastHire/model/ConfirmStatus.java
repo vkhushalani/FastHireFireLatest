@@ -1,8 +1,10 @@
 package com.amrest.fastHire.model;
 
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Lob;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
@@ -29,14 +31,18 @@ public class ConfirmStatus {
 	@Column(name = "\"DOC_GEN\"", columnDefinition = "VARCHAR(16)")
 	private String docGenFlag = "BEGIN";
 	
+	@Lob
 	@Column(name = "\"DOCUMENT\"", columnDefinition = "BLOB")
-	private String document;
+	private byte[] document;
 	
 	@Column(name = "\"COMPANY\"", columnDefinition = "VARCHAR(32)")
 	private String company;
 
 	@Column(name = "\"DEPARTMENT\"", columnDefinition = "VARCHAR(32)")
 	private String department;	
+	
+	@Column(name = "\"POSITION\"", columnDefinition = "VARCHAR(32)")
+	private String position;	
 	
 	public String getId() {
 		return id;
@@ -62,11 +68,11 @@ public class ConfirmStatus {
 		this.pexUpdateFlag = pexUpdateFlag;
 	}
 
-	public String getDocument() {
+	public byte[] getDocument() {
 		return document;
 	}
 
-	public void setDocument(String document) {
+	public void setDocument(byte[] document) {
 		this.document = document;
 	}
 
@@ -92,6 +98,14 @@ public class ConfirmStatus {
 
 	public void setDepartment(String department) {
 		this.department = department;
+	}
+
+	public String getPosition() {
+		return position;
+	}
+
+	public void setPosition(String position) {
+		this.position = position;
 	}
 
 

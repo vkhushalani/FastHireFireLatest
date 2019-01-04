@@ -9,6 +9,8 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
+import javax.sql.rowset.serial.SerialBlob;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
@@ -313,6 +316,7 @@ public class PreHireManagerController {
 				
 			String personuuId = ongoingPos.getJSONObject("userNav").getJSONObject("personKeyNav").getString("perPersonUuid");
 			ConfirmStatus confirmStatus = confirmStatusService.findById(personuuId);
+			logger.debug("confirmStatus" + confirmStatus);
 			if(confirmStatus == null){
 				
 			DashBoardPositionClass pos = new DashBoardPositionClass();
@@ -325,7 +329,7 @@ public class PreHireManagerController {
 			pos.setUserId(ongoingPos.getJSONObject("userNav").getString("userId"));
 //			pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
 			pos.setVacant(false);
-			
+			pos.setStatuses(null);
 			String startDate = ongoingPos.getString("customString11");
 			String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
 			long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
@@ -350,46 +354,43 @@ public class PreHireManagerController {
 		List<ConfirmStatus> confirmStatuses =  confirmStatusService.findByCountryDepartment(paraMap.get("company"), paraMap.get("department"));
 		
 		for(ConfirmStatus confirmStatus : confirmStatuses){
-			HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=perPersonUuid eq '"+confirmStatus.getId()+"'&$format=json&$expand=personalInfoNav&$select=personIdExternal,personalInfoNav/firstName,personalInfoNav/lastName");
+			HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=perPersonUuid eq '"+confirmStatus.getId()+"'&$format=json&$select=personIdExternal");
 			String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
 			JSONObject personResponseObject = new JSONObject(personResponseString); 
-			String personId = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0).getString("personIdExternal");
-			HttpResponse empResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+personId+"'&$format=json"
-					+ "&$expand=positionNav,userNav,"
-				+ "positionNav/employeeClassNav,userNav/personKeyNav"
-				+ "&$select=userId,startDate,customString11,position,"
-				+ "positionNav/externalName_localized,"
-				+ "positionNav/externalName_defaultValue,"
-				+ "positionNav/payGrade,positionNav/jobTitle,"
-				+ "userNav/userId,userNav/username,userNav/defaultFullName,"
-				+ "userNav/firstName,userNav/lastName,"
-				+ "positionNav/employeeClassNav/label_localized,"
-				+ "positionNav/employeeClassNav/label_defaultValue");
+			personResponseObject = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+			
+			
+			HttpResponse userResponse = destClient.callDestinationGET("/User", "?$filter=userId  eq '"+personResponseObject.getString("personIdExternal")+"'&$format=json&$select=userId,lastName,firstName");
+			
+			String userResponseString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+			JSONObject userResponseObject = new JSONObject(userResponseString); 
+			userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+			
+			HttpResponse empResponse = destClient.callDestinationGET("/Position","?$filter=code eq '"+confirmStatus.getPosition()+"'&$format=json"
+					+"&$expand=employeeClassNav"
+					+ "&$select="
+					+ "externalName_localized,"
+					+ "externalName_defaultValue,"
+					+ "payGrade,jobTitle,code,"
+					+ "employeeClassNav/label_defaultValue,"
+					+ "employeeClassNav/label_localized");
 			
 			String empResponseJsonString = EntityUtils.toString(empResponse.getEntity(), "UTF-8");
 			JSONObject empResponseObject = new JSONObject(empResponseJsonString);
 			JSONObject empResultObject = empResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 			
 			DashBoardPositionClass pos = new DashBoardPositionClass();
-			pos.setPayGrade(empResultObject.getJSONObject("positionNav").getString("payGrade"));
-			pos.setPositionCode(empResultObject.getString("position"));
-			pos.setPositionTitle(empResultObject.getJSONObject("positionNav").getString("externalName_localized") !=null ? empResultObject.getJSONObject("positionNav").getString("externalName_localized"):empResultObject.getJSONObject("positionNav").getString("externalName_defaultValue"));
-			pos.setEmployeeClassName(empResultObject.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_localized") !=null ? empResultObject.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_localized"): empResultObject.getJSONObject("positionNav").getJSONObject("employeeClassNav").getString("label_defaultValue"));
-			pos.setUserFirstName(empResultObject.getJSONObject("userNav").getString("firstName"));
-			pos.setUserLastName(empResultObject.getJSONObject("userNav").getString("lastName"));
-			pos.setUserId(empResultObject.getJSONObject("userNav").getString("userId"));
+			pos.setPayGrade(empResultObject.getString("payGrade"));
+			pos.setPositionCode(empResultObject.getString("code"));
+			pos.setPositionTitle(empResultObject.getString("externalName_localized") != null ? empResultObject.getString("externalName_localized") : empResultObject.getString("externalName_defaultValue"));//null check 
+			pos.setEmployeeClassName(empResultObject.getJSONObject("employeeClassNav").getString("label_localized")!= null ? empResultObject.getJSONObject("employeeClassNav").getString("label_localized") : empResultObject.getJSONObject("employeeClassNav").getString("label_defaultValue"));//null check
+			pos.setUserFirstName(userResponseObject.getString("firstName"));
+			pos.setUserLastName(userResponseObject.getString("lastName"));
+			pos.setUserId(personResponseObject.getString("personIdExternal"));
+			pos.setDayDiff(null);
 			pos.setVacant(false);
+			pos.setStartDate(null);
 			
-			String startDate = empResultObject.getString("customString11");
-			String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
-			long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
-			smilliSec = Objects.toString(smilliSecLong,null);
-			startDate = startDate.replace(startDate.substring(startDate.indexOf("(") + 1, startDate.lastIndexOf(")")), smilliSec);
-			pos.setStartDate(startDate);
-			
-			long diffInMillies =  Math.abs(smilliSecLong - today.getTime());
-			long diff = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
-			pos.setDayDiff(Objects.toString(diff,null)); // calculate day difference
 			
 			Map<String,String> statusMap =  new HashMap<String,String>(); 
 					
@@ -1381,10 +1382,12 @@ public class PreHireManagerController {
 					String personId =docGenerationObject.getJSONObject("PerPerson").getString("perPersonUuid");
 					String company =docGenerationObject.getJSONObject("EmpJob").getString("company");
 					String department =docGenerationObject.getJSONObject("EmpJob").getString("department");
+					String position =docGenerationObject.getJSONObject("EmpJob").getString("position");
 					ConfirmStatus confirmStatus = new ConfirmStatus();
 					confirmStatus.setId(personId);
 					confirmStatus.setCompany(company);
 					confirmStatus.setDepartment(department);
+					confirmStatus.setPosition(position);
 					confirmStatusService.create(confirmStatus);
 					
 					Thread parentThread = new Thread(new Runnable(){	
@@ -1587,10 +1590,6 @@ public class PreHireManagerController {
 												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
 //												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
 												
-												confirmStatus.setPexUpdateFlag("SUCCESS");
-												confirmStatusService.update(confirmStatus);
-												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-												logger.debug("After Pex Updates"+ timeStamp);
 											} catch (URISyntaxException | IOException e) {
 												// TODO Auto-generated catch block
 												e.printStackTrace();
@@ -1602,6 +1601,11 @@ public class PreHireManagerController {
 									
 									
 								}
+
+								confirmStatus.setPexUpdateFlag("SUCCESS");
+								confirmStatusService.update(confirmStatus);
+								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+								logger.debug("After Pex Updates"+ timeStamp);
 								// delete the MDF Object
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("Before MDF DELETE "+ timeStamp);
@@ -1626,9 +1630,9 @@ public class PreHireManagerController {
 											 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
 											 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
 												 logger.debug("docJson.document " + docJson.getString("document"));
-//												 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+												 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
 												 confirmStatus.setDocGenFlag("SUCCESS");
-												 confirmStatus.setDocument(docJson.getString("document"));
+												 confirmStatus.setDocument(decodedString);
 												
 //												 logger.debug("bytes " + decodedString);
 											 }
@@ -1678,11 +1682,25 @@ public class PreHireManagerController {
 	}
 	
 	@GetMapping(value = "/DocDownload/{personId}")
-	public ResponseEntity <?> downloadDocument(@PathVariable("personId") String personId) throws UnsupportedEncodingException{
-		ConfirmStatus confirmStatus = confirmStatusService.findById(personId);
-		byte[] decodedString = Base64.decodeBase64(new String(confirmStatus.getDocument()).getBytes("UTF-8"));
+	public ResponseEntity <?> downloadDocument(@PathVariable("personId") String personId) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		
+		HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=personIdExternal eq '"+personId+"'&$format=json&$select=perPersonUuid");
+		String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
+		JSONObject personResponseObject = new JSONObject(personResponseString); 
+		personResponseObject = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		
+		ConfirmStatus confirmStatus = confirmStatusService.findById(personResponseObject.getString("perPersonUuid"));
+		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
 		confirmStatusService.deleteByObject(confirmStatus);
-		return ResponseEntity.ok().body(decodedString);
+		return ResponseEntity.ok().body(confirmStatus.getDocument());
 	}
 	
 	public JSONObject  readJSONFile(String FilePath) throws IOException{ 

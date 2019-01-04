@@ -59,6 +59,10 @@ public class ConfirmStatusServiceImp implements ConfirmStatusService {
 	@Override
 	@Transactional
 	public void deleteByObject(ConfirmStatus item) {
+		
+		if (!em.contains(item)) {
+			item = em.merge(item);
+		}
 		em.remove(item);
 	}
 
