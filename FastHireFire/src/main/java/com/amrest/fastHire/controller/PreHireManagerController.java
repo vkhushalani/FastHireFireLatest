@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -1639,6 +1640,9 @@ public class PreHireManagerController {
 											 else
 											 {
 												 confirmStatus.setDocGenFlag("FAILED");
+												 byte[] jsonPayloadBytes = docGenerationObject.toString().getBytes(Charset.forName("UTF-8"));
+												 
+												 confirmStatus.setDocPayload(jsonPayloadBytes);
 											 }
 											 confirmStatusService.update(confirmStatus);
 										};
@@ -1701,6 +1705,57 @@ public class PreHireManagerController {
 		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
 		confirmStatusService.deleteByObject(confirmStatus);
 		return ResponseEntity.ok().body(confirmStatus.getDocument());
+	}
+	
+	@GetMapping(value = "/ReGenerateDoc/{personId}")
+	public ResponseEntity <?> ReGenerateDocument(@PathVariable("personId") String personId) throws NamingException, ClientProtocolException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+		
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		
+		
+		HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=personIdExternal eq '"+personId+"'&$format=json&$select=perPersonUuid");
+		String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
+		JSONObject personResponseObject = new JSONObject(personResponseString); 
+		personResponseObject = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		
+		ConfirmStatus confirmStatus = confirmStatusService.findById(personResponseObject.getString("perPersonUuid"));
+		String str = new String(confirmStatus.getDocPayload(), "UTF-8");
+		
+		HttpResponse response= generateDoc(str);
+		if(response.getStatusLine().getStatusCode() == 200){
+			String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+//			  String stringBody = response.getBody();
+			  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+			 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
+			 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
+				 logger.debug("docJson.document " + docJson.getString("document"));
+				 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+				 confirmStatus.setDocGenFlag("SUCCESS");
+				 confirmStatus.setDocument(decodedString);
+				 confirmStatusService.update(confirmStatus);
+				 return ResponseEntity.ok().body("SUCCESS");
+//				 logger.debug("bytes " + decodedString);
+			 }
+			 else
+			 {
+				 confirmStatus.setDocGenFlag("FAILED");
+				 byte[] jsonPayloadBytes = str.getBytes(Charset.forName("UTF-8"));
+				 
+				 confirmStatus.setDocPayload(jsonPayloadBytes);
+				 confirmStatusService.update(confirmStatus);
+			 }
+			 
+		};
+		
+//		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
+//		confirmStatusService.deleteByObject(confirmStatus);
+		return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
+		
 	}
 	
 	public JSONObject  readJSONFile(String FilePath) throws IOException{ 

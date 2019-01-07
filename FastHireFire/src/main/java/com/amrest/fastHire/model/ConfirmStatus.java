@@ -35,6 +35,10 @@ public class ConfirmStatus {
 	@Column(name = "\"DOCUMENT\"", columnDefinition = "BLOB")
 	private byte[] document;
 	
+	@Lob
+	@Column(name = "\"DOC_PAYLOAD\"", columnDefinition = "BLOB")
+	private byte[] docPayload;
+	
 	@Column(name = "\"COMPANY\"", columnDefinition = "VARCHAR(32)")
 	private String company;
 
@@ -106,6 +110,14 @@ public class ConfirmStatus {
 
 	public void setPosition(String position) {
 		this.position = position;
+	}
+
+	public byte[] getDocPayload() {
+		return docPayload;
+	}
+
+	public void setDocPayload(byte[] docPayload) {
+		this.docPayload = docPayload;
 	}
 
 
