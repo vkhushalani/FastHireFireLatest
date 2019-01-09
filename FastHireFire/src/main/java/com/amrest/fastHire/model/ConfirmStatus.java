@@ -1,6 +1,8 @@
 package com.amrest.fastHire.model;
 
 
+import java.util.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -23,21 +25,19 @@ public class ConfirmStatus {
 	private String id;
 	
 	@Column(name = "\"SF_ENTITY\"", columnDefinition = "VARCHAR(16)")
-	private String sfEntityFlag = "BEGIN";
+	private String sfEntityFlag = "";
 	
 	@Column(name = "\"PEX\"", columnDefinition = "VARCHAR(16)")
-	private String pexUpdateFlag = "BEGIN";
+	private String pexUpdateFlag = "";
 	
 	@Column(name = "\"DOC_GEN\"", columnDefinition = "VARCHAR(16)")
-	private String docGenFlag = "BEGIN";
+	private String docGenFlag = "";
 	
-	@Lob
-	@Column(name = "\"DOCUMENT\"", columnDefinition = "BLOB")
-	private byte[] document;
+	@Column(name = "\"UPDATED_ON\"", columnDefinition = "SECONDDATE")
+	private Date updatedOn;
 	
-	@Lob
-	@Column(name = "\"DOC_PAYLOAD\"", columnDefinition = "BLOB")
-	private byte[] docPayload;
+	@Column(name = "\"ENTITY_NAME\"", columnDefinition = "VARCHAR(16)")
+	private String entityName;
 	
 	@Column(name = "\"COMPANY\"", columnDefinition = "VARCHAR(32)")
 	private String company;
@@ -72,13 +72,6 @@ public class ConfirmStatus {
 		this.pexUpdateFlag = pexUpdateFlag;
 	}
 
-	public byte[] getDocument() {
-		return document;
-	}
-
-	public void setDocument(byte[] document) {
-		this.document = document;
-	}
 
 	public String getDocGenFlag() {
 		return docGenFlag;
@@ -112,13 +105,22 @@ public class ConfirmStatus {
 		this.position = position;
 	}
 
-	public byte[] getDocPayload() {
-		return docPayload;
+	public String getEntityName() {
+		return entityName;
 	}
 
-	public void setDocPayload(byte[] docPayload) {
-		this.docPayload = docPayload;
+	public void setEntityName(String entityName) {
+		this.entityName = entityName;
 	}
+
+	public Date getUpdatedOn() {
+		return updatedOn;
+	}
+
+	public void setUpdatedOn(Date updatedOn) {
+		this.updatedOn = updatedOn;
+	}
+
 
 
 }

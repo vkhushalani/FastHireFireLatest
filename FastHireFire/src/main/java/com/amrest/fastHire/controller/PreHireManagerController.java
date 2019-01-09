@@ -5,13 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.sql.Blob;
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -32,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
-import javax.sql.rowset.serial.SerialBlob;
+
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
@@ -111,6 +107,7 @@ public class PreHireManagerController {
 	 public static final String pexDestinationName = "FastHirePEX";
 	 public static final String docdestinationName =  "DocumentGeneration";
 	 String timeStamp;
+	 int counter;
 	 
 	 public static final Integer  padStartDate  = 15;
 	 public static final Integer  confirmStartDateDiffDays  =  2;
@@ -355,6 +352,9 @@ public class PreHireManagerController {
 		List<ConfirmStatus> confirmStatuses =  confirmStatusService.findByCountryDepartment(paraMap.get("company"), paraMap.get("department"));
 		
 		for(ConfirmStatus confirmStatus : confirmStatuses){
+			
+			Date confirmDate  = dateformatter.parse(dateformatter.format(confirmStatus.getUpdatedOn()));
+			if(confirmDate.equals(today)){
 			HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=perPersonUuid eq '"+confirmStatus.getId()+"'&$format=json&$select=personIdExternal");
 			String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
 			JSONObject personResponseObject = new JSONObject(personResponseString); 
@@ -401,6 +401,7 @@ public class PreHireManagerController {
 			pos.setStatuses(statusMap);
 			
 			returnPositions.add(pos);
+			}
 		}
 		// return the JSON Object
 		return ResponseEntity.ok().body(returnPositions);
@@ -624,7 +625,7 @@ public class PreHireManagerController {
 							tFieldGroup.getFieldGroup().setFieldGroupSeq(tFieldGroup.getFieldGroupSeq());
 							FieldGroupText fieldGroupText = fieldGroupTextService.findByFieldGroupLanguage(tFieldGroup.getFieldGroupId(),compareMap.get("locale"));
 							if(fieldGroupText !=null){
-								tFieldGroup.getFieldGroup().setDescription(fieldGroupText.getDescription());
+								tFieldGroup.getFieldGroup().setName(fieldGroupText.getName());
 							}
 						    
 							String jsonString = gson.toJson(tFieldGroup.getFieldGroup());
@@ -1355,7 +1356,7 @@ public class PreHireManagerController {
 					
 					// creating map for other requests.
 					
-					JSONObject docGenerationObject = new JSONObject();
+					JSONObject sfentityObject = new JSONObject();
 					
 					List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 					for (BatchSingleResponse batchResponse : batchResponses) {
@@ -1376,19 +1377,20 @@ public class PreHireManagerController {
 								 batchObject.put("employeeClass", employeeClassConst.getValue());
 								 }
 						}
-						docGenerationObject.put(enityKey, batchObject);
+						sfentityObject.put(enityKey, batchObject);
 						}
 						}
 					// creating entry for the confirm status flags update
-					String personId =docGenerationObject.getJSONObject("PerPerson").getString("perPersonUuid");
-					String company =docGenerationObject.getJSONObject("EmpJob").getString("company");
-					String department =docGenerationObject.getJSONObject("EmpJob").getString("department");
-					String position =docGenerationObject.getJSONObject("EmpJob").getString("position");
+					String personId =sfentityObject.getJSONObject("PerPerson").getString("perPersonUuid");
+					String company =sfentityObject.getJSONObject("EmpJob").getString("company");
+					String department =sfentityObject.getJSONObject("EmpJob").getString("department");
+					String position =sfentityObject.getJSONObject("EmpJob").getString("position");
 					ConfirmStatus confirmStatus = new ConfirmStatus();
 					confirmStatus.setId(personId);
 					confirmStatus.setCompany(company);
 					confirmStatus.setDepartment(department);
 					confirmStatus.setPosition(position);
+					confirmStatus.setUpdatedOn(new Date());
 					confirmStatusService.create(confirmStatus);
 					
 					Thread parentThread = new Thread(new Runnable(){	
@@ -1400,7 +1402,9 @@ public class PreHireManagerController {
 								
 								
 								 //updating the startDate and employeeClass to confirm the hire
-								
+								confirmStatus.setUpdatedOn(new Date());
+								confirmStatus.setSfEntityFlag("BEGIN");
+								confirmStatusService.update(confirmStatus);
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("before SF Updates"+ timeStamp);
 								
@@ -1452,16 +1456,29 @@ public class PreHireManagerController {
 									String postJsonString = getresultObj.toString();
 									
 									HttpResponse updateresponse = destClient.callDestinationPOST("/upsert", "?$format=json&purgeType=full",postJsonString);
+//									String entityPostResponseJsonString = EntityUtils.toString(updateresponse.getEntity(), "UTF-8");
+									if(updateresponse.getStatusLine().getStatusCode() != 200){
+										confirmStatus.setUpdatedOn(new Date());
+										confirmStatus.setSfEntityFlag("FAILED");
+										confirmStatus.setEntityName(entity.getKey());
+										confirmStatusService.update(confirmStatus);
+									}
 //									logger.debug(entity.getKey() + " updateresponse" + updateresponse);
 											}
 										}
 									}
 								}
+								if(!confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")){
+									confirmStatus.setUpdatedOn(new Date());
 								confirmStatus.setSfEntityFlag("SUCCESS");
-								confirmStatusService.update(confirmStatus);
+								confirmStatusService.update(confirmStatus); }
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("After SF Updates"+ timeStamp);
 							
+								confirmStatus.setUpdatedOn(new Date());
+								confirmStatus.setPexUpdateFlag("BEGIN");
+								confirmStatusService.update(confirmStatus);
+								
 							DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 							
 							// updating the SF mdf to the pex 
@@ -1522,6 +1539,7 @@ public class PreHireManagerController {
 								PexClient pexClient = new PexClient();
 								pexClient.setDestination(pexDestinationName);
 								pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
+								counter = 0;
 								
 								for(String pexFormMapKey : pexFormMap.keySet()){
 									Map <String,String> pexFormJsonRepMap = new HashMap<String,String>();
@@ -1577,7 +1595,7 @@ public class PreHireManagerController {
 											
 										}
 									}
-//									logger.debug("pexFormPostString : "+pexFormPostString);
+									logger.debug("pexFormPostString : "+pexFormPostString);
 									final String finalPexFormPostString = pexFormPostString;
 									Thread pexThread = new Thread(new Runnable(){
 										 @Override
@@ -1589,7 +1607,33 @@ public class PreHireManagerController {
 												
 												HttpResponse pexPostResponse = pexClient.callDestinationPOST("api/v3/forms/submit", "", finalPexFormPostString);
 												String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(), "UTF-8");
-//												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
+												try {
+													
+													if(pexPostResponse.getStatusLine().getStatusCode() == 200){
+														new JSONObject(pexPostResponseJsonString);
+														counter = counter + 1;
+														if(counter == pexFormMap.keySet().size()){
+															confirmStatus.setUpdatedOn(new Date());
+															confirmStatus.setPexUpdateFlag("SUCCESS");
+															confirmStatusService.update(confirmStatus);
+														}
+													}
+													else
+													{
+														confirmStatus.setUpdatedOn(new Date());
+														confirmStatus.setPexUpdateFlag("FAILED");
+														confirmStatusService.update(confirmStatus);
+														
+													}
+												
+													
+												}
+												catch (JSONException ex) {
+													confirmStatus.setUpdatedOn(new Date());
+													confirmStatus.setPexUpdateFlag("FAILED");
+													confirmStatusService.update(confirmStatus);
+											    }
+												logger.debug("pexPostResponseJsonString : "+pexPostResponseJsonString);
 												
 											} catch (URISyntaxException | IOException e) {
 												// TODO Auto-generated catch block
@@ -1603,8 +1647,7 @@ public class PreHireManagerController {
 									
 								}
 
-								confirmStatus.setPexUpdateFlag("SUCCESS");
-								confirmStatusService.update(confirmStatus);
+							
 								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 								logger.debug("After Pex Updates"+ timeStamp);
 								// delete the MDF Object
@@ -1615,51 +1658,7 @@ public class PreHireManagerController {
 								logger.debug("After MDF Delete"+ timeStamp);
 							}
 							
-							Thread docGenThread = new Thread(new Runnable(){
-								 @Override
-								  public void run(){
-									
-									try {
-//										logger.debug("Start Generation Doc:" + docGenerationObject.toString());
-										timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-										logger.debug("Before Doc Gen "+ timeStamp);
-										HttpResponse response= generateDoc(docGenerationObject.toString());
-										if(response.getStatusLine().getStatusCode() == 200){
-											String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
-//											  String stringBody = response.getBody();
-											  logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
-											 JSONObject docJson=  new JSONObject(docGenerationResponseJsonString);
-											 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
-												 logger.debug("docJson.document " + docJson.getString("document"));
-												 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
-												 confirmStatus.setDocGenFlag("SUCCESS");
-												 confirmStatus.setDocument(decodedString);
-												
-//												 logger.debug("bytes " + decodedString);
-											 }
-											 else
-											 {
-												 confirmStatus.setDocGenFlag("FAILED");
-												 byte[] jsonPayloadBytes = docGenerationObject.toString().getBytes(Charset.forName("UTF-8"));
-												 
-												 confirmStatus.setDocPayload(jsonPayloadBytes);
-											 }
-											 confirmStatusService.update(confirmStatus);
-										};
-										
-										timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-										logger.debug("After Doc Gen "+ timeStamp);
-										 
-										
-										 
-										
-									} catch (URISyntaxException | IOException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NamingException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									} 
-									}});
-							
-							docGenThread.start();
+						
 							}
 							catch (NamingException e) {
 								
@@ -1686,7 +1685,10 @@ public class PreHireManagerController {
 	}
 	
 	@GetMapping(value = "/DocDownload/{personId}")
-	public ResponseEntity <?> downloadDocument(@PathVariable("personId") String personId) throws NamingException, ClientProtocolException, IOException, URISyntaxException{
+	public ResponseEntity <?> downloadDocument(@PathVariable("personId") String personId) throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException, UnsupportedOperationException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+		Map<String,String> map = new HashMap<String,String>();
+		map.put("userId",personId);
+		
 		
 		DestinationClient destClient = new DestinationClient();
 		destClient.setDestName(destinationName);
@@ -1695,38 +1697,72 @@ public class PreHireManagerController {
 		destClient.setDestConfiguration();
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 		
-		
 		HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=personIdExternal eq '"+personId+"'&$format=json&$select=perPersonUuid");
 		String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
 		JSONObject personResponseObject = new JSONObject(personResponseString); 
 		personResponseObject = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 		
 		ConfirmStatus confirmStatus = confirmStatusService.findById(personResponseObject.getString("perPersonUuid"));
-		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
-		confirmStatusService.deleteByObject(confirmStatus);
-		return ResponseEntity.ok().body(confirmStatus.getDocument());
-	}
-	
-	@GetMapping(value = "/ReGenerateDoc/{personId}")
-	public ResponseEntity <?> ReGenerateDocument(@PathVariable("personId") String personId) throws NamingException, ClientProtocolException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
 		
-		DestinationClient destClient = new DestinationClient();
-		destClient.setDestName(destinationName);
-		destClient.setHeaderProvider();
-		destClient.setConfiguration();
-		destClient.setDestConfiguration();
-		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		confirmStatus.setUpdatedOn(new Date());
+		confirmStatus.setDocGenFlag("BEGIN");
+		 confirmStatusService.update(confirmStatus);
+		
+		 SimpleDateFormat dateformatter = new SimpleDateFormat(
+			      "yyyy-MM-dd");
+		 Date today = new Date();
+		 String dateString = dateformatter.format(today);
+		 
+		 BatchRequest batchRequest= new BatchRequest();
+			batchRequest.configureDestination(destinationName);
+		 
+		 
+		Map<String,String> entityMap = new HashMap<String,String>();  
 		
 		
-		HttpResponse personResponse = destClient.callDestinationGET("/PerPerson", "?$filter=personIdExternal eq '"+personId+"'&$format=json&$select=perPersonUuid");
-		String personResponseString = EntityUtils.toString(personResponse.getEntity(), "UTF-8");
-		JSONObject personResponseObject = new JSONObject(personResponseString); 
-		personResponseObject = personResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency,notes");
+		entityMap.put("EmpCompensation", "?$filter=userId eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=userId,startDate,payGroup,eventReason");
+		entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=userId,startDate,personIdExternal");
+		entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
+		entityMap.put("PerPersonal", "?$filter=personIdExternal eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
+		entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
+		entityMap.put("EmpJob", "?$filter=userId eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+		entityMap.put("PerPerson", "?$filter=personIdExternal  eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
+		entityMap.put("PerEmail", "?$filter=personIdExternal eq '"+map.get("userId")+"'&fromDate="+ dateString+ "&$format=json&$select=personIdExternal,emailAddress");
+		entityMap.put("cust_Additional_Information", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'&fromDate="+ dateString);
+		entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '"+map.get("userId")+"'&fromDate="+dateString+"&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
 		
-		ConfirmStatus confirmStatus = confirmStatusService.findById(personResponseObject.getString("perPersonUuid"));
-		String str = new String(confirmStatus.getDocPayload(), "UTF-8");
+		// reading the records and creating batch post body
 		
-		HttpResponse response= generateDoc(str);
+		for (Map.Entry<String,String> entity : entityMap.entrySet())  { 
+			batchRequest.createQueryPart("/"+entity.getKey()+ entity.getValue(), entity.getKey());
+		}
+		
+		// call Get Batch with all entities
+		batchRequest.callBatchPOST("/$batch", "");
+		
+		
+		// creating map for other requests.
+		
+		JSONObject docGenerationObject = new JSONObject();
+		
+		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+		for (BatchSingleResponse batchResponse : batchResponses) {
+//			logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
+			
+			JSONObject batchObject =  new JSONObject(batchResponse.getBody());
+			if(batchObject.getJSONObject("d").getJSONArray("results").length() !=0){
+				batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+				String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
+				String enityKey = batchResponseType.split("\\.")[1];
+
+			
+
+			docGenerationObject.put(enityKey, batchObject);
+			}
+			}
+		
+		HttpResponse response= generateDoc(docGenerationObject.toString());
 		if(response.getStatusLine().getStatusCode() == 200){
 			String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
 //			  String stringBody = response.getBody();
@@ -1735,28 +1771,27 @@ public class PreHireManagerController {
 			 if(docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
 				 logger.debug("docJson.document " + docJson.getString("document"));
 				 byte[] decodedString = Base64.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+				 confirmStatus.setUpdatedOn(new Date());
 				 confirmStatus.setDocGenFlag("SUCCESS");
-				 confirmStatus.setDocument(decodedString);
 				 confirmStatusService.update(confirmStatus);
-				 return ResponseEntity.ok().body("SUCCESS");
+				 return ResponseEntity.ok().body(decodedString);
 //				 logger.debug("bytes " + decodedString);
 			 }
 			 else
 			 {
+				 confirmStatus.setUpdatedOn(new Date());
 				 confirmStatus.setDocGenFlag("FAILED");
-				 byte[] jsonPayloadBytes = str.getBytes(Charset.forName("UTF-8"));
-				 
-				 confirmStatus.setDocPayload(jsonPayloadBytes);
 				 confirmStatusService.update(confirmStatus);
+			
 			 }
 			 
 		};
 		
 //		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
-//		confirmStatusService.deleteByObject(confirmStatus);
 		return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-		
 	}
+	
+
 	
 	public JSONObject  readJSONFile(String FilePath) throws IOException{ 
 		JSONObject jsonObject = null;
