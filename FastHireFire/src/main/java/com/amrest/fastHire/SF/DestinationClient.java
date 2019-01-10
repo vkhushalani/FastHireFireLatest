@@ -1,6 +1,7 @@
 package com.amrest.fastHire.SF;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -99,7 +100,7 @@ public class DestinationClient {
 	}
 	
 	@SuppressWarnings({ "resource", "deprecation" })
-	public HttpResponse callDestinationPOST(String path,String filter,String postJson) throws URISyntaxException, ClientProtocolException, IOException{
+	public HttpResponse callDestinationPOST(String path,String filter,String postJson) throws MalformedURLException, URISyntaxException {
 		String urlString = this.getDestProperty("URL");
 		URL url= new URL(urlString+path+filter);
 		URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
@@ -132,11 +133,25 @@ public class DestinationClient {
 				request.setHeader("Authorization", basicAuth);
 			}
 		
-		HttpResponse response = httpClient.execute(request);
+		HttpResponse response;
+		try {
+			response = httpClient.execute(request);
+			logger.debug("responseJson"+response);
+			logger.debug("Post urlString" + urlString +"responseJson " +  response );
+			
+			return response;
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			return null;
+//			e.printStackTrace();
+		} catch (IOException e) {
+			return null;
+			// TODO Auto-generated catch block
+//			e.printStackTrace();
+		}
 //		String responseJson = EntityUtils.toString(response.getEntity(), "UTF-8");
-		logger.debug("responseJson"+response);
-		logger.debug("Post urlString" + urlString +"responseJson " +  response );
-		return response;
+		
+		
 		
 	}
 	
