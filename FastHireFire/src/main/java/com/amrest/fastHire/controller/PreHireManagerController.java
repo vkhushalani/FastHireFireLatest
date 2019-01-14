@@ -1810,7 +1810,7 @@ public class PreHireManagerController {
 		String loggedInUser =  request.getUserPrincipal().getName();
 		Map<String,String> map = new HashMap<String,String>();  
 		
-		map.put("userid", personId);
+		map.put("userId", personId);
 		
 		SimpleDateFormat dateformatter = new SimpleDateFormat(
 			      "yyyy-MM-dd");
@@ -1860,21 +1860,16 @@ public class PreHireManagerController {
 		logger.debug("After Batch Call GET"+ timeStamp);
 		
 		
-		
-		// creating map for other requests.
-		
-		JSONObject sfentityObject = new JSONObject();
-		
 		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 		for (BatchSingleResponse batchResponse : batchResponses) {
-//			logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
+			logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
 			
 			JSONObject batchObject =  new JSONObject(batchResponse.getBody());
 			if(batchObject.getJSONObject("d").getJSONArray("results").length() !=0){
 				batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 				String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
 				String enityKey = batchResponseType.split("\\.")[1];
-//			logger.debug("enityKey" + enityKey);
+			logger.debug("enityKey" + enityKey);
 			entityResponseMap.put(enityKey, batchResponse.getBody());
 			}
 			}
@@ -2180,10 +2175,7 @@ public class PreHireManagerController {
 		return jsonObject;
 	}
 
-    public HttpResponse generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
-
-                                     {
-    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+    public HttpResponse generateDoc(String reqString) throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
    
 
                     logger.debug("Doc Genetration: gotRequest");
@@ -2231,95 +2223,13 @@ public class PreHireManagerController {
                     reqBodyObj.put("CompanyCode", company);
                     reqBodyObj.put("CompanyCode", "US001");
                     reqBodyObj.put("Gcc", "Z05");
-
                     reqBodyObj.put("HrisId", reqObject.getJSONObject("PerPerson").getString("personIdExternal"));
-
                     reqBodyObj.put("OutputType", "pdf");
-
                     reqBodyObj.put("Email", reqObject.getJSONObject("PerEmail").getString("emailAddress"));
-                    
                     reqBodyObj.put("OutputFileName", "Contract.pdf");
                     reqBodyObj.put("FileType", "PERSONAL");
                     
-                    JSONArray parameters = new JSONArray();
-
-                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_LAST_NAME").put("Value",
-
-                                                    reqObject.getJSONObject("PerPersonal").getString("lastName")));
-
-                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_FIRST_NAME").put("Value",
-
-                                                    reqObject.getJSONObject("PerPersonal").getString("firstName")));
-                    
-                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_PLACE_OF_BIRTH").put("Value",
-                    		
-                    		String.valueOf(reqObject.getJSONObject("PerPerson").get("placeOfBirth")).equalsIgnoreCase("null") ? "" : 
-                                                    reqObject.getJSONObject("PerPerson").getString("placeOfBirth")));
-                    
-                    String DOB = reqObject.getJSONObject("PerPerson").getString("dateOfBirth");
-                    DOB = DOB.substring(DOB.indexOf("(") + 1, DOB.indexOf(")"));
-                    Date dobDate = new Date(Long.parseLong(DOB));
-                    parameters.put(new JSONObject().put("Key", "CS_PERSONAL_INFO_DATE_OF_BIRTH").put("Value",sdf.format(dobDate)));
-
-                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUNAM").put("Value",
-                    		reqObject.has("cust_Additional_Information") ?
-                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUNAM")).equalsIgnoreCase("null") ? "" : 
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUNAM"):""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUVOR").put("Value",
-                    		reqObject.has("cust_Additional_Information") ?
-                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUVOR"):""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_SVNUM").put("Value",
-                    		reqObject.has("cust_Additional_Information") ?
-                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_SVNUM"):""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_STRNR").put("Value",
-                    		reqObject.has("cust_Additional_Information") ?
-                    		String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR"):""));
-                    		
-                    String sDateString = reqObject.getJSONObject("EmpJob").getString("startDate");
-                    sDateString = sDateString.substring(sDateString.indexOf("(") + 1, sDateString.indexOf(")"));
-                    Date sDate = new Date(Long.parseLong(sDateString));
-                    parameters.put(new JSONObject().put("Key", "CS_EMPLOYMENTINFO_START_DATE").put("Value",
-                                                    sdf.format(sDate)));
-
-                    parameters.put(new JSONObject().put("Key", "CS_JOBINFO_JOB_TITLE").put("Value",
-                    		String.valueOf(reqObject.getJSONObject("EmpJob").get("jobTitle")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("EmpJob").getString("jobTitle")));
-
-                    parameters.put(new JSONObject().put("Key", "CS_JOBINFO_PAY_GRADE").put("Value",
-                    		String.valueOf(reqObject.getJSONObject("EmpJob").get("payGrade")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("EmpJob").getString("payGrade")));
-
-                    parameters.put(new JSONObject().put("Key", "CS_PAYCOMPONENTRECURRING_P02HU_0010_PAYCOMPVALUE").put("Value",
-                    		reqObject.has("EmpPayCompRecurring") ? 
-                    		String.valueOf(reqObject.getJSONObject("EmpPayCompRecurring").get("paycompvalue")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue") : ""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ROUTINGNUMBER").put("Value",
-                    		reqObject.has("PaymentInformationV3") ? 
-                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).get("routingNumber")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).getString("routingNumber") : ""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_PAYMENTINFORMATIONDETAILV3_ACCOUNTNUMBER").put("Value",
-                    		reqObject.has("PaymentInformationV3") ? 
-                    		String.valueOf(reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).get("accountNumber")).equalsIgnoreCase("null") ? "" :
-                    			reqObject.getJSONObject("PaymentInformationV3").getJSONObject("toPaymentInformationDetailV3").getJSONArray("results").getJSONObject(0).getString("accountNumber") : ""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS1").put("Value",
-                    		reqObject.has("PerAddressDEFLT") ? 
-                    		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address1")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address1"):""));
-
-                    parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
-                    		reqObject.has("PerAddressDEFLT") ? 
-                    		String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase("null") ? "" :
-                                                    reqObject.getJSONObject("PerAddressDEFLT").getString("address2"):""));
-
+                    JSONArray parameters = getReqBodyObj(reqBodyObj, reqObject);
                     reqBodyObj.put("parameters", parameters);                    
                      timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
@@ -2343,9 +2253,95 @@ public class PreHireManagerController {
 
     }
 
+ // Get Document POST Body
+ 	private JSONArray getReqBodyObj(JSONObject reqBodyObj, JSONObject reqObject) {
+ 		JSONArray parameters = new JSONArray();
+ 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+ 		String fulltimeOrPartimeEN = "";
+ 		String fulltimeOrPartimeHU = "";
+ 		if (reqObject.getJSONObject("EmpJob").getInt("standardHours") >= 40) {
+ 			fulltimeOrPartimeEN = "full-time";
+ 		} else {
+ 			fulltimeOrPartimeEN = "part-time";
+ 		}
+ 		if (reqObject.getJSONObject("EmpJob").getInt("standardHours") >= 40) {
+ 			fulltimeOrPartimeHU = "teljes";
+ 		} else {
+ 			fulltimeOrPartimeHU = "részmunkaidos";
+ 		}
+ 		parameters.put(new JSONObject().put("Key", "CS_PERSONALINFO_LAST_NAME").put("Value",
+ 				reqObject.getJSONObject("PerPersonal").getString("lastName")));
+ 		parameters.put(new JSONObject().put("Key", "CS_PERSONALINFO_FIRST_NAME").put("Value",
+ 				reqObject.getJSONObject("PerPersonal").getString("firstName")));
+ 
+ 		parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_MUNAM").put("Value",
+ 				reqObject.has("cust_Additional_Information")
+ 						? String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUNAM"))
+ 								.equalsIgnoreCase("null") ? ""
+ 										: reqObject.getJSONObject("cust_Additional_Information").getString("cust_MUNAM")
+ 						: ""));
+
+ 		parameters.put(new JSONObject().put("Key", "CS_CUST_ADDITIONAL_INFORMATION_CUST_STRNR").put("Value",
+ 				reqObject.has("cust_Additional_Information")
+ 						? String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR"))
+ 								.equalsIgnoreCase("null") ? ""
+ 										: reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR")
+ 						: ""));
+ 		String sDateString = reqObject.getJSONObject("EmpJob").getString("startDate");
+ 		sDateString = sDateString.substring(sDateString.indexOf("(") + 1, sDateString.indexOf(")"));
+ 		Date sDate = new Date(Long.parseLong(sDateString));
+ 		parameters.put(new JSONObject().put("Key", "CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value", sdf.format(sDate)));
+ 		parameters.put(new JSONObject().put("Key", "CS_JOBINFO_JOB_TITLE").put("Value",
+ 				String.valueOf(reqObject.getJSONObject("EmpJob").get("jobTitle")).equalsIgnoreCase("null") ? ""
+ 						: reqObject.getJSONObject("EmpJob").getString("jobTitle")));
+ 	
+ 		parameters.put(new JSONObject().put("Key", "CS_PAYCOMPONENTRECURRING_P02HU_0010_PAYCOMPVALUE").put("Value",
+ 				reqObject.has("EmpPayCompRecurring")
+ 						? String.valueOf(reqObject.getJSONObject("EmpPayCompRecurring").get("paycompvalue"))
+ 								.equalsIgnoreCase("null") ? ""
+ 										: reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")
+ 						: ""));
+
+ 		parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
+ 				reqObject.has("PerAddressDEFLT")
+ 						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address1")).equalsIgnoreCase(
+ 								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address1")
+ 						: ""));
+ 		parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
+ 				reqObject.has("PerAddressDEFLT")
+ 						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase(
+ 								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address2")
+ 						: ""));
+
+ 		parameters.put(new JSONObject().put("Key", "CS_JOBINFO_CONTRACT_END_DATE").put("Value",
+ 				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? 
+ 						"" : reqObject.getJSONObject("EmpJob").getString("contractEndDate")	
+ 				));// Check for contractEndDate this
+ 		parameters.put(new JSONObject().put("Key", "CS_CALC3_FT_PT").put("Value", fulltimeOrPartimeEN));
+ 		parameters.put(new JSONObject().put("Key", "CS_CALC3_FT_PT").put("Value", fulltimeOrPartimeHU));
+ 		parameters.put(new JSONObject().put("Key", "CS_CALC4_DAILY_HOURS").put("Value",
+ 				reqObject.getJSONObject("EmpJob").getInt("standardHours") / 5));
+ 		return parameters;
+ 	}
+    
+ 	String identify_hours(String entityString){
+ 		String returnString;
+    	JSONObject entityObj = new JSONObject(entityString);
+//    	logger.debug("entityObj Object calc" + entityObj);
+    	int hours = entityObj.getInt("standardHours");
+    	
+    	if(hours >= 40)
+    	{returnString =  ">=40";}
+    	else
+    	{
+    		returnString = "<40";
+    	}
+    	
+    	return returnString;
+ 	}
     
     // age calculation function
-    String calculate_age(String entityString){
+    String compute_age(String entityString){
 //    	logger.debug("Start Calculate Age");
     	String returnString;
     	JSONObject entityObj = new JSONObject(entityString);
