@@ -2302,16 +2302,15 @@ public class PreHireManagerController {
  										: reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")
  						: ""));
 
- 		parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
- 				reqObject.has("PerAddressDEFLT")
- 						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address1")).equalsIgnoreCase(
- 								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address1")
- 						: ""));
- 		parameters.put(new JSONObject().put("Key", "CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
- 				reqObject.has("PerAddressDEFLT")
- 						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase(
- 								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address2")
- 						: ""));
+		parameters.put(new JSONObject().put("Key", "HU_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
+				formatDate(sDateString, "HUN", true)));
+		parameters.put(new JSONObject().put("Key", "HU_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
+				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
+						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), "HUN", true)));// Check
+																													// for
+																													// contractEndDate
+		return parameters;
+	}
 
  		parameters.put(new JSONObject().put("Key", "CS_JOBINFO_CONTRACT_END_DATE").put("Value",
  				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? 
@@ -2371,4 +2370,24 @@ public class PreHireManagerController {
     
     
 
+	}
+
+	private static String formatDate(String dateToFormat, Object locale, Boolean custom) {
+		if (custom == false) {
+			Date date = new Date(Long.parseLong(dateToFormat));
+			SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MMMM.dd", (Locale) locale);
+			return (sdf.format(date));
+		} else {
+
+			switch ((String) locale) {
+			case "HUN":
+				Date date = new Date(Long.parseLong(dateToFormat));
+				Calendar cal = Calendar.getInstance();
+				cal.setTime(date);
+				return (cal.get(Calendar.YEAR) + "." + hunLocale.values()[cal.get(Calendar.MONTH)] + "."
+						+ cal.get(Calendar.DAY_OF_MONTH));
+			}
+		}
+		return dateToFormat;
+	}
 }
