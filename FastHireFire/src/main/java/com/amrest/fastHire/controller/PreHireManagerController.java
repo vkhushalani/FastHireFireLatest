@@ -2387,7 +2387,7 @@ public class PreHireManagerController {
 			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
 		logger.debug("Doc Genetration: gotRequest");
-
+		logger.debug("GenerateDoc reqString:" + reqString);
 		JSONObject reqObject = new JSONObject(reqString);
 
 		JSONObject reqBodyObj = new JSONObject();
@@ -2495,6 +2495,7 @@ public class PreHireManagerController {
 		// sDateString = sDateString.substring(sDateString.indexOf("(") + 1,
 		// sDateString.indexOf(")"));
 		// Date sDate = new Date(Long.parseLong(sDateString));
+		logger.debug("EN_CS_EMPLOYMENTDETAILS_HIRE_DATE" + sDateString);
 		parameters.put(new JSONObject().put("Key", "EN_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
 				formatDate(sDateString, Locale.US, false)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_JOB_TITLE").put("Value",
@@ -2519,6 +2520,8 @@ public class PreHireManagerController {
 								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address2")
 						: ""));
 
+		logger.debug(
+				"EN_CS_JOBINFO_CONTRACT_END_DATE" + reqObject.getJSONObject("EmpJob").getString("contractEndDate"));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
 				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
 						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), Locale.US,
@@ -2528,7 +2531,7 @@ public class PreHireManagerController {
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC3_FT_PT").put("Value", fulltimeOrPartimeHU));
 		parameters.put(new JSONObject().put("Key", "EN_CS_CALC4_DAILY_HOURS").put("Value",
 				reqObject.getJSONObject("EmpJob").getInt("standardHours") / 5));
-
+		logger.debug("HU_CS_EMPLOYMENTDETAILS_HIRE_DATE" + sDateString);
 		parameters.put(new JSONObject().put("Key", "HU_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
 				formatDate(sDateString, "HUN", true)));
 		parameters.put(new JSONObject().put("Key", "HU_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
@@ -2593,7 +2596,7 @@ public class PreHireManagerController {
 		dateToFormat = dateToFormat.substring(dateToFormat.indexOf("(") + 1, dateToFormat.indexOf(")"));
 		if (custom == false) {
 			Date date = new Date(Long.parseLong(dateToFormat));
-			SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM YYYY", (Locale) locale);
+			SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", (Locale) locale);
 			return (sdf.format(date));
 		} else {
 			switch ((String) locale) {
@@ -2601,7 +2604,7 @@ public class PreHireManagerController {
 				Date date = new Date(Long.parseLong(dateToFormat));
 				Calendar cal = Calendar.getInstance();
 				cal.setTime(date);
-				return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[cal.get(Calendar.MONTH)] + " "
+				return (cal.get(Calendar.YEAR) + " " + hunLocale.values()[cal.get(Calendar.MONTH)] + " "
 						+ cal.get(Calendar.DAY_OF_MONTH));
 			}
 		}
@@ -2611,10 +2614,10 @@ public class PreHireManagerController {
 	private String formatLastYearDay(String dateToFormat, Object locale, boolean custom) {
 		dateToFormat = dateToFormat.substring(dateToFormat.indexOf("(") + 1, dateToFormat.indexOf(")"));
 		Date date = new Date(Long.parseLong(dateToFormat));
-		SimpleDateFormat sdf_YYYY = new SimpleDateFormat("YYYY");
+		SimpleDateFormat sdf_YYYY = new SimpleDateFormat("yyyy");
 		if (custom == false) {
 			Date decMonth = new Date(1577786942000L);
-			SimpleDateFormat sdf_MMDD = new SimpleDateFormat("dd MMMM", (Locale) locale);
+			SimpleDateFormat sdf_MMDD = new SimpleDateFormat("MMMM dd,", (Locale) locale);
 			return (sdf_MMDD.format(decMonth) + " " + (Integer.parseInt(sdf_YYYY.format(date)) + 1));
 		} else {
 			switch ((String) locale) {
