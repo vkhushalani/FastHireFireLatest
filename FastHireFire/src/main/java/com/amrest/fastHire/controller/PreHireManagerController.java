@@ -100,7 +100,7 @@ public class PreHireManagerController {
 	public static final String docdestinationName = "DocumentGeneration";
 
 	private enum hunLocale {
-		Január, Február, Március, Aprilis, Május, Junius, Julius, Augusztus, Szeptember, Október, November, December
+		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
 	};
 
 	String timeStamp;
@@ -1520,6 +1520,7 @@ public class PreHireManagerController {
 		confirmStatus.setCompany(company);
 		confirmStatus.setDepartment(department);
 		confirmStatus.setPosition(position);
+		confirmStatus.setStartDate(map.get("startDate"));
 		confirmStatus.setUpdatedOn(new Date());
 		confirmStatusService.create(confirmStatus);
 
@@ -1781,7 +1782,7 @@ public class PreHireManagerController {
 											confirmStatus.setPexUpdateFlag("FAILED");
 											confirmStatusService.update(confirmStatus);
 										}
-										logger.debug("pexPostResponseJsonString : " + pexPostResponseJsonString);
+										logger.error("pexPostResponseJsonString : " + pexPostResponseJsonString);
 
 									} catch (URISyntaxException | IOException e) {
 										// TODO Auto-generated catch block
@@ -1965,7 +1966,7 @@ public class PreHireManagerController {
 			URISyntaxException, IOException {
 		String loggedInUser = request.getUserPrincipal().getName();
 		Map<String, String> map = new HashMap<String, String>();
-
+		logger.debug("START REPSOT");
 		map.put("userId", personId);
 
 		SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -2018,12 +2019,12 @@ public class PreHireManagerController {
 		}
 
 		timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-		logger.debug("Before Batch Call GET" + timeStamp);
+		logger.debug("Before Batch Call GET REPOST" + timeStamp);
 		// call Get Batch with all entities
 		batchRequest.callBatchPOST("/$batch", "");
 
 		timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-		logger.debug("After Batch Call GET" + timeStamp);
+		logger.debug("After Batch Call GET REPOST" + timeStamp);
 
 		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 		for (BatchSingleResponse batchResponse : batchResponses) {
@@ -2043,11 +2044,14 @@ public class PreHireManagerController {
 		String pPuid = jObject.getString("perPersonUuid");
 		ConfirmStatus confirmStatus = confirmStatusService.findById(pPuid);
 
-		jObject = new JSONObject(entityResponseMap.get("EmpJob"));
-		jObject = jObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		map.put("startDate", jObject.getString("startDate"));
+		logger.debug("confirm Status REPSOT" + confirmStatus.getId());
+
+		map.put("startDate", confirmStatus.getStartDate());
+
+		logger.debug("SF REPOST START");
 		// if SF Entities Failed
-		if (confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
+		if (confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")
+				|| confirmStatus.getSfEntityFlag().equalsIgnoreCase("")) {
 
 			try {
 
@@ -2162,8 +2166,11 @@ public class PreHireManagerController {
 				confirmStatusService.update(confirmStatus);
 			}
 		}
+		logger.debug("PEX REPOST START");
+		if (confirmStatus.getPexUpdateFlag().equalsIgnoreCase("FAILED")
+				|| confirmStatus.getPexUpdateFlag().equalsIgnoreCase("")) {
 
-		if (confirmStatus.getPexUpdateFlag().equalsIgnoreCase("FAILED")) {
+			logger.debug("PEX REPOST START INSIDE");
 			confirmStatus.setUpdatedOn(new Date());
 			confirmStatus.setPexUpdateFlag("BEGIN");
 			confirmStatusService.update(confirmStatus);
@@ -2604,7 +2611,7 @@ public class PreHireManagerController {
 				Date date = new Date(Long.parseLong(dateToFormat));
 				Calendar cal = Calendar.getInstance();
 				cal.setTime(date);
-				return (cal.get(Calendar.YEAR) + " " + hunLocale.values()[cal.get(Calendar.MONTH)] + " "
+				return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[cal.get(Calendar.MONTH)] + " "
 						+ cal.get(Calendar.DAY_OF_MONTH));
 			}
 		}
