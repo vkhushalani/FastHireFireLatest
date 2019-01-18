@@ -2552,10 +2552,10 @@ public class PreHireManagerController {
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
 
 				formatLastYearDay(sDateString, "HUN", true)));
-		parameters.put(new JSONObject().put("Key", "EN_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
-				calcLastDateYearPlus1(sDateString, Locale.ENGLISH, false)));
-		parameters.put(new JSONObject().put("Key", "HU_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
-				calcLastDateYearPlus1(sDateString, "HUN", true)));
+		parameters.put(new JSONObject().put("Key", "EN_CS_CALC1_QRTR_END_DATE").put("Value",
+				calcQuarterDateYear(sDateString, Locale.ENGLISH, false)));
+		parameters.put(new JSONObject().put("Key", "HU_CS_CALC1_QRTR_END_DATE").put("Value",
+				calcQuarterDateYear(sDateString, "HUN", true)));
 		return parameters;
 	}
 
@@ -2640,7 +2640,7 @@ public class PreHireManagerController {
 		return dateToFormat;
 	}
 
-	private static String calcLastDateYearPlus1(String dateToFormat, Object locale, Boolean custom) {
+	private static String calcQuarterDateYear(String dateToFormat, Object locale, Boolean custom) {
 		dateToFormat = dateToFormat.substring(dateToFormat.indexOf("(") + 1, dateToFormat.indexOf(")"));
 		Date date = new Date(Long.parseLong(dateToFormat));
 		Calendar cal = Calendar.getInstance();
@@ -2654,7 +2654,7 @@ public class PreHireManagerController {
 			Date month;
 			switch (quarter) {
 			case 1:
-				month = new Date(Long.parseLong("155400920400"));
+				month = new Date(Long.parseLong("1552896366000"));
 				return (sdfMonth.format(month) + " " + 31 + ", " + cal.get(Calendar.YEAR));
 			case 2:
 				month = new Date(Long.parseLong("1561871604000"));
