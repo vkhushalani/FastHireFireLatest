@@ -2476,7 +2476,7 @@ public class PreHireManagerController {
 		String fulltimeOrPartimeHU = "";
 		if (reqObject.getJSONObject("EmpJob").getInt("standardHours") >= 40) {
 			fulltimeOrPartimeEN = "full-time";
-			fulltimeOrPartimeHU = "Teljes Munkaidöben";
+			fulltimeOrPartimeHU = "teljes Munkaidöben";
 		} else {
 			fulltimeOrPartimeEN = "part-time";
 			fulltimeOrPartimeHU = "Részmunkaidöben";
@@ -2556,7 +2556,7 @@ public class PreHireManagerController {
 				calcQuarterDateYear(sDateString, Locale.ENGLISH, false)));
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC1_QRTR_END_DATE").put("Value",
 				calcQuarterDateYear(sDateString, "HUN", true)));
-		return parameters;
+		return parameters;ca
 	}
 
 	String identify_hours(String entityString) {
