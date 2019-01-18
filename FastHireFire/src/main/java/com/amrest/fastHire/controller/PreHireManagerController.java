@@ -100,8 +100,8 @@ public class PreHireManagerController {
 	public static final String docdestinationName = "DocumentGeneration";
 
 	private enum hunLocale {
-		Január, Február, Március, Aprilis, Május, Junius, Julius, Augusztus, Szeptember, Október, November, December
-	}; 
+		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
+	};
 
 	String timeStamp;
 	int counter;
@@ -247,8 +247,9 @@ public class PreHireManagerController {
 			pos.setPayGrade(vacantPos.getString("payGrade"));
 			pos.setPositionCode(vacantPos.getString("code"));
 			pos.setPositionTitle(vacantPos.getString("externalName_localized") != null
-					? vacantPos.getString("externalName_localized") : vacantPos.getString("externalName_defaultValue"));// null
-																														// check
+					? vacantPos.getString("externalName_localized")
+					: vacantPos.getString("externalName_defaultValue"));// null
+																		// check
 			pos.setEmployeeClassName(vacantPos.getJSONObject("employeeClassNav").getString("label_localized") != null
 					? vacantPos.getJSONObject("employeeClassNav").getString("label_localized")
 					: vacantPos.getJSONObject("employeeClassNav").getString("label_defaultValue"));// null
@@ -1519,6 +1520,7 @@ public class PreHireManagerController {
 		confirmStatus.setCompany(company);
 		confirmStatus.setDepartment(department);
 		confirmStatus.setPosition(position);
+		confirmStatus.setStartDate(map.get("startDate"));
 		confirmStatus.setUpdatedOn(new Date());
 		confirmStatusService.create(confirmStatus);
 
@@ -1719,7 +1721,8 @@ public class PreHireManagerController {
 								if (values[2].equalsIgnoreCase("cust_personIdGenerate")) {
 									postField.put("value",
 											String.valueOf(mdfFieldsObject2.get(values[1])).equalsIgnoreCase("null")
-													? "" : mdfFieldsObject2.getString(values[1]));
+													? ""
+													: mdfFieldsObject2.getString(values[1]));
 								} else {
 									postField.put("value",
 											String.valueOf(mdfFieldsObject.get(values[1])).equalsIgnoreCase("null") ? ""
@@ -1779,7 +1782,7 @@ public class PreHireManagerController {
 											confirmStatus.setPexUpdateFlag("FAILED");
 											confirmStatusService.update(confirmStatus);
 										}
-										logger.debug("pexPostResponseJsonString : " + pexPostResponseJsonString);
+										logger.error("pexPostResponseJsonString : " + pexPostResponseJsonString);
 
 									} catch (URISyntaxException | IOException e) {
 										// TODO Auto-generated catch block
@@ -1963,7 +1966,7 @@ public class PreHireManagerController {
 			URISyntaxException, IOException {
 		String loggedInUser = request.getUserPrincipal().getName();
 		Map<String, String> map = new HashMap<String, String>();
-
+		logger.debug("START REPSOT");
 		map.put("userId", personId);
 
 		SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -2016,12 +2019,12 @@ public class PreHireManagerController {
 		}
 
 		timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-		logger.debug("Before Batch Call GET" + timeStamp);
+		logger.debug("Before Batch Call GET REPOST" + timeStamp);
 		// call Get Batch with all entities
 		batchRequest.callBatchPOST("/$batch", "");
 
 		timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-		logger.debug("After Batch Call GET" + timeStamp);
+		logger.debug("After Batch Call GET REPOST" + timeStamp);
 
 		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 		for (BatchSingleResponse batchResponse : batchResponses) {
@@ -2041,325 +2044,329 @@ public class PreHireManagerController {
 		String pPuid = jObject.getString("perPersonUuid");
 		ConfirmStatus confirmStatus = confirmStatusService.findById(pPuid);
 
-		jObject = new JSONObject(entityResponseMap.get("EmpJob"));
-		jObject = jObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		map.put("startDate", jObject.getString("startDate"));
+		logger.debug("confirm Status REPOST" + confirmStatus.getId());
+
+		map.put("startDate", confirmStatus.getStartDate());
+
+		logger.debug("SF REPOST START");
 		// if SF Entities Failed
-		if (confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
-			
-			try{
+		if (confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")
+				|| confirmStatus.getSfEntityFlag().equalsIgnoreCase("")) {
 
-			Thread entityThread = new Thread(new Runnable() {
-				@Override
-				public void run() {
+			try {
 
-					try {
+				Thread entityThread = new Thread(new Runnable() {
+					@Override
+					public void run() {
 
-						// updating the startDate and employeeClass to confirm
-						// the hire
-						confirmStatus.setUpdatedOn(new Date());
-						confirmStatus.setSfEntityFlag("BEGIN");
-						confirmStatusService.update(confirmStatus);
-						timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-						logger.debug("before SF Updates" + timeStamp);
+						try {
 
-						for (Map.Entry<String, String> entity : entityMap.entrySet()) {
+							// updating the startDate and employeeClass to confirm
+							// the hire
+							confirmStatus.setUpdatedOn(new Date());
+							confirmStatus.setSfEntityFlag("BEGIN");
+							confirmStatusService.update(confirmStatus);
+							timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+							logger.debug("before SF Updates" + timeStamp);
 
-							if (!(entity.getKey().equalsIgnoreCase("PerPerson")
-									|| entity.getKey().equalsIgnoreCase("PerEmail")
-									|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
-									|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate"))) {
+							for (Map.Entry<String, String> entity : entityMap.entrySet()) {
 
-								String getresponseJson = entityResponseMap.get(entity.getKey());
-								if (getresponseJson != null) {
-									JSONObject getresponseJsonObject = new JSONObject(getresponseJson);
-									// logger.debug("getresponseJson"+getresponseJson);
-									if (getresponseJsonObject.getJSONObject("d").getJSONArray("results")
-											.length() != 0) {
-										JSONObject getresultObj = getresponseJsonObject.getJSONObject("d")
-												.getJSONArray("results").getJSONObject(0);
+								if (!(entity.getKey().equalsIgnoreCase("PerPerson")
+										|| entity.getKey().equalsIgnoreCase("PerEmail")
+										|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
+										|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate"))) {
 
-										if (entity.getKey().equalsIgnoreCase("PaymentInformationV3")) {
-											getresultObj.put("effectiveStartDate", map.get("startDate"));
-											JSONObject paymentInfoDetail = getresultObj
-													.getJSONObject("toPaymentInformationDetailV3")
+									String getresponseJson = entityResponseMap.get(entity.getKey());
+									if (getresponseJson != null) {
+										JSONObject getresponseJsonObject = new JSONObject(getresponseJson);
+										// logger.debug("getresponseJson"+getresponseJson);
+										if (getresponseJsonObject.getJSONObject("d").getJSONArray("results")
+												.length() != 0) {
+											JSONObject getresultObj = getresponseJsonObject.getJSONObject("d")
 													.getJSONArray("results").getJSONObject(0);
-											paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",
-													map.get("startDate"));
-											getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
 
-										} else if (entity.getKey().equalsIgnoreCase("EmpJob")) {
-											getresultObj.put("startDate", map.get("startDate"));
-											if (getresultObj.getString("countryOfCompany") != null) {
-												SFConstants employeeClassConst = sfConstantsService
-														.findById("employeeClassId_"
-																+ getresultObj.getString("countryOfCompany"));
-												getresultObj.put("employeeClass", employeeClassConst.getValue());
+											if (entity.getKey().equalsIgnoreCase("PaymentInformationV3")) {
+												getresultObj.put("effectiveStartDate", map.get("startDate"));
+												JSONObject paymentInfoDetail = getresultObj
+														.getJSONObject("toPaymentInformationDetailV3")
+														.getJSONArray("results").getJSONObject(0);
+												paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",
+														map.get("startDate"));
+												getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
 
+											} else if (entity.getKey().equalsIgnoreCase("EmpJob")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												if (getresultObj.getString("countryOfCompany") != null) {
+													SFConstants employeeClassConst = sfConstantsService
+															.findById("employeeClassId_"
+																	+ getresultObj.getString("countryOfCompany"));
+													getresultObj.put("employeeClass", employeeClassConst.getValue());
+
+												}
+
+												// remove countryOfCompany due to un
+												// upsertable field
+												getresultObj.remove("countryOfCompany");
+												getresultObj.remove("jobTitle");
+												getresultObj.remove("positionNav");
+
+											} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												getresultObj.put("notes", "Date updated");
+											} else {
+												getresultObj.put("startDate", map.get("startDate"));
 											}
 
-											// remove countryOfCompany due to un
-											// upsertable field
-											getresultObj.remove("countryOfCompany");
-											getresultObj.remove("jobTitle");
-											getresultObj.remove("positionNav");
+											String postJsonString = getresultObj.toString();
 
-										} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
-											getresultObj.put("startDate", map.get("startDate"));
-											getresultObj.put("notes", "Date updated");
-										} else {
-											getresultObj.put("startDate", map.get("startDate"));
+											HttpResponse updateresponse = destClient.callDestinationPOST("/upsert",
+													"?$format=json&purgeType=full", postJsonString);
+											// String entityPostResponseJsonString =
+											// EntityUtils.toString(updateresponse.getEntity(),
+											// "UTF-8");
+											if (updateresponse.getStatusLine().getStatusCode() != 200) {
+												confirmStatus.setUpdatedOn(new Date());
+												confirmStatus.setSfEntityFlag("FAILED");
+												confirmStatus.setEntityName(entity.getKey());
+												confirmStatusService.update(confirmStatus);
+											}
+											// logger.debug(entity.getKey() + "
+											// updateresponse" + updateresponse);
 										}
-
-										String postJsonString = getresultObj.toString();
-
-										HttpResponse updateresponse = destClient.callDestinationPOST("/upsert",
-												"?$format=json&purgeType=full", postJsonString);
-										// String entityPostResponseJsonString =
-										// EntityUtils.toString(updateresponse.getEntity(),
-										// "UTF-8");
-										if (updateresponse.getStatusLine().getStatusCode() != 200) {
-											confirmStatus.setUpdatedOn(new Date());
-											confirmStatus.setSfEntityFlag("FAILED");
-											confirmStatus.setEntityName(entity.getKey());
-											confirmStatusService.update(confirmStatus);
-										}
-										// logger.debug(entity.getKey() + "
-										// updateresponse" + updateresponse);
 									}
 								}
 							}
+							if (!confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
+								confirmStatus.setUpdatedOn(new Date());
+								confirmStatus.setSfEntityFlag("SUCCESS");
+								confirmStatusService.update(confirmStatus);
+							}
+							timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+							logger.debug("After SF Updates" + timeStamp);
 						}
-						if (!confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
+
+						catch (MalformedURLException | URISyntaxException e) {
 							confirmStatus.setUpdatedOn(new Date());
-							confirmStatus.setSfEntityFlag("SUCCESS");
+							confirmStatus.setSfEntityFlag("FAILED");
+							confirmStatusService.update(confirmStatus);
+							e.printStackTrace();
+
+						} catch (Exception e) {
+							confirmStatus.setUpdatedOn(new Date());
+							confirmStatus.setSfEntityFlag("FAILED");
 							confirmStatusService.update(confirmStatus);
 						}
-						timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-						logger.debug("After SF Updates" + timeStamp);
 					}
+				});
 
-					catch (MalformedURLException | URISyntaxException e) {
-						confirmStatus.setUpdatedOn(new Date());
-						confirmStatus.setSfEntityFlag("FAILED");
-						confirmStatusService.update(confirmStatus);
-						e.printStackTrace();
-
-					}
-					catch (Exception e) {
-						confirmStatus.setUpdatedOn(new Date());
-						confirmStatus.setSfEntityFlag("FAILED");
-						confirmStatusService.update(confirmStatus);
-					}
-				}
-			});
-
-			entityThread.start();
-		}
-			catch (Exception e) {
+				entityThread.start();
+			} catch (Exception e) {
 				confirmStatus.setUpdatedOn(new Date());
 				confirmStatus.setSfEntityFlag("FAILED");
 				confirmStatusService.update(confirmStatus);
 			}
 		}
+		logger.debug("PEX REPOST START");
+		if (confirmStatus.getPexUpdateFlag().equalsIgnoreCase("FAILED")
+				|| confirmStatus.getPexUpdateFlag().equalsIgnoreCase("")) {
 
-		if (confirmStatus.getPexUpdateFlag().equalsIgnoreCase("FAILED")) {
+			logger.debug("PEX REPOST START INSIDE");
 			confirmStatus.setUpdatedOn(new Date());
 			confirmStatus.setPexUpdateFlag("BEGIN");
 			confirmStatusService.update(confirmStatus);
 			try {
-			DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-			
-		
-			// updating the SF mdf to the pex
+				DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
-			JSONObject mdfFieldsObject = new JSONObject(entityResponseMap.get("cust_Additional_Information"));
-			JSONObject mdfFieldsObject2 = new JSONObject(entityResponseMap.get("cust_personIdGenerate"));
-			if (mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0) {
+				// updating the SF mdf to the pex
 
-				mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-				mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+				JSONObject mdfFieldsObject = new JSONObject(entityResponseMap.get("cust_Additional_Information"));
+				JSONObject mdfFieldsObject2 = new JSONObject(entityResponseMap.get("cust_personIdGenerate"));
+				logger.debug("mdfFieldsObject Repost" + mdfFieldsObject);
+				logger.debug("mdfFieldsObject2 Repost" + mdfFieldsObject2);
+				if (mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0) {
 
-				// logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
+					mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+					mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 
-				Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
-				Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String, ArrayList<String[]>>();
-				ArrayList<String[]> fieldValues;
-				while (mdfFieldKeys.hasNext()) {
-					String key = (String) mdfFieldKeys.next();
-					if (key.contains("cust_ZZ_MDF2PEX_")) {
-						String customField = mdfFieldsObject.getString(key);
-						String[] parts = customField.split("\\|\\|");
-						if (parts.length == 3) {
-							// logger.debug("pexFormMap - key : "+key+",FormId :
-							// "+parts[1]+", FieldId: "+parts[2]+", FieldName:
-							// "+parts[0]);
-							fieldValues = pexFormMap.get(parts[1]);
-							if (fieldValues == null) {
-								fieldValues = new ArrayList<String[]>();
+					 logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
+
+					Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
+					Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String, ArrayList<String[]>>();
+					ArrayList<String[]> fieldValues;
+					while (mdfFieldKeys.hasNext()) {
+						String key = (String) mdfFieldKeys.next();
+						if (key.contains("cust_ZZ_MDF2PEX_")) {
+							String customField = mdfFieldsObject.getString(key);
+							String[] parts = customField.split("\\|\\|");
+							if (parts.length == 3) {
+								 logger.debug("pexFormMap - key : "+key+",FormId :"+parts[1]+", FieldId: "+parts[2]+", FieldName:"+parts[0]);
+								fieldValues = pexFormMap.get(parts[1]);
+								if (fieldValues == null) {
+									fieldValues = new ArrayList<String[]>();
+								}
+								fieldValues.add(new String[] { parts[2], parts[0], "cust_Additional_Information" });
+								 logger.debug("pexFormMap fieldValues:"+fieldValues.get(0));
+								pexFormMap.put(parts[1], fieldValues);
 							}
-							fieldValues.add(new String[] { parts[2], parts[0], "cust_Additional_Information" });
-							// logger.debug("pexFormMap fieldValues:
-							// "+fieldValues.get(0));
-							pexFormMap.put(parts[1], fieldValues);
 						}
-					}
 
-				}
-				mdfFieldKeys = mdfFieldsObject2.keys();
-				while (mdfFieldKeys.hasNext()) {
-					String key = (String) mdfFieldKeys.next();
-					if (key.contains("cust_ZZ_MDF2PEX_")) {
-						String customField = mdfFieldsObject2.getString(key);
-						String[] parts = customField.split("\\|\\|");
-						if (parts.length == 3) {
-							// logger.debug("pexFormMap - key : "+key+",FormId :
-							// "+parts[1]+", FieldId: "+parts[2]+", FieldName:
-							// "+parts[0]);
-							fieldValues = pexFormMap.get(parts[1]);
-							if (fieldValues == null) {
-								fieldValues = new ArrayList<String[]>();
+					}
+					mdfFieldKeys = mdfFieldsObject2.keys();
+					while (mdfFieldKeys.hasNext()) {
+						String key = (String) mdfFieldKeys.next();
+						if (key.contains("cust_ZZ_MDF2PEX_")) {
+							String customField = mdfFieldsObject2.getString(key);
+							String[] parts = customField.split("\\|\\|");
+							if (parts.length == 3) {
+								 logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName:"+parts[0]);
+								fieldValues = pexFormMap.get(parts[1]);
+								if (fieldValues == null) {
+									fieldValues = new ArrayList<String[]>();
+								}
+								fieldValues.add(new String[] { parts[2], parts[0], "cust_personIdGenerate" });
+								 logger.debug("pexFormMap fieldValues:"+fieldValues.get(0));
+								pexFormMap.put(parts[1], fieldValues);
 							}
-							fieldValues.add(new String[] { parts[2], parts[0], "cust_personIdGenerate" });
-							// logger.debug("pexFormMap fieldValues:
-							// "+fieldValues.get(0));
-							pexFormMap.put(parts[1], fieldValues);
 						}
+
 					}
 
-				}
+					JSONObject empJobResponseJsonObject = new JSONObject(entityResponseMap.get("EmpJob"));
+					empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results")
+							.getJSONObject(0);
+					 logger.debug("empJobResponseJsonObject" +
+					 empJobResponseJsonObject.toString());
+					PexClient pexClient = new PexClient();
+					pexClient.setDestination(pexDestinationName);
+					pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
+					counter = 0;
 
-				JSONObject empJobResponseJsonObject = new JSONObject(entityResponseMap.get("EmpJob"));
-				empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results")
-						.getJSONObject(0);
-				// logger.debug("empJobResponseJsonObject" +
-				// empJobResponseJsonObject.toString());
-				PexClient pexClient = new PexClient();
-				pexClient.setDestination(pexDestinationName);
-				pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
-				counter = 0;
+					for (String pexFormMapKey : pexFormMap.keySet()) {
+						Map<String, String> pexFormJsonRepMap = new HashMap<String, String>();
+						pexFormJsonRepMap.put("candidateId", map.get("userId"));
+						pexFormJsonRepMap.put("formId", pexFormMapKey);
+						pexFormJsonRepMap.put("companyCode", empJobResponseJsonObject.getString("company"));
 
-				for (String pexFormMapKey : pexFormMap.keySet()) {
-					Map<String, String> pexFormJsonRepMap = new HashMap<String, String>();
-					pexFormJsonRepMap.put("candidateId", map.get("userId"));
-					pexFormJsonRepMap.put("formId", pexFormMapKey);
-					pexFormJsonRepMap.put("companyCode", empJobResponseJsonObject.getString("company"));
+						JSONArray postFieldsArray = new JSONArray();
+						String validFromDate = map.get("startDate");
+						Calendar cal = Calendar.getInstance();
+						String milliSec = validFromDate.substring(validFromDate.indexOf("(") + 1,
+								validFromDate.indexOf(")"));
+						long milliSecLong = Long.valueOf(milliSec).longValue();
+						cal.setTimeInMillis(milliSecLong);
+						validFromDate = formatter.format(cal.getTime());
+						validFromDate = validFromDate + "T00:00:00.000Z";
+						// valid from and valid to dates.
+						JSONObject validFromPostField = new JSONObject();
+						validFromPostField.put("fieldId", "valid_from");
+						validFromPostField.put("value", validFromDate);
+						postFieldsArray.put(validFromPostField);
 
-					JSONArray postFieldsArray = new JSONArray();
-					String validFromDate = map.get("startDate");
-					Calendar cal = Calendar.getInstance();
-					String milliSec = validFromDate.substring(validFromDate.indexOf("(") + 1,
-							validFromDate.indexOf(")"));
-					long milliSecLong = Long.valueOf(milliSec).longValue();
-					cal.setTimeInMillis(milliSecLong);
-					validFromDate = formatter.format(cal.getTime());
-					validFromDate = validFromDate + "T00:00:00.000Z";
-					// valid from and valid to dates.
-					JSONObject validFromPostField = new JSONObject();
-					validFromPostField.put("fieldId", "valid_from");
-					validFromPostField.put("value", validFromDate);
-					postFieldsArray.put(validFromPostField);
+						JSONObject validToPostField = new JSONObject();
+						validToPostField.put("fieldId", "valid_to");
+						validToPostField.put("value", "9999-12-31T00:00:00.000Z");
+						postFieldsArray.put(validToPostField);
 
-					JSONObject validToPostField = new JSONObject();
-					validToPostField.put("fieldId", "valid_to");
-					validToPostField.put("value", "9999-12-31T00:00:00.000Z");
-					postFieldsArray.put(validToPostField);
-
-					fieldValues = pexFormMap.get(pexFormMapKey);
-					for (String[] values : fieldValues) {
-						// logger.debug("post fields: "+values[0] +" :
-						// "+values[1]);
-						JSONObject postField = new JSONObject();
-						postField.put("fieldId", values[0]);
-						if (values[2].equalsIgnoreCase("cust_personIdGenerate")) {
-							postField.put("value",
-									String.valueOf(mdfFieldsObject2.get(values[1])).equalsIgnoreCase("null") ? ""
-											: mdfFieldsObject2.getString(values[1]));
-						} else {
-							postField.put("value",
-									String.valueOf(mdfFieldsObject.get(values[1])).equalsIgnoreCase("null") ? ""
-											: mdfFieldsObject.getString(values[1]));
+						fieldValues = pexFormMap.get(pexFormMapKey);
+						for (String[] values : fieldValues) {
+							 logger.debug("post fields: "+values[0] +" :"+values[1]);
+							JSONObject postField = new JSONObject();
+							postField.put("fieldId", values[0]);
+							if (values[2].equalsIgnoreCase("cust_personIdGenerate")) {
+								postField.put("value",
+										String.valueOf(mdfFieldsObject2.get(values[1])).equalsIgnoreCase("null") ? ""
+												: mdfFieldsObject2.getString(values[1]));
+							} else {
+								postField.put("value",
+										String.valueOf(mdfFieldsObject.get(values[1])).equalsIgnoreCase("null") ? ""
+												: mdfFieldsObject.getString(values[1]));
+							}
+							postFieldsArray.put(postField);
 						}
-						postFieldsArray.put(postField);
-					}
-					pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
-					// logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
-					JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
-					String pexFormPostString = pexFormPostObj.toString();
+						pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
+						 logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
+						JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
+						String pexFormPostString = pexFormPostObj.toString();
 
-					for (Map.Entry<String, String> entry : pexFormJsonRepMap.entrySet()) {
-						if (!entry.getKey().equalsIgnoreCase("fieldsArray")) {
-							pexFormPostString = pexFormPostString.replaceAll("<" + entry.getKey() + ">",
-									entry.getValue());
-						} else {
-							pexFormPostString = pexFormPostString.replaceAll("\"<" + entry.getKey() + ">\"",
-									entry.getValue());
+						for (Map.Entry<String, String> entry : pexFormJsonRepMap.entrySet()) {
+							if (!entry.getKey().equalsIgnoreCase("fieldsArray")) {
+								pexFormPostString = pexFormPostString.replaceAll("<" + entry.getKey() + ">",
+										entry.getValue());
+							} else {
+								pexFormPostString = pexFormPostString.replaceAll("\"<" + entry.getKey() + ">\"",
+										entry.getValue());
 
+							}
 						}
-					}
-					logger.debug("pexFormPostString : " + pexFormPostString);
-					final String finalPexFormPostString = pexFormPostString;
-					Thread pexThread = new Thread(new Runnable() {
-						@Override
-						public void run() {
+						logger.debug("pexFormPostString : " + pexFormPostString);
+						final String finalPexFormPostString = pexFormPostString;
+						Thread pexThread = new Thread(new Runnable() {
+							@Override
+							public void run() {
 
-							try {
-								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-								logger.debug("Before PEX Updates" + timeStamp);
-
-								HttpResponse pexPostResponse = pexClient.callDestinationPOST("api/v3/forms/submit", "",
-										finalPexFormPostString);
-								String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(),
-										"UTF-8");
 								try {
+									timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+									logger.debug("Before PEX Updates" + timeStamp);
 
-									if (pexPostResponse.getStatusLine().getStatusCode() == 200) {
-										JSONObject pexResponseObject = new JSONObject(pexPostResponseJsonString);
-										counter = counter + 1;
-										if (counter == pexFormMap.keySet().size()) {
+									HttpResponse pexPostResponse = pexClient.callDestinationPOST("api/v3/forms/submit",
+											"", finalPexFormPostString);
+									String pexPostResponseJsonString = EntityUtils.toString(pexPostResponse.getEntity(),
+											"UTF-8");
+									logger.debug("Before Try pexPostResponseJsonString : " + pexPostResponseJsonString);
+									try {
+
+										if (pexPostResponse.getStatusLine().getStatusCode() == 200) {
+											JSONObject pexResponseObject = new JSONObject(pexPostResponseJsonString);
+											counter = counter + 1;
+											if (counter == pexFormMap.keySet().size()) {
+												confirmStatus.setUpdatedOn(new Date());
+												confirmStatus.setPexUpdateFlag("SUCCESS");
+												confirmStatusService.update(confirmStatus);
+											}
+										} else {
 											confirmStatus.setUpdatedOn(new Date());
-											confirmStatus.setPexUpdateFlag("SUCCESS");
+											confirmStatus.setPexUpdateFlag("FAILED");
 											confirmStatusService.update(confirmStatus);
+											
+
 										}
-									} else {
+
+									} catch (JSONException ex) {
 										confirmStatus.setUpdatedOn(new Date());
 										confirmStatus.setPexUpdateFlag("FAILED");
 										confirmStatusService.update(confirmStatus);
-
+										logger.debug("FAILED PEX REPOST" + ex.getMessage());
 									}
+									logger.debug("pexPostResponseJsonString : " + pexPostResponseJsonString);
 
-								} catch (JSONException ex) {
+								} catch (URISyntaxException | IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
 									confirmStatus.setUpdatedOn(new Date());
 									confirmStatus.setPexUpdateFlag("FAILED");
 									confirmStatusService.update(confirmStatus);
+									logger.debug("FAILED PEX REPOST" + e.getMessage());
+								} catch (Exception e) {
+									confirmStatus.setUpdatedOn(new Date());
+									confirmStatus.setPexUpdateFlag("FAILED");
+									confirmStatusService.update(confirmStatus);
+									logger.debug("FAILED PEX REPOST" + e.getMessage());
 								}
-								logger.debug("pexPostResponseJsonString : " + pexPostResponseJsonString);
-
-							} catch (URISyntaxException | IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-								confirmStatus.setUpdatedOn(new Date());
-								confirmStatus.setPexUpdateFlag("FAILED");
-								confirmStatusService.update(confirmStatus);
-							} catch (Exception e) {
-								confirmStatus.setUpdatedOn(new Date());
-								confirmStatus.setPexUpdateFlag("FAILED");
-								confirmStatusService.update(confirmStatus);
 							}
-						}
-					});
+						});
 
-					pexThread.start();
+						pexThread.start();
 
-				} 
+					}
+				}
 			}
-			}
-			
+
 			catch (Exception e) {
 				confirmStatus.setUpdatedOn(new Date());
 				confirmStatus.setPexUpdateFlag("FAILED");
 				confirmStatusService.update(confirmStatus);
-			} 
+				logger.debug("FAILED PEX REPOST" + e.getMessage());
+			}
 
 		}
 		return ResponseEntity.ok().body("SUCCESS");
@@ -2388,7 +2395,7 @@ public class PreHireManagerController {
 			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
 		logger.debug("Doc Genetration: gotRequest");
-
+		logger.debug("GenerateDoc reqString:" + reqString);
 		JSONObject reqObject = new JSONObject(reqString);
 
 		JSONObject reqBodyObj = new JSONObject();
@@ -2469,13 +2476,10 @@ public class PreHireManagerController {
 		String fulltimeOrPartimeHU = "";
 		if (reqObject.getJSONObject("EmpJob").getInt("standardHours") >= 40) {
 			fulltimeOrPartimeEN = "full-time";
+			fulltimeOrPartimeHU = "Teljes Munkaidöben";
 		} else {
 			fulltimeOrPartimeEN = "part-time";
-		}
-		if (reqObject.getJSONObject("EmpJob").getInt("standardHours") >= 40) {
-			fulltimeOrPartimeHU = "teljes";
-		} else {
-			fulltimeOrPartimeHU = "részmunkaidos";
+			fulltimeOrPartimeHU = "Részmunkaidöben";
 		}
 		parameters.put(new JSONObject().put("Key", "EN_CS_PERSONALINFO_LAST_NAME").put("Value",
 				reqObject.getJSONObject("PerPersonal").getString("lastName")));
@@ -2499,6 +2503,7 @@ public class PreHireManagerController {
 		// sDateString = sDateString.substring(sDateString.indexOf("(") + 1,
 		// sDateString.indexOf(")"));
 		// Date sDate = new Date(Long.parseLong(sDateString));
+		logger.debug("EN_CS_EMPLOYMENTDETAILS_HIRE_DATE" + sDateString);
 		parameters.put(new JSONObject().put("Key", "EN_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
 				formatDate(sDateString, Locale.US, false)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_JOB_TITLE").put("Value",
@@ -2512,21 +2517,19 @@ public class PreHireManagerController {
 										: reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")
 						: ""));
 
-		parameters
-				.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
-						reqObject.has("PerAddressDEFLT")
-								? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address8"))
-										.equalsIgnoreCase("null") ? ""
-												: reqObject.getJSONObject("PerAddressDEFLT").getString("address8")
-								: ""));
-		parameters
-				.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
-						reqObject.has("PerAddressDEFLT")
-								? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2"))
-										.equalsIgnoreCase("null") ? ""
-												: reqObject.getJSONObject("PerAddressDEFLT").getString("address2")
-								: ""));
+		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
+				reqObject.has("PerAddressDEFLT")
+						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address8")).equalsIgnoreCase(
+								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address8")
+						: ""));
+		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
+				reqObject.has("PerAddressDEFLT")
+						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase(
+								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address2")
+						: ""));
 
+		logger.debug(
+				"EN_CS_JOBINFO_CONTRACT_END_DATE" + reqObject.getJSONObject("EmpJob").getString("contractEndDate"));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
 				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
 						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), Locale.US,
@@ -2536,7 +2539,7 @@ public class PreHireManagerController {
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC3_FT_PT").put("Value", fulltimeOrPartimeHU));
 		parameters.put(new JSONObject().put("Key", "EN_CS_CALC4_DAILY_HOURS").put("Value",
 				reqObject.getJSONObject("EmpJob").getInt("standardHours") / 5));
-
+		logger.debug("HU_CS_EMPLOYMENTDETAILS_HIRE_DATE" + sDateString);
 		parameters.put(new JSONObject().put("Key", "HU_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
 				formatDate(sDateString, "HUN", true)));
 		parameters.put(new JSONObject().put("Key", "HU_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
@@ -2601,16 +2604,15 @@ public class PreHireManagerController {
 		dateToFormat = dateToFormat.substring(dateToFormat.indexOf("(") + 1, dateToFormat.indexOf(")"));
 		if (custom == false) {
 			Date date = new Date(Long.parseLong(dateToFormat));
-			SimpleDateFormat sdf = new SimpleDateFormat("YYYY.MMMM.dd", (Locale) locale);
+			SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", (Locale) locale);
 			return (sdf.format(date));
 		} else {
-
 			switch ((String) locale) {
 			case "HUN":
 				Date date = new Date(Long.parseLong(dateToFormat));
 				Calendar cal = Calendar.getInstance();
 				cal.setTime(date);
-				return (cal.get(Calendar.YEAR) + "." + hunLocale.values()[cal.get(Calendar.MONTH)] + "."
+				return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[cal.get(Calendar.MONTH)] + " "
 						+ cal.get(Calendar.DAY_OF_MONTH));
 			}
 		}
@@ -2618,38 +2620,21 @@ public class PreHireManagerController {
 	}
 
 	private String formatLastYearDay(String dateToFormat, Object locale, boolean custom) {
-
 		dateToFormat = dateToFormat.substring(dateToFormat.indexOf("(") + 1, dateToFormat.indexOf(")"));
-
 		Date date = new Date(Long.parseLong(dateToFormat));
-
-		SimpleDateFormat sdf_YYYY = new SimpleDateFormat("YYYY");
-
+		SimpleDateFormat sdf_YYYY = new SimpleDateFormat("yyyy");
 		if (custom == false) {
-
 			Date decMonth = new Date(1577786942000L);
-
-			SimpleDateFormat sdf_MMDD = new SimpleDateFormat("MMMM.dd", (Locale) locale);
-
-			return (Integer.parseInt(sdf_YYYY.format(date)) + 1 + "." + sdf_MMDD.format(decMonth));
-
+			SimpleDateFormat sdf_MMDD = new SimpleDateFormat("MMMM dd,", (Locale) locale);
+			return (sdf_MMDD.format(decMonth) + " " + (Integer.parseInt(sdf_YYYY.format(date)) + 1));
 		} else {
-
 			switch ((String) locale) {
-
 			case "HUN":
-
 				Calendar cal = Calendar.getInstance();
-
 				cal.setTime(date);
-
-				return (Integer.parseInt(sdf_YYYY.format(date)) + 1 + "." + hunLocale.values()[11] + "." + 31);
-
+				return (Integer.parseInt(sdf_YYYY.format(date)) + 1 + ". " + hunLocale.values()[11] + " " + 31);
 			}
-
 		}
-
 		return dateToFormat;
-
 	}
 }

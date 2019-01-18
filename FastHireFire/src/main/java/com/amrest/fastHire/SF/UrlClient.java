@@ -83,7 +83,7 @@ public class UrlClient {
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPost request = new HttpPost(urlString);
 		
-		StringEntity entity = new StringEntity(this.getPostJson());
+		StringEntity entity = new StringEntity(this.getPostJson(), "UTF-8");
 		logger.debug("postJson"+this.getPostJson() );
 		request.setEntity(entity);
 		request.setHeader("Accept", "application/json");
@@ -116,7 +116,7 @@ public class UrlClient {
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPut request = new HttpPut(urlString);
 		
-		StringEntity entity = new StringEntity(this.getPostJson());
+		StringEntity entity = new StringEntity(this.getPostJson(), "UTF-8");
 		logger.debug("postJson"+this.getPostJson() );
 		request.setEntity(entity);
 		request.setHeader("Accept", "application/json");

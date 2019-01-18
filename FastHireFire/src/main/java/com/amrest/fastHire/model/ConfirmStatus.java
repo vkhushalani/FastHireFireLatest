@@ -48,6 +48,9 @@ public class ConfirmStatus {
 	@Column(name = "\"POSITION\"", columnDefinition = "VARCHAR(32)")
 	private String position;	
 	
+	@Column(name = "\"START_DATE\"", columnDefinition = "VARCHAR(64)")
+	private String startDate;
+	
 	public String getId() {
 		return id;
 	}
@@ -119,6 +122,14 @@ public class ConfirmStatus {
 
 	public void setUpdatedOn(Date updatedOn) {
 		this.updatedOn = updatedOn;
+	}
+
+	public String getStartDate() {
+		return startDate;
+	}
+
+	public void setStartDate(String startDate) {
+		this.startDate = startDate;
 	}
 
 

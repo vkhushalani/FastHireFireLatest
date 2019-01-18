@@ -96,7 +96,7 @@ public class PexClient {
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPost request = new HttpPost(urlString);
 		
-		StringEntity entity = new StringEntity(postJson);
+		StringEntity entity = new StringEntity(postJson, "UTF-8");
 		logger.debug("postJson"+postJson );
 		request.setEntity(entity);
 		request.setHeader("Accept", "application/json");
