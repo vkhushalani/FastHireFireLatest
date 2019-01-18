@@ -2188,7 +2188,7 @@ public class PreHireManagerController {
 					mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 					mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 
-					 logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
+					logger.debug("mdfFieldsObject" + mdfFieldsObject.toString());
 
 					Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
 					Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String, ArrayList<String[]>>();
@@ -2199,13 +2199,14 @@ public class PreHireManagerController {
 							String customField = mdfFieldsObject.getString(key);
 							String[] parts = customField.split("\\|\\|");
 							if (parts.length == 3) {
-								 logger.debug("pexFormMap - key : "+key+",FormId :"+parts[1]+", FieldId: "+parts[2]+", FieldName:"+parts[0]);
+								logger.debug("pexFormMap - key : " + key + ",FormId :" + parts[1] + ", FieldId: "
+										+ parts[2] + ", FieldName:" + parts[0]);
 								fieldValues = pexFormMap.get(parts[1]);
 								if (fieldValues == null) {
 									fieldValues = new ArrayList<String[]>();
 								}
 								fieldValues.add(new String[] { parts[2], parts[0], "cust_Additional_Information" });
-								 logger.debug("pexFormMap fieldValues:"+fieldValues.get(0));
+								logger.debug("pexFormMap fieldValues:" + fieldValues.get(0));
 								pexFormMap.put(parts[1], fieldValues);
 							}
 						}
@@ -2218,13 +2219,14 @@ public class PreHireManagerController {
 							String customField = mdfFieldsObject2.getString(key);
 							String[] parts = customField.split("\\|\\|");
 							if (parts.length == 3) {
-								 logger.debug("pexFormMap - key : "+key+",FormId : "+parts[1]+", FieldId: "+parts[2]+", FieldName:"+parts[0]);
+								logger.debug("pexFormMap - key : " + key + ",FormId : " + parts[1] + ", FieldId: "
+										+ parts[2] + ", FieldName:" + parts[0]);
 								fieldValues = pexFormMap.get(parts[1]);
 								if (fieldValues == null) {
 									fieldValues = new ArrayList<String[]>();
 								}
 								fieldValues.add(new String[] { parts[2], parts[0], "cust_personIdGenerate" });
-								 logger.debug("pexFormMap fieldValues:"+fieldValues.get(0));
+								logger.debug("pexFormMap fieldValues:" + fieldValues.get(0));
 								pexFormMap.put(parts[1], fieldValues);
 							}
 						}
@@ -2234,8 +2236,7 @@ public class PreHireManagerController {
 					JSONObject empJobResponseJsonObject = new JSONObject(entityResponseMap.get("EmpJob"));
 					empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d").getJSONArray("results")
 							.getJSONObject(0);
-					 logger.debug("empJobResponseJsonObject" +
-					 empJobResponseJsonObject.toString());
+					logger.debug("empJobResponseJsonObject" + empJobResponseJsonObject.toString());
 					PexClient pexClient = new PexClient();
 					pexClient.setDestination(pexDestinationName);
 					pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
@@ -2269,7 +2270,7 @@ public class PreHireManagerController {
 
 						fieldValues = pexFormMap.get(pexFormMapKey);
 						for (String[] values : fieldValues) {
-							 logger.debug("post fields: "+values[0] +" :"+values[1]);
+							logger.debug("post fields: " + values[0] + " :" + values[1]);
 							JSONObject postField = new JSONObject();
 							postField.put("fieldId", values[0]);
 							if (values[2].equalsIgnoreCase("cust_personIdGenerate")) {
@@ -2284,7 +2285,7 @@ public class PreHireManagerController {
 							postFieldsArray.put(postField);
 						}
 						pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
-						 logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
+						logger.debug("pexFormJsonRepMap" + pexFormJsonRepMap);
 						JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
 						String pexFormPostString = pexFormPostObj.toString();
 
@@ -2327,7 +2328,6 @@ public class PreHireManagerController {
 											confirmStatus.setUpdatedOn(new Date());
 											confirmStatus.setPexUpdateFlag("FAILED");
 											confirmStatusService.update(confirmStatus);
-											
 
 										}
 
@@ -2551,9 +2551,11 @@ public class PreHireManagerController {
 
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
 
-				formatLastYearDay(sDateString, "HUN", true))); // contractEndDate
-																// // for
-																// contractEndDate
+				formatLastYearDay(sDateString, "HUN", true)));
+		parameters.put(new JSONObject().put("Key", "EN_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
+				calcLastDateYearPlus1(sDateString, Locale.ENGLISH, false)));
+		parameters.put(new JSONObject().put("Key", "HU_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
+				calcLastDateYearPlus1(sDateString, "HUN", true)));
 		return parameters;
 	}
 
@@ -2636,5 +2638,50 @@ public class PreHireManagerController {
 			}
 		}
 		return dateToFormat;
+	}
+
+	private static String calcLastDateYearPlus1(String dateToFormat, Object locale, Boolean custom) {
+		dateToFormat = dateToFormat.substring(dateToFormat.indexOf("(") + 1, dateToFormat.indexOf(")"));
+		Date date = new Date(Long.parseLong(dateToFormat));
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		int quarter = cal.get(Calendar.MONTH) / 3 + 1;
+		if (custom == false) {
+			// SimpleDateFormat sdfForMonthNumber = new SimpleDateFormat("M");
+			// int quarter = (Integer.parseInt(sdfForMonthNumber.format(date)) / 3 + 1);
+			// MMMM dd, yyyy
+			SimpleDateFormat sdfMonth = new SimpleDateFormat("MMMM", (Locale) locale);
+			Date month;
+			switch (quarter) {
+			case 1:
+				month = new Date(Long.parseLong("155400920400"));
+				return (sdfMonth.format(month) + " " + 31 + ", " + cal.get(Calendar.YEAR));
+			case 2:
+				month = new Date(Long.parseLong("1561871604000"));
+				return (sdfMonth.format(month) + " " + 30 + ", " + cal.get(Calendar.YEAR));
+			case 3:
+				month = new Date(Long.parseLong("1569820404000"));
+				return (sdfMonth.format(month) + " " + 30 + ", " + cal.get(Calendar.YEAR));
+			case 4:
+				month = new Date(Long.parseLong("1577769204000"));
+				return (sdfMonth.format(month) + " " + 31 + ", " + cal.get(Calendar.YEAR));
+			}
+			return (null);
+		} else {
+			switch ((String) locale) {
+			case "HUN":
+				switch (quarter) {
+				case 1:
+					return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[2] + " " + 31);
+				case 2:
+					return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[5] + " " + 30);
+				case 3:
+					return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[8] + " " + 30);
+				case 4:
+					return (cal.get(Calendar.YEAR) + ". " + hunLocale.values()[11] + " " + 31);
+				}
+			}
+			return null;
+		}
 	}
 }
