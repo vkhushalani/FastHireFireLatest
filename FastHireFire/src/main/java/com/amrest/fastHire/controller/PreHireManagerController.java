@@ -1458,7 +1458,7 @@ public class PreHireManagerController {
 		entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId")
 				+ "'&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
 		entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId")
-				+ "'&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+				+ "'&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/externalName_localized,positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
 		entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId")
 				+ "'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
 		entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId")
@@ -1881,7 +1881,7 @@ public class PreHireManagerController {
 				+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 		entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
 				+ dateString
-				+ "&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
+				+ "&$format=json&$expand=address9Nav/picklistLabels,countryNav&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8,address9Nav/picklistLabels/label,address9Nav/picklistLabels/locale,countryNav/territoryName");
 		entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
 				+ "&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
 		entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate=" + dateString
@@ -2302,6 +2302,7 @@ public class PreHireManagerController {
 						logger.debug("pexFormPostString : " + pexFormPostString);
 						final String finalPexFormPostString = pexFormPostString;
 						Thread pexThread = new Thread(new Runnable() {
+
 							@Override
 							public void run() {
 
@@ -2506,9 +2507,12 @@ public class PreHireManagerController {
 		logger.debug("EN_CS_EMPLOYMENTDETAILS_HIRE_DATE" + sDateString);
 		parameters.put(new JSONObject().put("Key", "EN_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
 				formatDate(sDateString, Locale.US, false)));
-		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_JOB_TITLE").put("Value",
-				String.valueOf(reqObject.getJSONObject("EmpJob").get("jobTitle")).equalsIgnoreCase("null") ? ""
-						: reqObject.getJSONObject("EmpJob").getString("jobTitle")));
+		parameters
+				.put(new JSONObject().put("Key", "EN_CS_JOBINFO_JOB_TITLE").put("Value",
+						String.valueOf(reqObject.getJSONObject("EmpJob").getJSONObject("positionNav")
+								.get("externalName_localized")).equalsIgnoreCase("null") ? ""
+										: reqObject.getJSONObject("EmpJob").getJSONObject("positionNav")
+												.getString("externalName_localized")));
 
 		parameters.put(new JSONObject().put("Key", "EN_CS_PAYCOMPONENTRECURRING_P02HU_0010_PAYCOMPVALUE").put("Value",
 				reqObject.has("EmpPayCompRecurring")
@@ -2517,17 +2521,16 @@ public class PreHireManagerController {
 										: reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")
 						: ""));
 
-		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
-				reqObject.has("PerAddressDEFLT")
-						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address8")).equalsIgnoreCase(
-								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address8")
-						: ""));
-		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
-				reqObject.has("PerAddressDEFLT")
-						? String.valueOf(reqObject.getJSONObject("PerAddressDEFLT").get("address2")).equalsIgnoreCase(
-								"null") ? "" : reqObject.getJSONObject("PerAddressDEFLT").getString("address2")
-						: ""));
+		JSONArray propertiesADDRESS8 = new JSONArray(
+				"[\"PerAddressDEFLT/address1\",\"PerAddressDEFLT/address6\",\"PerAddressDEFLT/address5\",\"PerAddressDEFLT/address4\",\"PerAddressDEFLT/address3\",\"PerAddressDEFLT/address2\",\"PerAddressDEFLT/address7\"]");
 
+		JSONArray propertiesADDRESS2 = new JSONArray(
+				"[\"PerAddressDEFLT/address8\",\"PerAddressDEFLT/address9Nav/picklistLabels/label\",\"PerAddressDEFLT/city\",\"PerAddressDEFLT/county\",\"PerAddressDEFLT/zipCode\",\"PerAddressDEFLT/countryNav/territoryName\"]");
+
+		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
+				getValuesDynamically(propertiesADDRESS8, reqObject)));
+		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
+				getValuesDynamically(propertiesADDRESS2, reqObject)));
 		logger.debug(
 				"EN_CS_JOBINFO_CONTRACT_END_DATE" + reqObject.getJSONObject("EmpJob").getString("contractEndDate"));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
@@ -2556,7 +2559,13 @@ public class PreHireManagerController {
 				calcQuarterDateYear(sDateString, Locale.ENGLISH, false)));
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC1_QRTR_END_DATE").put("Value",
 				calcQuarterDateYear(sDateString, "HUN", true)));
-		return parameters;ca
+		parameters.put(new JSONObject().put("Key", "EN_CS_CUST_ADDITIONAL_INFORMATION_CUST_MUVOR").put("Value",
+				reqObject.has("cust_Additional_Information")
+						? String.valueOf(reqObject.getJSONObject("cust_Additional_Information").get("cust_MUVOR"))
+								.equalsIgnoreCase("null") ? ""
+										: reqObject.getJSONObject("cust_Additional_Information").getString("cust_STRNR")
+						: ""));
+		return parameters;
 	}
 
 	String identify_hours(String entityString) {
@@ -2683,5 +2692,104 @@ public class PreHireManagerController {
 			}
 			return null;
 		}
+	}
+
+	private static String getValuesDynamically(JSONArray properties, JSONObject reqObject) {
+		String responseString = "";
+		String[] parts;
+		String EN_CS_HUN_HOMEADDRESS_ADDRESS8 = "";
+		JSONArray tempJsonArray = new JSONArray();
+		JSONObject tempJsonObj = new JSONObject();
+		String value = "";
+		int prevKey = 0; // 0 for start 1 for array and 2 for obj;
+		int nextKey = 0; // 0 for start 1 for array and 2 for obj and 3 for the exactValue;
+		for (int i = 0; i < properties.length(); i++) {
+			nextKey = 0;
+			prevKey = 0;
+			nextKey = 0;
+			parts = properties.getString(i).split("/");
+			for (int j = 0; j < parts.length; j++) {
+				switch (nextKey) {
+				case 0:
+					if (parts[j].indexOf('{') == -1 && parts[j].indexOf('[') == -1) {
+						prevKey = 1;
+						nextKey = 3;
+						tempJsonObj = reqObject.has(parts[j]) ? reqObject.getJSONObject(parts[j]) : null;
+						break;
+					} else if (parts[j].indexOf('{') != -1) {
+						prevKey = 1;
+						nextKey = 2;
+						parts[j] = parts[j].substring(0, parts[j].length() - 1);
+						tempJsonObj = reqObject.has(parts[j]) ? reqObject.getJSONObject(parts[j]) : null;
+					} else if (parts[j].indexOf('[') != -1) {
+						prevKey = 1;
+						nextKey = 1;
+						parts[j] = parts[j].substring(0, parts[j].length() - 1);
+						tempJsonObj = reqObject.has(parts[j]) ? reqObject.getJSONObject(parts[j]) : null;
+					}
+					break;
+				case 1:
+					if (tempJsonObj != null) {
+						String searchFor = parts[j].substring(parts[j].indexOf('?') + 1, parts[j].indexOf('='));
+						String selectValueFromEntity = parts[j].substring(parts[j].indexOf('=') + 1,
+								parts[j].indexOf(':'));
+						String entityName = selectValueFromEntity.substring(0, selectValueFromEntity.indexOf('.'));
+						selectValueFromEntity = selectValueFromEntity.substring(selectValueFromEntity.indexOf('.') + 1);
+						String valueAt = parts[j].substring(parts[j].indexOf(':') + 1);
+						tempJsonArray = tempJsonObj.getJSONArray(parts[j].substring(0, parts[j].indexOf('?')));
+						for (int tempJsonArrayindex = 0; tempJsonArrayindex < tempJsonArray
+								.length(); tempJsonArrayindex++) {
+							if (tempJsonArray.getJSONObject(tempJsonArrayindex).has(searchFor)) {
+								if (tempJsonArray.getJSONObject(tempJsonArrayindex).getString(searchFor)
+										.equalsIgnoreCase("en_US")) {
+									if (tempJsonArray.getJSONObject(tempJsonArrayindex).getString(valueAt)
+											.length() > 0) {
+										responseString = responseString + " "
+												+ tempJsonArray.getJSONObject(tempJsonArrayindex).getString(valueAt);
+									}
+								}
+							}
+						}
+//						System.out.println(parts[j]);
+//						System.out.println("Search For: " + searchFor);
+//						System.out.println("EntityName: " + entityName);
+//						System.out.println("selectValueFromEntity: " + selectValueFromEntity);
+//						System.out.println("placeAt: " + tempJsonArray.getJSONObject(0).getString(searchFor));
+					}
+					break;
+				case 2:
+					if (tempJsonObj != null) {
+						if (parts[j].indexOf('{') == -1 && parts[j].indexOf('[') == -1) {
+							prevKey = 2;
+							nextKey = 3;
+							tempJsonObj = tempJsonObj.has(parts[j]) ? tempJsonObj.getJSONObject(parts[j]) : null;
+						} else if (parts[j].indexOf('{') != -1) {
+							prevKey = 2;
+							nextKey = 2;
+							parts[j] = parts[j].substring(0, parts[j].length() - 1);
+							tempJsonObj = tempJsonObj.has(parts[j]) ? tempJsonObj.getJSONObject(parts[j]) : null;
+						} else if (parts[j].indexOf('[') != -1) {
+							prevKey = 2;
+							nextKey = 1;
+							parts[j] = parts[j].substring(0, parts[j].indexOf('['));
+							tempJsonObj = tempJsonObj.has(parts[j]) ? tempJsonObj.getJSONObject(parts[j]) : null;
+						}
+					} else {
+						value = "";
+					}
+					break;
+				case 3:
+					if (tempJsonObj != null) {
+						value = tempJsonObj.has(parts[j]) ? tempJsonObj.getString(parts[j]) : null;
+						if (value.length() > 0) {
+							responseString = responseString + " " + value;
+						}
+						value = "";
+					}
+					break;
+				}
+			}
+		}
+		return responseString;
 	}
 }
