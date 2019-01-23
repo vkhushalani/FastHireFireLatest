@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.olingo.odata2.api.batch.BatchException;
 import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
@@ -1945,7 +1946,8 @@ public class PreHireManagerController {
 			}
 
 			HttpResponse response = generateDoc(docGenerationObject.toString());
-			if (response != null) {
+			String msg = response.getAllHeaders()[0].getValue();
+			if (response != null && !msg.equals("NoTemplateFound")) {
 				if (response.getStatusLine().getStatusCode() == 200) {
 					String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
 					// String stringBody = response.getBody();
@@ -1975,7 +1977,12 @@ public class PreHireManagerController {
 					temp.setDocGenFlag("FAILED");
 					confirmStatusService.update(temp);
 				}
-				;
+
+			} else if (msg.equals("NoTemplateFound")) {
+				ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
+				temp.setUpdatedOn(new Date());
+				temp.setDocGenFlag("NoTemplateFound");
+				confirmStatusService.update(temp);
 			} else {
 				ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
 				temp.setUpdatedOn(new Date());
@@ -2483,7 +2490,10 @@ public class PreHireManagerController {
 			logger.debug("contract.getTemplate()" + contract.getTemplate());
 			reqBodyObj.put("TemplateName", contract.getTemplate());
 		} else {
-			reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
+			HttpResponse httpResponse = new BasicHttpResponse(null, counter, "NoTemplateFound");
+			httpResponse.setHeader("msg", "NoTemplateFound");
+			return httpResponse;
+			// reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
 		}
 
 		reqBodyObj.put("CompanyCode", company);
@@ -2565,14 +2575,20 @@ public class PreHireManagerController {
 										: reqObject.getJSONObject("EmpPayCompRecurring").getString("paycompvalue")
 						: ""));
 
-		JSONArray propertiesADDRESS8 = new JSONArray(
-				"[\"PerAddressDEFLT/address1\",\"PerAddressDEFLT/address6\",\"PerAddressDEFLT/address5\",\"PerAddressDEFLT/address4\",\"PerAddressDEFLT/address3\",\"PerAddressDEFLT/address2\",\"PerAddressDEFLT/address7\"]");
+//		JSONArray propertiesADDRESS8 = new JSONArray(
+//				"[\"PerAddressDEFLT/address1\",\"PerAddressDEFLT/address6\",\"PerAddressDEFLT/address5\",\"PerAddressDEFLT/address4\",\"PerAddressDEFLT/address3\",\"PerAddressDEFLT/address2\",\"PerAddressDEFLT/address7\"]");
+		JSONArray propertiesADDRESS8 = new JSONArray("[\"PerAddressDEFLT/zipCode\",\"PerAddressDEFLT/city\"]");
 
+		/*
+		 * JSONArray propertiesADDRESS2 = new JSONArray("[\"PerAddressDEFLT/address8\""
+		 * +
+		 * ",\"PerAddressDEFLT{/address9Nav{/picklistLabels[/results?locale=User.defaultLocale:label\""
+		 * +
+		 * ",\"PerAddressDEFLT/city\",\"PerAddressDEFLT/county\",\"PerAddressDEFLT/zipCode\","
+		 * + "\"PerAddressDEFLT{" + "/countryNav/territoryName\"]");
+		 */
 		JSONArray propertiesADDRESS2 = new JSONArray("[\"PerAddressDEFLT/address8\""
-				+ ",\"PerAddressDEFLT{/address9Nav{/picklistLabels[/results?locale=User.defaultLocale:label\""
-				+ ",\"PerAddressDEFLT/city\",\"PerAddressDEFLT/county\",\"PerAddressDEFLT/zipCode\","
-				+ "\"PerAddressDEFLT{" + "/countryNav/territoryName\"]");
-
+				+ ",\"PerAddressDEFLT{/address9Nav{/picklistLabels[/results?locale=User.defaultLocale:label\",\"PerAddressDEFLT/address2\"]");
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
 				getValuesDynamically(propertiesADDRESS8, reqObject)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
