@@ -1528,6 +1528,7 @@ public class PreHireManagerController {
 			confirmStatusTemp.setUpdatedOn(new Date());
 			confirmStatusTemp = confirmStatusService.create(confirmStatusTemp);
 			ConfirmStatus confirmStatus = confirmStatusTemp;
+			logger.debug("confirmStatus:" + confirmStatus.getId());
 			final Thread parentThread = new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -1536,7 +1537,9 @@ public class PreHireManagerController {
 
 						// updating the startDate and employeeClass to confirm the
 						// hire
+						logger.debug("confirmStatus.getId():" + confirmStatus.getId());
 						ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
+						logger.debug("ctemp:" + temp);
 						temp.setUpdatedOn(new Date());
 						temp.setSfEntityFlag("BEGIN");
 						confirmStatusService.update(temp);
@@ -1981,8 +1984,9 @@ public class PreHireManagerController {
 			} else if (msg.equals("NoTemplateFound")) {
 				ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
 				temp.setUpdatedOn(new Date());
-				temp.setDocGenFlag("NoTemplateFound");
+				temp.setDocGenFlag("FAILED");
 				confirmStatusService.update(temp);
+				return new ResponseEntity<>("NoTemplateFound", HttpStatus.INTERNAL_SERVER_ERROR);
 			} else {
 				ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
 				temp.setUpdatedOn(new Date());
@@ -2490,6 +2494,7 @@ public class PreHireManagerController {
 			logger.debug("contract.getTemplate()" + contract.getTemplate());
 			reqBodyObj.put("TemplateName", contract.getTemplate());
 		} else {
+			logger.debug("Doc Genetration: gotRequest");
 			HttpResponse httpResponse = new BasicHttpResponse(null, counter, "NoTemplateFound");
 			httpResponse.setHeader("msg", "NoTemplateFound");
 			return httpResponse;

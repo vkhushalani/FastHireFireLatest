@@ -10,21 +10,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.amrest.fastHire.model.ConfirmStatus;
-import com.amrest.fastHire.model.ContractCriteria;
 
 @Transactional
 @Component
 public class ConfirmStatusServiceImp implements ConfirmStatusService {
 
 	@PersistenceContext
-	 EntityManager em;
-	
+	EntityManager em;
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<ConfirmStatus> findAll() {
 		Query query = em.createNamedQuery("ConfirmStatus.findAll");
-		 List<ConfirmStatus> items = query.getResultList();
-	        return items;
+		List<ConfirmStatus> items = query.getResultList();
+		return items;
 	}
 
 	@Override
@@ -32,38 +31,41 @@ public class ConfirmStatusServiceImp implements ConfirmStatusService {
 		ConfirmStatus item = em.find(ConfirmStatus.class, id);
 		return item;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<ConfirmStatus> findByCountryDepartment(String company , String department) {
+	public List<ConfirmStatus> findByCountryDepartment(String company, String department) {
 		Query query = em.createNamedQuery("ConfirmStatus.findByCountryDepartment")
-				.setParameter("department", department)
-				.setParameter("company", company);
-		 List<ConfirmStatus> items = query.getResultList();
-	        return items;
+				.setParameter("department", department).setParameter("company", company);
+		List<ConfirmStatus> items = query.getResultList();
+		return items;
 	}
 
 	@Override
 	@Transactional
 	public ConfirmStatus update(ConfirmStatus item) {
 		em.merge(item);
-	       return item;	}
+		em.flush();
+		return item;
+	}
 
 	@Override
 	@Transactional
 	public ConfirmStatus create(ConfirmStatus item) {
 		em.persist(item);
+		em.flush();
 		return item;
 	}
 
 	@Override
 	@Transactional
 	public void deleteByObject(ConfirmStatus item) {
-		
+
 		if (!em.contains(item)) {
 			item = em.merge(item);
 		}
 		em.remove(item);
+		em.flush();
 	}
 
 }
