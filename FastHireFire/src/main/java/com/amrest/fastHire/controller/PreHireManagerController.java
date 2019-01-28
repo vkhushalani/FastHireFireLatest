@@ -2582,8 +2582,10 @@ public class PreHireManagerController {
 
 //		JSONArray propertiesADDRESS8 = new JSONArray(
 //				"[\"PerAddressDEFLT/address1\",\"PerAddressDEFLT/address6\",\"PerAddressDEFLT/address5\",\"PerAddressDEFLT/address4\",\"PerAddressDEFLT/address3\",\"PerAddressDEFLT/address2\",\"PerAddressDEFLT/address7\"]");
-		JSONArray propertiesADDRESS8 = new JSONArray("[\"PerAddressDEFLT/zipCode\",\"PerAddressDEFLT/city\"]");
-
+		// JSONArray propertiesADDRESS8 = new
+		// JSONArray("[\"PerAddressDEFLT/zipCode\",\"PerAddressDEFLT/city\"]");
+		JSONArray propertiesADDRESS8 = new JSONArray(
+				"[\"PerAddressDEFLT/zipCode~ \",\"PerAddressDEFLT/city~, \",\"PerAddressDEFLT/address8~ \",\"PerAddressDEFLT{/address9Nav{/picklistLabels[/results?locale=User.defaultLocale:label~ \",\"PerAddressDEFLT/address2~. \",\"PerAddressDEFLT/address3~\"]");
 		/*
 		 * JSONArray propertiesADDRESS2 = new JSONArray("[\"PerAddressDEFLT/address8\""
 		 * +
@@ -2592,8 +2594,8 @@ public class PreHireManagerController {
 		 * ",\"PerAddressDEFLT/city\",\"PerAddressDEFLT/county\",\"PerAddressDEFLT/zipCode\","
 		 * + "\"PerAddressDEFLT{" + "/countryNav/territoryName\"]");
 		 */
-		JSONArray propertiesADDRESS2 = new JSONArray("[\"PerAddressDEFLT/address8\""
-				+ ",\"PerAddressDEFLT{/address9Nav{/picklistLabels[/results?locale=User.defaultLocale:label\",\"PerAddressDEFLT/address2\"]");
+		JSONArray propertiesADDRESS2 = new JSONArray("[\"PerAddressDEFLT/address4~, \","
+				+ "\"PerAddressDEFLT/address5~>\"," + "\"PerAddressDEFLT/address6~ \"]");
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS8").put("Value",
 				getValuesDynamically(propertiesADDRESS8, reqObject)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
@@ -2785,10 +2787,10 @@ public class PreHireManagerController {
 	private static String getValuesDynamically(JSONArray properties, JSONObject reqObject) {
 		String responseString = "";
 		String[] parts;
-		String EN_CS_HUN_HOMEADDRESS_ADDRESS8 = "";
 		JSONArray tempJsonArray = new JSONArray();
 		JSONObject tempJsonObj = new JSONObject();
 		String value = "";
+		String currentSaperator = "";
 		int prevKey = 0; // 0 for start 1 for array and 2 for obj;
 		int nextKey = 0; // 0 for start 1 for array and 2 for obj and 3 for the exactValue;
 		for (int i = 0; i < properties.length(); i++) {
@@ -2832,23 +2834,38 @@ public class PreHireManagerController {
 						tempJsonArray = tempJsonObj.getJSONArray(parts[j].substring(0, parts[j].indexOf('?')));
 						for (int tempJsonArrayindex = 0; tempJsonArrayindex < tempJsonArray
 								.length(); tempJsonArrayindex++) {
+							String key = parts[j].substring(parts[j].indexOf(':') + 1, parts[j].indexOf('~'));
+							String saperator = "";
+							if (currentSaperator.equalsIgnoreCase("")) {
+								currentSaperator = parts[j].substring(parts[j].indexOf('~') + 1);
+								saperator = "";
+							} else {
+								saperator = currentSaperator;
+								currentSaperator = parts[j].substring(parts[j].indexOf('~') + 1);
+							}
 							if (tempJsonArray.getJSONObject(tempJsonArrayindex).has(searchFor)) {
-
 								if (tempJsonArray.getJSONObject(tempJsonArrayindex).getString(searchFor)
 										.equalsIgnoreCase(checkFor)) {
-									if (tempJsonArray.getJSONObject(tempJsonArrayindex).getString(valueAt)
-											.length() > 0) {
-										responseString = responseString + " "
-												+ tempJsonArray.getJSONObject(tempJsonArrayindex).getString(valueAt);
+									if (tempJsonArray.getJSONObject(tempJsonArrayindex).getString(key).length() > 0) {
+										// System.out.println("**" + responseString);
+										if (currentSaperator.equalsIgnoreCase("")) {
+											currentSaperator = parts[j].substring(parts[j].indexOf('~') + 1);
+											if (currentSaperator.equalsIgnoreCase(">")) {
+												currentSaperator = "/";
+											}
+											responseString = responseString + "" + value + currentSaperator;
+										} else {
+											currentSaperator = parts[j].substring(parts[j].indexOf('~') + 1);
+											if (currentSaperator.equalsIgnoreCase(">")) {
+												currentSaperator = "/";
+											}
+											responseString = responseString + value + currentSaperator;
+										}
+
 									}
 								}
 							}
 						}
-//						System.out.println(parts[j]);
-//						System.out.println("Search For: " + searchFor);
-//						System.out.println("EntityName: " + entityName);
-//						System.out.println("selectValueFromEntity: " + selectValueFromEntity);
-//						System.out.println("placeAt: " + tempJsonArray.getJSONObject(0).getString(searchFor));
 					}
 					break;
 				case 2:
@@ -2874,12 +2891,26 @@ public class PreHireManagerController {
 					break;
 				case 3:
 					if (tempJsonObj != null) {
-						value = tempJsonObj.has(parts[j])
-								? String.valueOf(tempJsonObj.get(parts[j])).equalsIgnoreCase("null") ? ""
-										: tempJsonObj.getString(parts[j])
+						String key = parts[j].substring(0, parts[j].indexOf('~'));
+						value = tempJsonObj.has(key)
+								? String.valueOf(tempJsonObj.get(key)).equalsIgnoreCase("null") ? ""
+										: tempJsonObj.getString(key)
 								: "";
 						if (value.length() > 0) {
-							responseString = responseString + " " + value;
+							// System.out.println("**" + responseString);
+							if (currentSaperator.equalsIgnoreCase("")) {
+								currentSaperator = parts[j].substring(parts[j].indexOf('~') + 1);
+								if (currentSaperator.equalsIgnoreCase(">")) {
+									currentSaperator = "/";
+								}
+								responseString = responseString + "" + value + currentSaperator;
+							} else {
+								currentSaperator = parts[j].substring(parts[j].indexOf('~') + 1);
+								if (currentSaperator.equalsIgnoreCase(">")) {
+									currentSaperator = "/";
+								}
+								responseString = responseString + value + currentSaperator;
+							}
 						}
 						value = "";
 					}
@@ -2889,4 +2920,5 @@ public class PreHireManagerController {
 		}
 		return responseString;
 	}
+
 }
