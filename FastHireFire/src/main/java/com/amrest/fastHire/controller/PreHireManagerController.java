@@ -2859,7 +2859,9 @@ public class PreHireManagerController {
 											if (currentSaperator.equalsIgnoreCase(">")) {
 												currentSaperator = "/";
 											}
-											responseString = responseString + value + currentSaperator;
+											responseString = responseString
+													+ tempJsonArray.getJSONObject(tempJsonArrayindex).getString(key)
+													+ currentSaperator;
 										}
 
 									}
