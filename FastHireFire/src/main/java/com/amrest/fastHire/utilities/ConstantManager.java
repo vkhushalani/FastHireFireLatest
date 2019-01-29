@@ -61,17 +61,17 @@ public class ConstantManager {
 	public static final String empType = "/SF/employmentType";
 	public static final String parentPos = "/SF/parentPosition";
 	public static final String managerID = "/SF/managerID";
-	
+
 	public static final String custPerIDGen = "/SF/genID";
 	public static final String userEntity = "/SF/userEntity";
 	public static final String perPerson = "/SF/Person";
 	public static final String empEmployment = "/SF/Employment";
-	public static final String empJob= "/SF/EmpJob";
-	public static final String perPersonal= "/SF/PerPersonal";
-	public static final String perEmail= "/SF/PerEmail";
-	public static final String empCompensation= "/SF/Compensation";
-	public static final String empPayCompRecurring= "/SF/PayComp";
-	public static final String posVacancy= "/SF/Vacancy";
+	public static final String empJob = "/SF/EmpJob";
+	public static final String perPersonal = "/SF/PerPersonal";
+	public static final String perEmail = "/SF/PerEmail";
+	public static final String empCompensation = "/SF/Compensation";
+	public static final String empPayCompRecurring = "/SF/PayComp";
+	public static final String posVacancy = "/SF/Vacancy";
 	// End SF api specific constants
 
 	// Redirect URL constants
@@ -100,8 +100,8 @@ public class ConstantManager {
 	public static final String ssoLog = "SSO enabled : ";
 
 	public static final String compSkillIDLog = "Company Skill ID : ";
-	
-	public static final Integer  padStartDate  = 15;
+
+	public static final Integer padStartDate = 15;
 
 	public static String userName;
 
@@ -118,7 +118,7 @@ public class ConstantManager {
 	public static String paramStartDateName;
 
 	public static String paramStartDateValue;
-	
+
 	public static final String customDateName = "customString11";
 
 	public static String customDateValue;

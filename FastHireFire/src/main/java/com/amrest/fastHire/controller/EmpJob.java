@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.List;
 
 import javax.naming.NamingException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -60,16 +62,15 @@ public class EmpJob {
 
 	private String paramWorkSchName = null;
 	private String paramWorkSchValue = null;
-	
+
 	private String paramContractEDateName = null;
 	private String paramContractEDateValue = null;
-	
+
 	private String paramcontractTypeName = null;
 	private String paramcontractTypeValue = null;
-	
+
 	private String paramFirmSubCategoryName = null;
 	private String paramFirmSubCategoryValue = null;
-	
 
 	private final String sDate = "startdate";
 	private final String empType = "employmenttype";
@@ -80,8 +81,6 @@ public class EmpJob {
 	private String contractEndDate = "contractEndDate";
 	private String contractType = "contractType";
 	private String customString1 = "customString1";
-
-
 
 	private String jobCode = null;
 	private String company = null;
@@ -94,17 +93,21 @@ public class EmpJob {
 	private String standardHours = null;
 	private String parentCode = null;
 	private String managerId = null;
-	
+
 	private static String datePattern = "dd/MM/yyyy";
 
 	@PostMapping(value = ConstantManager.empJob, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson(@RequestBody String request) throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
-
+	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession)
+			throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		String customDateValue = (String) session.getAttribute("customDateValue");
+		logger.error("Got UserId from session in EmpJob: " + userID);
 		// Extract the params and their values
-		parseRequest(request);
+		parseRequest(request, session);
 
 		// getting params for the json Body
-		callAPI(paramPositionValue);
+		callAPI(paramPositionValue, session);
 		getManagerFromEmpJob();
 
 		URLManager genURL = new URLManager(getClass().getSimpleName(), configName);
@@ -113,37 +116,39 @@ public class EmpJob {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, replaceKeys(),
-				EmpJob.class);
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				replaceKeys(userID, customDateValue), EmpJob.class);
 
 		String result = httpConnectionPOST.connectToServer();
 		return result;
 	}
 
-	private void getManagerFromEmpJob() throws NamingException, ClientProtocolException, IOException, URISyntaxException {
+	private void getManagerFromEmpJob()
+			throws NamingException, ClientProtocolException, IOException, URISyntaxException {
 		DestinationClient destClient = new DestinationClient();
 		destClient.setDestName(destinationName);
 		destClient.setHeaderProvider();
 		destClient.setConfiguration();
 		destClient.setDestConfiguration();
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
-		HttpResponse response = destClient.callDestinationGET("/EmpJob?$format=json&$filter=positionNav/code eq '"+parentCode+"'&$expand=positionNav&$select=userId","");
+		HttpResponse response = destClient.callDestinationGET("/EmpJob?$format=json&$filter=positionNav/code eq '"
+				+ parentCode + "'&$expand=positionNav&$select=userId", "");
 		String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
 		JSONObject jsonObject = (JSONObject) JSONValue.parse(responseString);
 		jsonObject = (JSONObject) jsonObject.get("d");
 		JSONArray jsonArray = (JSONArray) jsonObject.get("results");
-		jsonObject = (JSONObject)jsonArray.get(0);
-		 managerId = jsonObject.get("userId").toString();
-		
+		jsonObject = (JSONObject) jsonArray.get(0);
+		managerId = jsonObject.get("userId").toString();
+
 	}
 
 	// Call another api
-	private void callAPI(String position) {
+	private void callAPI(String position, HttpSession session) {
 		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "/Position?$filter=code%20eq%20'" + position
 				+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
 		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
 //		logger.error(urlToCall);
-		
+
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
 		HttpConnectionGET get = new HttpConnectionGET(uri, URLManager.dConfiguration, EmpJob.class);
@@ -155,10 +160,10 @@ public class EmpJob {
 		JSONArray jsonArray = (JSONArray) jsonObj.get("results");
 
 		for (int i = 0; i < jsonArray.size(); i++) {
-			JSONObject jsonObject = (JSONObject) JSONValue.parse(jsonArray.get(i).toString());			
+			JSONObject jsonObject = (JSONObject) JSONValue.parse(jsonArray.get(i).toString());
 			JSONObject metaData = (JSONObject) jsonObject.get("__metadata");
-			ConstantManager.metaDataUpdatePosVac = metaData.get("uri").toString();
-			
+			session.setAttribute("metaDataUpdatePosVac", metaData.get("uri").toString());
+			logger.error("metaDataUpdatePosVac Set at session:" + metaData.get("uri").toString());
 //			logger.error(jsonObject.toJSONString());
 
 			if (jsonObject.get("jobCode") != null) {
@@ -214,17 +219,18 @@ public class EmpJob {
 			} else {
 				standardHours = "0";
 			}
-			if(jsonObject.get("parentPosition")!=  null){
-				JSONObject parentPositionObject = (JSONObject) JSONValue.parse(jsonObject.get("parentPosition").toString());
+			if (jsonObject.get("parentPosition") != null) {
+				JSONObject parentPositionObject = (JSONObject) JSONValue
+						.parse(jsonObject.get("parentPosition").toString());
 				parentCode = parentPositionObject.get("code").toString();
+			} else {
+				parentCode = "";
 			}
-			else
-			{parentCode = "";}
 		}
 	}
 
 	// Parse the request
-	private void parseRequest(String request) throws ParseException {
+	private void parseRequest(String request, HttpSession session) throws ParseException {
 		ObjectMapper mapper = new ObjectMapper();
 		Detail[] detail = null;
 		try {
@@ -239,23 +245,21 @@ public class EmpJob {
 						paramName = name;
 						paramValue = field.getValue().toString();
 
-						ConstantManager.paramStartDateName = paramName;
-						
-						
+						session.setAttribute("paramStartDateName", paramName);
+
 						SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 						Date today = new Date();
 						Calendar now = Calendar.getInstance();
 						now.setTime(today);
-				        now.set(Calendar.HOUR, 0);
-				        now.set(Calendar.MINUTE, 0);
-				        now.set(Calendar.SECOND, 0);
-				        now.set(Calendar.HOUR_OF_DAY, 0);
-						
-						ConstantManager.paramStartDateValue = dateFormatted(sdf.format(now.getTime()));
-						ConstantManager.paramOrgStartDateValue = sdf.format(now.getTime());
-						
-						
+						now.set(Calendar.HOUR, 0);
+						now.set(Calendar.MINUTE, 0);
+						now.set(Calendar.SECOND, 0);
+						now.set(Calendar.HOUR_OF_DAY, 0);
 
+						session.setAttribute("paramStartDateValue", dateFormatted(sdf.format(now.getTime())));
+						logger.error("paramStartDateValue Set at session:" + dateFormatted(sdf.format(now.getTime())));
+						session.setAttribute("paramOrgStartDateValue", sdf.format(now.getTime()));
+						logger.error("paramOrgStartDateValue Set at session:" + sdf.format(now.getTime()));
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 					} else if (name.toLowerCase().equals(empType.toLowerCase())) {
@@ -288,29 +292,26 @@ public class EmpJob {
 //						logger.error(paramWorkSchName.toString());
 //						logger.error(paramWorkSchValue.toString());
 
-					}
-					else if (name.toLowerCase().equals(contractEndDate.toLowerCase())) {
+					} else if (name.toLowerCase().equals(contractEndDate.toLowerCase())) {
 						paramContractEDateName = name;
 						paramContractEDateValue = field.getValue().toString();
 						paramContractEDateValue = dateFormatted(paramContractEDateValue);
 //						logger.error(paramEmpName.toString());
 //						logger.error(paramEmpValue.toString());
 
-					} 
-					else if (name.toLowerCase().equals(contractType.toLowerCase())) {
-						 paramcontractTypeName = name;
-						 paramcontractTypeValue = field.getValue().toString();
+					} else if (name.toLowerCase().equals(contractType.toLowerCase())) {
+						paramcontractTypeName = name;
+						paramcontractTypeValue = field.getValue().toString();
 //						logger.error(paramEmpName.toString());
 //						logger.error(paramEmpValue.toString());
 
-					} 
-					else if (name.toLowerCase().equals(customString1.toLowerCase())) {
+					} else if (name.toLowerCase().equals(customString1.toLowerCase())) {
 						paramFirmSubCategoryName = name;
 						paramFirmSubCategoryValue = field.getValue().toString();
 //						logger.error(paramEmpName.toString());
 //						logger.error(paramEmpValue.toString());
 
-					} 
+					}
 				}
 			}
 
@@ -321,8 +322,7 @@ public class EmpJob {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
-		String userID = ConstantManager.userID;
+	private String replaceKeys(String userID, String customDateValue) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
@@ -353,7 +353,7 @@ public class EmpJob {
 		obj.put(paramContractEDateName, paramContractEDateValue);
 		obj.put(paramcontractTypeName, paramcontractTypeValue);
 		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
-		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
+		obj.put(ConstantManager.customDateName, customDateValue);
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}

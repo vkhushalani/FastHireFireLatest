@@ -7,6 +7,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +41,7 @@ public class PerPerson {
 	private static String datePattern = "dd/MM/yyyy";
 
 	@PostMapping(value = ConstantManager.perPerson, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson(@RequestBody String request) {
+	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession) {
 
 		// Extract the params and their values
 		parseRequest(request);
@@ -49,8 +52,11 @@ public class PerPerson {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, replaceKeys(),
-				PerPerson.class);
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in PerPerson: " + userID);
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				replaceKeys(userID), PerPerson.class);
 
 		String result = httpConnectionPOST.connectToServer();
 		return result;
@@ -87,8 +93,7 @@ public class PerPerson {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
-		String userID = ConstantManager.userID;
+	private String replaceKeys(String userID) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();

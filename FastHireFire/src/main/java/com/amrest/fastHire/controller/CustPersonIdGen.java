@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
@@ -35,7 +38,7 @@ public class CustPersonIdGen {
 	private String paramValue = null;
 
 	@GetMapping(value = ConstantManager.custPerIDGen, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String generateID() {
+	public String generateID(HttpServletRequest request) {
 
 		URLManager genURL = new URLManager(getClass().getSimpleName(), configName);
 		String urlToCall = genURL.formURLToCall();
@@ -50,26 +53,29 @@ public class CustPersonIdGen {
 		JSONObject jsonObj = (JSONObject) JSONValue.parse(result);
 		jsonObj = (JSONObject) jsonObj.get("d");
 		this.userID = jsonObj.get("externalCode").toString();
-		ConstantManager.userID = this.userID;
-//		logger.error("User ID" + this.userID);
+		HttpSession session = request.getSession(false);
+		session.setAttribute("userID", this.userID);
+		logger.error("UserId Set at session:" + this.userID);
 		return checkResp(this.userID);
 	}
-	
+
 	@PostMapping(value = ConstantManager.custPerIDGen, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String postCustPersonCustomField(@RequestBody String request){
-		
+	public String postCustPersonCustomField(@RequestBody String request, HttpServletRequest requestForSession) {
+
 		parseRequest(request);
-		
-		URLManager genURL = new URLManager(getClass().getSimpleName()+"Post", configName);
+
+		URLManager genURL = new URLManager(getClass().getSimpleName() + "Post", configName);
 		String urlToCall = genURL.formURLToCall();
-		
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in CustPersonIdGen: " + userID);
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, postBodyCreation(),
-				CustPersonIdGen.class);
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				postBodyCreation(userID), CustPersonIdGen.class);
 		String result = httpConnectionPOST.connectToServer();
 		return result;
 	}
-	
+
 	private void parseRequest(String request) {
 		ObjectMapper mapper = new ObjectMapper();
 		Detail[] detail = null;
@@ -85,8 +91,7 @@ public class CustPersonIdGen {
 					if (techName.toLowerCase().equals(cust_FEOR1.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						
-						
+
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 						break;
@@ -96,17 +101,17 @@ public class CustPersonIdGen {
 		} catch (IOException e) {
 			logger.error(e.toString());
 		}
-		
+
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	private String postBodyCreation() {
+	private String postBodyCreation(String userId) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("uri", "cust_personIdGenerate('"+ConstantManager.userID+"')");
+		jsonObj.put("uri", "cust_personIdGenerate('" + userID + "')");
 		obj.put("__metadata", jsonObj);
-		obj.put(paramName,paramValue);
+		obj.put(paramName, paramValue);
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}

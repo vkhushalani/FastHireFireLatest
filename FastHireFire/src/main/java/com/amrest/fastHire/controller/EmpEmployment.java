@@ -11,6 +11,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +41,10 @@ public class EmpEmployment {
 	private String paramName = null;
 	private String paramValue = null;
 	private final String sDate = "startdate";
-	
 
 	@PostMapping(value = ConstantManager.empEmployment, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String empEmployment(@RequestBody String request) throws ParseException {
+	public String empEmployment(@RequestBody String request, HttpServletRequest requestForSession)
+			throws ParseException {
 
 		// Extract the params and their values
 		parseRequest(request);
@@ -52,7 +55,10 @@ public class EmpEmployment {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		String data = replaceKeys();
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in EmpEmploiment: " + userID);
+		String data = replaceKeys(userID);
 		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, data,
 				EmpEmployment.class);
 
@@ -76,8 +82,7 @@ public class EmpEmployment {
 					if (techName.toLowerCase().equals(sDate.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						
-						
+
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 						break;
@@ -91,19 +96,19 @@ public class EmpEmployment {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
-		String userID = ConstantManager.userID;
+	private String replaceKeys(String userID) {
+		// String userID = ConstantManager.userID;
 		JSONObject obj = new JSONObject();
-		
+
 		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 		Date today = new Date();
 		Calendar now = Calendar.getInstance();
 		now.setTime(today);
-        now.set(Calendar.HOUR, 0);
-        now.set(Calendar.MINUTE, 0);
-        now.set(Calendar.SECOND, 0);
-        now.set(Calendar.HOUR_OF_DAY, 0);
-        
+		now.set(Calendar.HOUR, 0);
+		now.set(Calendar.MINUTE, 0);
+		now.set(Calendar.SECOND, 0);
+		now.set(Calendar.HOUR_OF_DAY, 0);
+
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("uri", "EmpEmployment(personIdExternal='" + userID + "',userId='" + userID + "')");
 		obj.put("__metadata", jsonObj);

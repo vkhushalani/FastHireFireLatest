@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +49,7 @@ public class EmpPayCompRecurring {
 	private final String frequency = "frequency";
 
 	@PostMapping(value = ConstantManager.empPayCompRecurring, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson(@RequestBody String request) {
+	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession) {
 
 		// Extract the params and their values
 		parseRequest(request);
@@ -57,9 +60,15 @@ public class EmpPayCompRecurring {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, replaceKeys(),
-				EmpPayCompRecurring.class);
-
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in EmpPayCompRecurring: " + userID);
+		String paramStartDateName = (String) session.getAttribute("paramStartDateName");
+		logger.error("Got paramStartDateName from session in EmpPayCompRecurring: " + userID);
+		String paramStartDateValue = (String) session.getAttribute("paramStartDateValue");
+		logger.error("Got paramStartDateValue from session in EmpPayCompRecurring: " + paramStartDateValue);
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				replaceKeys(userID, paramStartDateName, paramStartDateValue), EmpPayCompRecurring.class);
 		String result = httpConnectionPOST.connectToServer();
 		return result;
 	}
@@ -105,19 +114,16 @@ public class EmpPayCompRecurring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
-		String userID = ConstantManager.userID;
+	private String replaceKeys(String userID, String paramStartDateName, String paramStartDateValue) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("uri", "EmpPayCompRecurring");
 		obj.put("__metadata", jsonObj);
 
-		obj.put(ConstantManager.paramStartDateName, ConstantManager.paramStartDateValue);
-//		obj.put(ConstantManager.paramEndDateName, ConstantManager.paramEndDateValue);
-		
-		logger.debug(ConstantManager.paramStartDateName + ConstantManager.paramStartDateValue);
-//		logger.debug(ConstantManager.paramEndDateName + ConstantManager.paramEndDateValue);
+		obj.put(paramStartDateName, paramStartDateValue);
+
+		// logger.debug(paramStartDateName + paramStartDateValue);
 		obj.put("userId", userID);
 		obj.put(paramName, paramValue);
 		obj.put(paramCompName, paramCompValue);

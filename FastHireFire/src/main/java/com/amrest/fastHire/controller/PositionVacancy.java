@@ -2,6 +2,9 @@ package com.amrest.fastHire.controller;
 
 import java.net.URI;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -25,7 +28,7 @@ public class PositionVacancy {
 	private static final Logger logger = LoggerFactory.getLogger(PositionVacancy.class);
 
 	@GetMapping(value = ConstantManager.posVacancy, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson() {
+	public String perPerson(HttpServletRequest request) {
 
 		URLManager genURL = new URLManager(getClass().getSimpleName(), configName);
 		String urlToCall = genURL.formURLToCall();
@@ -33,21 +36,27 @@ public class PositionVacancy {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, replaceKeys(),
-				PositionVacancy.class);
+		HttpSession session = request.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in PositionVacacy: " + userID);
+		String metaDataUpdatePosVac = (String) session.getAttribute("metaDataUpdatePosVac");
+		logger.error("Got UserId from session in PositionVacacy: " + metaDataUpdatePosVac);
+
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				replaceKeys(metaDataUpdatePosVac), PositionVacancy.class);
 
 		String result = httpConnectionPOST.connectToServer();
 		String code = checkResp(result);
-		String resp = sendResp(code);
+		String resp = sendResp(code, userID);
 		return resp;
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
+	private String replaceKeys(String metaDataUpdatePosVac) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("uri", ConstantManager.metaDataUpdatePosVac);
+		jsonObj.put("uri", metaDataUpdatePosVac);
 		obj.put("__metadata", jsonObj);
 
 		obj.put("vacant", false);
@@ -72,12 +81,12 @@ public class PositionVacancy {
 
 	// Send the response
 	@SuppressWarnings("unchecked")
-	private String sendResp(String code) {
+	private String sendResp(String code, String userID) {
 
 		JSONObject obj = new JSONObject();
 		if (code != null && code.equals("200")) {
 			obj.put("message", "SUCCESS");
-			obj.put("userID", ConstantManager.userID);
+			obj.put("userID", userID);
 		} else {
 			obj.put("message", "ERROR");
 			obj.put("userID", "");

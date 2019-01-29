@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +37,7 @@ public class EmpCompensation {
 	private final String payGroup = "paygroup";
 
 	@PostMapping(value = ConstantManager.empCompensation, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson(@RequestBody String request) {
+	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession) {
 
 		// Extract the params and their values
 		parseRequest(request);
@@ -45,8 +48,15 @@ public class EmpCompensation {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, replaceKeys(),
-				EmpCompensation.class);
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in EmpCompensation: " + userID);
+		String paramStartDateName = (String) session.getAttribute("paramStartDateName");
+		logger.error("Got paramStartDateName from session in EmpCompensation: " + userID);
+		String paramStartDateValue = (String) session.getAttribute("paramStartDateValue");
+		logger.error("Got paramStartDateValue from session in EmpCompensation: " + paramStartDateValue);
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				replaceKeys(userID, paramStartDateName, paramStartDateValue), EmpCompensation.class);
 
 		String result = httpConnectionPOST.connectToServer();
 		return result;
@@ -82,16 +92,15 @@ public class EmpCompensation {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
-		String userID = ConstantManager.userID;
+	private String replaceKeys(String userID, String paramStartDateName, String paramStartDateValue) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("uri", "EmpCompensation");
 		obj.put("__metadata", jsonObj);
 
-		obj.put(ConstantManager.paramStartDateName, ConstantManager.paramStartDateValue);
-		logger.debug(ConstantManager.paramStartDateName + ConstantManager.paramStartDateValue);
+		obj.put(paramStartDateName, paramStartDateValue);
+		logger.debug(paramStartDateName + paramStartDateValue);
 //		logger.debug(ConstantManager.paramEndDateName + ConstantManager.paramEndDateValue);
 //		obj.put(ConstantManager.paramEndDateName, ConstantManager.paramEndDateValue);
 		obj.put("userId", userID);

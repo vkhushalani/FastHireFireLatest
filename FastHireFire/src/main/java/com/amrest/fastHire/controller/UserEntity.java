@@ -13,6 +13,7 @@ import java.util.List;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,24 +59,29 @@ public class UserEntity {
 	private String loggedInUser = null;
 	@Autowired
 	SFConstantsService sfConstantsService;
+
 	@PostMapping(value = ConstantManager.userEntity, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String userEntity(@RequestBody String request,HttpServletRequest httprequest) throws ParseException, ClientProtocolException, IOException, URISyntaxException, NamingException {
-		 loggedInUser =  httprequest.getUserPrincipal().getName();
-		parseRequest(request);
+	public String userEntity(@RequestBody String request, HttpServletRequest httprequest)
+			throws ParseException, ClientProtocolException, IOException, URISyntaxException, NamingException {
+		loggedInUser = httprequest.getUserPrincipal().getName();
+		parseRequest(request, httprequest);
 		URLManager genURL = new URLManager(getClass().getSimpleName(), configName);
 		String urlToCall = genURL.formURLToCall();
 		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
-		
+
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
+		HttpSession session = httprequest.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in PositionVacacy: " + userID);
 		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
-				createBody(ConstantManager.userID), UserEntity.class);
-		
-		
+				createBody(userID), UserEntity.class);
+
 		String result = httpConnectionPOST.connectToServer();
 		return result;
 	}
-	private void parseRequest(String request) throws ParseException {
+
+	private void parseRequest(String request, HttpServletRequest requestForSession) throws ParseException {
 		ObjectMapper mapper = new ObjectMapper();
 		Detail[] detail = null;
 		try {
@@ -91,26 +96,26 @@ public class UserEntity {
 					if (techName.toLowerCase().equals(sDate.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-						
+
 						SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 						Calendar c = Calendar.getInstance();
 						c.setTime(sdf.parse(paramValue));
 						c.add(Calendar.DAY_OF_MONTH, ConstantManager.padStartDate);
-						ConstantManager.customDateValue = dateFormatted(sdf.format(c.getTime()));
+						HttpSession session = requestForSession.getSession(false);
+						session.setAttribute("customDateValue", dateFormatted(sdf.format(c.getTime())));
+						logger.error("customDateValue Set at session:" + dateFormatted(sdf.format(c.getTime())));
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 						break;
-					}
-					else if(techName.equalsIgnoreCase("emailAddress")){
-						emailValue =  field.getValue().toString();
+					} else if (techName.equalsIgnoreCase("emailAddress")) {
+						emailValue = field.getValue().toString();
 //						logger.error("emailValue"+emailValue);
-					}
-					else if(techName.equalsIgnoreCase("lastName")){
-						lastNameValue = field.getValue().toString();	
+					} else if (techName.equalsIgnoreCase("lastName")) {
+						lastNameValue = field.getValue().toString();
 //						logger.error("lastNameValue"+lastNameValue);
 					}
-										
-					else if(techName.equalsIgnoreCase("firstName")){
+
+					else if (techName.equalsIgnoreCase("firstName")) {
 						firstNameValue = field.getValue().toString();
 //						logger.error("firstNameValue"+firstNameValue);
 					}
@@ -125,8 +130,10 @@ public class UserEntity {
 		}
 
 	}
+
 	@SuppressWarnings("unchecked")
-	private String createBody(String userID) throws ClientProtocolException, IOException, URISyntaxException, NamingException {
+	private String createBody(String userID)
+			throws ClientProtocolException, IOException, URISyntaxException, NamingException {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
@@ -136,24 +143,24 @@ public class UserEntity {
 		obj.put("username", userID);
 		obj.put("status", "Active");
 		obj.put("userId", userID);
-//		obj.put(ConstantManager.customDateName, ConstantManager.customDateValue);
-		obj.put("email",emailValue);
+		obj.put("email", emailValue);
 		obj.put("lastName", lastNameValue);
 		obj.put("firstName", firstNameValue);
 //		obj.put("defaultLocale", defaultLanguage);
-		
-		// call empJOB to get logged in user country 
-		
+
+		// call empJOB to get logged in user country
+
 		DestinationClient destClient = new DestinationClient();
 		destClient.setDestName(destinationName);
 		destClient.setHeaderProvider();
 		destClient.setConfiguration();
 		destClient.setDestConfiguration();
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
-		
+
 		// get the Emjob Details of the logged In user
-		
-		HttpResponse empJobResponse =  destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '"+loggedInUser+"' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
+
+		HttpResponse empJobResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '" + loggedInUser
+				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
 		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
 		JSONObject empJobResponseObject = (JSONObject) JSONValue.parse(empJobResponseJsonString);
 		empJobResponseObject = (JSONObject) empJobResponseObject.get("d");
@@ -163,11 +170,12 @@ public class UserEntity {
 		empJobResponseObject = (JSONObject) empJobResponseObject.get("positionNav");
 		empJobResponseObject = (JSONObject) empJobResponseObject.get("companyNav");
 		String country = (String) empJobResponseObject.get("country");
-		SFConstants defaultLanguage = sfConstantsService.findById("defaultLocale_"+country);
+		SFConstants defaultLanguage = sfConstantsService.findById("defaultLocale_" + country);
 		obj.put("defaultLocale", defaultLanguage.getValue());
-		logger.debug("input object"+obj.toJSONString());
+		logger.debug("input object" + obj.toJSONString());
 		return obj.toJSONString();
 	}
+
 	private String dateFormatted(String startDate) {
 //		logger.error("Start Date" + startDate);
 		String timeStamp = " 00:00:00:000";

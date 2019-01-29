@@ -8,6 +8,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +48,7 @@ public class PerPersonal {
 
 	private String paramLastName = null;
 	private String paramLastNameValue = null;
-	
+
 	private String paramPrefLang = null;
 	private String paramPrefLangValue = null;
 
@@ -56,7 +59,7 @@ public class PerPersonal {
 	private final String prefLang = "nativePreferredLang";
 
 	@PostMapping(value = ConstantManager.perPersonal, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public String perPerson(@RequestBody String request) {
+	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession) {
 
 		// Extract the params and their values
 		parseRequest(request);
@@ -67,8 +70,12 @@ public class PerPersonal {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration, replaceKeys(),
-				PerPersonal.class);
+		HttpSession session = requestForSession.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		String paramOrgStartDateValue = (String) session.getAttribute("paramOrgStartDateValue");
+		logger.error("Got UserId from session in PerPersonal: " + userID);
+		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
+				replaceKeys(userID, paramOrgStartDateValue), PerPersonal.class);
 
 		String result = httpConnectionPOST.connectToServer();
 		return result;
@@ -106,8 +113,7 @@ public class PerPersonal {
 						paramLastNameValue = field.getValue().toString();
 //						logger.error(paramLastName.toString());
 //						logger.error(paramLastNameValue.toString());
-					}
-					else if (techName.toLowerCase().equals(prefLang.toLowerCase())) {
+					} else if (techName.toLowerCase().equals(prefLang.toLowerCase())) {
 						paramPrefLang = techName;
 						paramPrefLangValue = field.getValue().toString();
 //						logger.error(paramPrefLang.toString());
@@ -121,13 +127,12 @@ public class PerPersonal {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys() {
-		String userID = ConstantManager.userID;
+	private String replaceKeys(String userID, String paramOrgStartDateValue) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("uri",
-				"PerPersonal(personIdExternal='" + userID + "',startDate=datetime'" + dateFormatted() + "')");
+		jsonObj.put("uri", "PerPersonal(personIdExternal='" + userID + "',startDate=datetime'"
+				+ dateFormatted(paramOrgStartDateValue) + "')");
 		obj.put("__metadata", jsonObj);
 
 		obj.put("personIdExternal", userID);
@@ -141,13 +146,13 @@ public class PerPersonal {
 		return obj.toJSONString();
 	}
 
-	private String dateFormatted() {
+	private String dateFormatted(String paramOrgStartDateValue) {
 		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
 		Date date = null;
 		DateFormat targetFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String formattedDate = null;
 		try {
-			date = simpleDateFormat.parse(ConstantManager.paramOrgStartDateValue);
+			date = simpleDateFormat.parse(paramOrgStartDateValue);
 			formattedDate = targetFormat.format(date);
 		} catch (ParseException e) {
 			logger.error(e.toString());
