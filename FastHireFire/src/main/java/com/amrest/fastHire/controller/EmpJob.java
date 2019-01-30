@@ -358,7 +358,7 @@ public class EmpJob {
 		obj.put(paramcontractTypeName, paramcontractTypeValue);
 		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
 		obj.put(ConstantManager.customDateName, customDateValue);
-//		logger.error(obj.toJSONString());
+//		logger.error(obj.toJSONString()); 
 		return obj.toJSONString();
 	}
 
