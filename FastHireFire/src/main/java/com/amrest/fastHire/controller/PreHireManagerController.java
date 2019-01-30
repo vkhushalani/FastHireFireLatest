@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
@@ -177,18 +178,22 @@ public class PreHireManagerController {
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 
 		// call to get local language of the logged in user
-
+		HttpSession session = request.getSession(false);
 		HttpResponse userResponse = destClient.callDestinationGET("/User", "?$filter=userId eq '" + loggedInUser
 				+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
 		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
 		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
 		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		session.setAttribute("defaultLocale", userResponseObject.getString("defaultLocale"));
+		logger.debug(
+				"Set defaultLocale to session in PerHireManager: " + userResponseObject.getString("defaultLocale"));
 		return ResponseEntity.ok().body(userResponseObject.toString());
 	}
 
 	@GetMapping(value = "/DashBoardPositions")
 	public ResponseEntity<List<DashBoardPositionClass>> getDashBoardPositions(HttpServletRequest request)
 			throws NamingException, ClientProtocolException, IOException, URISyntaxException, java.text.ParseException {
+		HttpSession session = request.getSession(false);
 		String loggedInUser = request.getUserPrincipal().getName();
 		// need to remove this code
 		if (loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
@@ -217,6 +222,10 @@ public class PreHireManagerController {
 		paraMap.put("department", empJobResponseObject.getJSONObject("positionNav").getString("department"));
 		paraMap.put("country",
 				empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
+		session.setAttribute("country",
+				empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
+		logger.debug("Set country to session in PerHireManager: "
+				+ empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
 		paraMap.put("position", empJobResponseObject.getString("position"));
 		SFConstants vacantEmployeeClass = sfConstantsService.findById("vacantEmployeeClass_" + paraMap.get("country"));
 
@@ -1191,7 +1200,7 @@ public class PreHireManagerController {
 			@RequestParam(value = "triggerFieldId", required = true) String triggerFieldId,
 			@RequestParam(value = "selectedValue", required = true) String selectedValue, HttpServletRequest request)
 			throws NamingException, ClientProtocolException, IOException, URISyntaxException {
-
+		HttpSession session = request.getSession(false);
 		String loggedInUser = request.getUserPrincipal().getName();
 		if (loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
 				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")) {
@@ -1209,22 +1218,24 @@ public class PreHireManagerController {
 
 		// call to get local language of the logged in user
 
-		HttpResponse userResponse = destClient.callDestinationGET("/User",
-				"?$filter=userId eq '" + loggedInUser + "'&$format=json&$select=defaultLocale");
-		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
-		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
-		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		map.put("locale", userResponseObject.getString("defaultLocale"));
+//		HttpResponse userResponse = destClient.callDestinationGET("/User",
+//				"?$filter=userId eq '" + loggedInUser + "'&$format=json&$select=defaultLocale");
+//		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+//		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
+//		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+//		map.put("locale", userResponseObject.getString("defaultLocale"));
+//
+//		HttpResponse empJobResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '" + loggedInUser
+//				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country,positionNav/company,positionNav/department");
+//		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
+//		JSONObject empJobResponseObject = new JSONObject(empJobResponseJsonString);
+//		empJobResponseObject = empJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 
-		HttpResponse empJobResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '" + loggedInUser
-				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country,positionNav/company,positionNav/department");
-		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
-		JSONObject empJobResponseObject = new JSONObject(empJobResponseJsonString);
-		empJobResponseObject = empJobResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-
-		map.put("country",
-				empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
-
+		map.put("country", (String) session.getAttribute("country"));
+		logger.debug("Got country from session in PreHireManagerController: " + session.getAttribute("country"));
+		map.put("locale", (String) session.getAttribute("defaultLocale"));
+		logger.debug(
+				"Got defaultLocale from session in PreHireManagerController: " + session.getAttribute("defaultLocale"));
 		map.put("fieldId", fieldId);
 		map.put("selectedValue", selectedValue);
 		map.put("triggerFieldId", triggerFieldId);

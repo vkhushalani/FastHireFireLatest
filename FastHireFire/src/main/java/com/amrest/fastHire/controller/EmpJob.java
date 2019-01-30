@@ -100,12 +100,6 @@ public class EmpJob {
 	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession)
 			throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
 		HttpSession session = requestForSession.getSession(false);
-		String userID = (String) session.getAttribute("userID");
-		logger.error("Got UserId from session in EmpJob: " + userID);
-		String customDateValue = (String) session.getAttribute("customDateValue");
-		logger.error("Got customDateValue from session in EmpJob: " + customDateValue);
-		String paramStartDateValue = (String) session.getAttribute("paramStartDateValue");
-		logger.error("Got paramStartDateValue from session in EmpJob: " + paramStartDateValue);
 
 		// Extract the params and their values
 		parseRequest(request, session);
@@ -120,6 +114,12 @@ public class EmpJob {
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
+		String userID = (String) session.getAttribute("userID");
+		logger.error("Got UserId from session in EmpJob: " + userID);
+		String customDateValue = (String) session.getAttribute("customDateValue");
+		logger.error("Got customDateValue from session in EmpJob: " + customDateValue);
+		String paramStartDateValue = (String) session.getAttribute("paramStartDateValue");
+		logger.error("Got paramStartDateValue from session in EmpJob: " + paramStartDateValue);
 		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
 				replaceKeys(userID, customDateValue, paramStartDateValue), EmpJob.class);
 
