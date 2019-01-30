@@ -101,8 +101,12 @@ public class EmpJob {
 			throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
 		HttpSession session = requestForSession.getSession(false);
 		String userID = (String) session.getAttribute("userID");
-		String customDateValue = (String) session.getAttribute("customDateValue");
 		logger.error("Got UserId from session in EmpJob: " + userID);
+		String customDateValue = (String) session.getAttribute("customDateValue");
+		logger.error("Got customDateValue from session in EmpJob: " + customDateValue);
+		String paramStartDateValue = (String) session.getAttribute("paramStartDateValue");
+		logger.error("Got paramStartDateValue from session in EmpJob: " + paramStartDateValue);
+
 		// Extract the params and their values
 		parseRequest(request, session);
 
@@ -117,7 +121,7 @@ public class EmpJob {
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
 		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
-				replaceKeys(userID, customDateValue), EmpJob.class);
+				replaceKeys(userID, customDateValue, paramStartDateValue), EmpJob.class);
 
 		String result = httpConnectionPOST.connectToServer();
 		return result;
@@ -246,7 +250,7 @@ public class EmpJob {
 						paramValue = field.getValue().toString();
 
 						session.setAttribute("paramStartDateName", paramName);
-
+						logger.error("Set paramStartDateName to session in EmpJob: " + paramName);
 						SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 						Date today = new Date();
 						Calendar now = Calendar.getInstance();
@@ -257,9 +261,10 @@ public class EmpJob {
 						now.set(Calendar.HOUR_OF_DAY, 0);
 
 						session.setAttribute("paramStartDateValue", dateFormatted(sdf.format(now.getTime())));
-						logger.error("paramStartDateValue Set at session:" + dateFormatted(sdf.format(now.getTime())));
+						logger.error("paramStartDateValue Set at session from empjob:"
+								+ dateFormatted(sdf.format(now.getTime())));
 						session.setAttribute("paramOrgStartDateValue", sdf.format(now.getTime()));
-						logger.error("paramOrgStartDateValue Set at session:" + sdf.format(now.getTime()));
+						logger.error("paramOrgStartDateValue Set at session from empjob:" + sdf.format(now.getTime()));
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 					} else if (name.toLowerCase().equals(empType.toLowerCase())) {
@@ -322,7 +327,7 @@ public class EmpJob {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String replaceKeys(String userID, String customDateValue) {
+	private String replaceKeys(String userID, String customDateValue, String paramStartDateValue) {
 		JSONObject obj = new JSONObject();
 
 		JSONObject jsonObj = new JSONObject();
@@ -331,8 +336,7 @@ public class EmpJob {
 
 		obj.put("jobCode", jobCode);
 		obj.put("userId", userID);
-		obj.put(paramName, ConstantManager.paramStartDateValue);
-//		obj.put(ConstantManager.paramEndDateName, ConstantManager.paramEndDateValue);
+		obj.put(paramName, paramStartDateValue);
 		obj.put("eventReason", "HIRNEW");
 		obj.put("company", company);
 		obj.put("businessUnit", businessUnit);
