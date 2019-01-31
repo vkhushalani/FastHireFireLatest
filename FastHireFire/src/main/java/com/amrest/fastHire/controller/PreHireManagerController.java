@@ -178,15 +178,11 @@ public class PreHireManagerController {
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 
 		// call to get local language of the logged in user
-		HttpSession session = request.getSession(false);
 		HttpResponse userResponse = destClient.callDestinationGET("/User", "?$filter=userId eq '" + loggedInUser
 				+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
 		String userResponseJsonString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
 		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
 		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-		session.setAttribute("defaultLocale", userResponseObject.getString("defaultLocale"));
-		logger.debug(
-				"Set defaultLocale to session in PerHireManager: " + userResponseObject.getString("defaultLocale"));
 		return ResponseEntity.ok().body(userResponseObject.toString());
 	}
 
@@ -424,7 +420,7 @@ public class PreHireManagerController {
 			@RequestParam(value = "businessUnit", required = false) String businessUnitId,
 			@RequestParam(value = "position", required = true) String position)
 			throws NamingException, ClientProtocolException, IOException, URISyntaxException {
-
+		HttpSession session = request.getSession(false);
 		String loggedInUser = request.getUserPrincipal().getName();
 		if (loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
 				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")) {
@@ -458,7 +454,9 @@ public class PreHireManagerController {
 		JSONObject userResponseObject = new JSONObject(userResponseJsonString);
 		userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
 		compareMap.put("locale", userResponseObject.getString("defaultLocale"));
-
+		session.setAttribute("defaultLocale", userResponseObject.getString("defaultLocale"));
+		logger.debug(
+				"Set defaultLocale to session in PerHireManager: " + userResponseObject.getString("defaultLocale"));
 		HttpResponse empJobResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '" + loggedInUser
 				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=position,positionNav/companyNav/country,positionNav/company,positionNav/department");
 		String empJobResponseJsonString = EntityUtils.toString(empJobResponse.getEntity(), "UTF-8");
