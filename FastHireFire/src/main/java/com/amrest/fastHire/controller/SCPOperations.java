@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amrest.fastHire.SF.DestinationClient;
@@ -33,41 +34,40 @@ import com.sap.cloud.account.TenantContext;
 @RestController
 @RequestMapping("/FastHireAdmin")
 public class SCPOperations {
-	
+
 	Logger logger = LoggerFactory.getLogger(SCPOperations.class);
-	
+
 	public static final String tokenDestName = "PlatFormClientAuthToken";
-	
+
 	@GetMapping("/GetGroups")
-	public ResponseEntity <?> GetGroups() throws ClientProtocolException, NamingException, URISyntaxException, IOException{
+	public ResponseEntity<?> GetGroups()
+			throws ClientProtocolException, NamingException, URISyntaxException, IOException {
 		JSONObject tokenResponseObject = getoAuthToken();
 		String aToken = tokenResponseObject.getString("access_token");
 		String tokenType = tokenResponseObject.getString("token_type");
-		
+
 		// get the subscribed account details
 		Account subscribedAccount = getSubscribedAccount();
-		
-		UrlClient client= new UrlClient();
+
+		UrlClient client = new UrlClient();
 		String cloudHost = System.getenv("HC_HOST");
 		String cloudAccount = subscribedAccount.getId();
-		client.setBaseUrl("https://api."+cloudHost+"/authorization/v1");
-		client.setPath("/accounts/"+cloudAccount+"/groups");
+		client.setBaseUrl("https://api." + cloudHost + "/authorization/v1");
+		client.setPath("/accounts/" + cloudAccount + "/groups");
 		client.setFilter("");
 		client.setTokenType(tokenType);
 		client.setUserName("");
 		client.setPassword(aToken);
 		HttpResponse response = client.callDestinationGET();
 		String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-		if(response.getStatusLine().getStatusCode() == 200){
-			return 	ResponseEntity.ok().body(responseString);
-			}
-		else
-		{
-			return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
+		if (response.getStatusLine().getStatusCode() == 200) {
+			return ResponseEntity.ok().body(responseString);
+		} else {
+			return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		
+
 	}
-	
+
 	private Account getSubscribedAccount() throws NamingException {
 		Context ctx = new InitialContext();
 		TenantContext tenantctx = (TenantContext) ctx.lookup("java:comp/env/TenantContext");
@@ -75,135 +75,162 @@ public class SCPOperations {
 	}
 
 	@PostMapping("/AssignUserToGroup")
-	public ResponseEntity <?> assignUserToGroup(@RequestBody String postJson) throws NamingException, ClientProtocolException, URISyntaxException, IOException{
-		
-		Map<String,String> map = new HashMap<String,String>();  
-		
+	public ResponseEntity<?> assignUserToGroup(@RequestBody String postJson)
+			throws NamingException, ClientProtocolException, URISyntaxException, IOException {
+
+		Map<String, String> map = new HashMap<String, String>();
+
 		// get post JSON Object GroupName,Users Comma Separated
-				JSONObject postObject = new JSONObject(postJson);
-				Iterator<?> keys = postObject.keys();
-				
-				while(keys.hasNext()) {
-				    String key = (String)keys.next();
-				    map.put(key, postObject.getString(key));
-				}
-				
-				// get the subscribed account details
-				Account subscribedAccount = getSubscribedAccount();
-				
-				// get auth Token
-				JSONObject tokenResponseObject = getoAuthToken();
-				String aToken = tokenResponseObject.getString("access_token");
-				String tokenType = tokenResponseObject.getString("token_type");
-				
-				
-				// set the url client 
-				UrlClient client= new UrlClient();
-				String cloudHost = System.getenv("HC_HOST");
-				String cloudAccount = subscribedAccount.getId();
-				client.setBaseUrl("https://api."+cloudHost+"/authorization/v1");
-				client.setPath("/accounts/"+cloudAccount+"/groups/users/");
-				client.setFilter("?groupName="+map.get("GroupName"));
-				client.setTokenType(tokenType);
-				client.setUserName("");
-				client.setPassword(aToken);
-				
-				// create post json
-				String json = "{\"users\":[";
-				String usersString = map.get("users");
-				String[] parts = usersString.split(",");
-				int counter = 0;
-				for(String user : parts){
-					json = json + "{\"name\" : \""+user+"\"}";
-					
-					counter = counter + 1;
-					if(counter != parts.length){
-						json = json + ",";
-					}
-				}
-				json = json +"]}";
-				
-				client.setPostJson(json);
-				HttpResponse response = client.callDestinationPUT();
-				if(response.getStatusLine().getStatusCode() == 201){
-				return 	ResponseEntity.ok().body("Success");
-				}
-				
-				return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-		
+		JSONObject postObject = new JSONObject(postJson);
+		Iterator<?> keys = postObject.keys();
+
+		while (keys.hasNext()) {
+			String key = (String) keys.next();
+			map.put(key, postObject.getString(key));
+		}
+
+		// get the subscribed account details
+		Account subscribedAccount = getSubscribedAccount();
+
+		// get auth Token
+		JSONObject tokenResponseObject = getoAuthToken();
+		String aToken = tokenResponseObject.getString("access_token");
+		String tokenType = tokenResponseObject.getString("token_type");
+
+		// set the url client
+		UrlClient client = new UrlClient();
+		String cloudHost = System.getenv("HC_HOST");
+		String cloudAccount = subscribedAccount.getId();
+		client.setBaseUrl("https://api." + cloudHost + "/authorization/v1");
+		client.setPath("/accounts/" + cloudAccount + "/groups/users/");
+		client.setFilter("?groupName=" + map.get("GroupName"));
+		client.setTokenType(tokenType);
+		client.setUserName("");
+		client.setPassword(aToken);
+
+		// create post json
+		String json = "{\"users\":[";
+		String usersString = map.get("users");
+		String[] parts = usersString.split(",");
+		int counter = 0;
+		for (String user : parts) {
+			json = json + "{\"name\" : \"" + user + "\"}";
+
+			counter = counter + 1;
+			if (counter != parts.length) {
+				json = json + ",";
+			}
+		}
+		json = json + "]}";
+
+		client.setPostJson(json);
+		HttpResponse response = client.callDestinationPUT();
+		if (response.getStatusLine().getStatusCode() == 201) {
+			return ResponseEntity.ok().body("Success");
+		}
+
+		return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
+
 	}
-	
+
 	@DeleteMapping("/DeleteUserFromGroup")
-	public ResponseEntity <?> deleteUserFromGroup(@RequestBody String postJson) throws NamingException, ClientProtocolException, URISyntaxException, IOException{
-		
-		Map<String,String> map = new HashMap<String,String>();  
-		
+	public ResponseEntity<?> deleteUserFromGroup(@RequestBody String postJson)
+			throws NamingException, ClientProtocolException, URISyntaxException, IOException {
+
+		Map<String, String> map = new HashMap<String, String>();
+
 		// get post JSON Object GroupName,Users Comma Separated
-				JSONObject postObject = new JSONObject(postJson);
-				Iterator<?> keys = postObject.keys();
-				
-				while(keys.hasNext()) {
-				    String key = (String)keys.next();
-				    map.put(key, postObject.getString(key));
-				}
-				
-				// get the subscribed account details
-				Account subscribedAccount = getSubscribedAccount();
-				
-				// get auth Token
-				JSONObject tokenResponseObject = getoAuthToken();
-				String aToken = tokenResponseObject.getString("access_token");
-				String tokenType = tokenResponseObject.getString("token_type");
-				
-				
-				// set the url client 
-				UrlClient client= new UrlClient();
-				String cloudHost = System.getenv("HC_HOST");
-				String cloudAccount = subscribedAccount.getId();
-				client.setBaseUrl("https://api."+cloudHost+"/authorization/v1");
-				client.setPath("/accounts/"+cloudAccount+"/groups/users/");
-				client.setTokenType(tokenType);
-				client.setUserName("");
-				client.setPassword(aToken);
-				
-				// create filter String
-				String filter = "?groupName="+map.get("GroupName")+"&users=";
-				String usersString = map.get("users");
-				String[] parts = usersString.split(",");
-				int counter = 0;
-				for(String user : parts){
-					filter = filter + user;
-					
-					counter = counter + 1;
-					if(counter != parts.length){
-						filter = filter + ";";
-					}
-				}
-				
-				
-				client.setFilter(filter);
-				HttpResponse response = client.callDestinationDELETE();
-				if(response.getStatusLine().getStatusCode() == 200){
-				return 	ResponseEntity.ok().body("Success");
-				}
-				
-				return new ResponseEntity<>("Error",HttpStatus.INTERNAL_SERVER_ERROR);
-		
+		JSONObject postObject = new JSONObject(postJson);
+		Iterator<?> keys = postObject.keys();
+
+		while (keys.hasNext()) {
+			String key = (String) keys.next();
+			map.put(key, postObject.getString(key));
+		}
+
+		// get the subscribed account details
+		Account subscribedAccount = getSubscribedAccount();
+
+		// get auth Token
+		JSONObject tokenResponseObject = getoAuthToken();
+		String aToken = tokenResponseObject.getString("access_token");
+		String tokenType = tokenResponseObject.getString("token_type");
+
+		// set the url client
+		UrlClient client = new UrlClient();
+		String cloudHost = System.getenv("HC_HOST");
+		String cloudAccount = subscribedAccount.getId();
+		client.setBaseUrl("https://api." + cloudHost + "/authorization/v1");
+		client.setPath("/accounts/" + cloudAccount + "/groups/users/");
+		client.setTokenType(tokenType);
+		client.setUserName("");
+		client.setPassword(aToken);
+
+		// create filter String
+		String filter = "?groupName=" + map.get("GroupName") + "&users=";
+		String usersString = map.get("users");
+		String[] parts = usersString.split(",");
+		int counter = 0;
+		for (String user : parts) {
+			filter = filter + user;
+
+			counter = counter + 1;
+			if (counter != parts.length) {
+				filter = filter + ";";
+			}
+		}
+
+		client.setFilter(filter);
+		HttpResponse response = client.callDestinationDELETE();
+		if (response.getStatusLine().getStatusCode() == 200) {
+			return ResponseEntity.ok().body("Success");
+		}
+
+		return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
+
 	}
-	
-	public JSONObject getoAuthToken() throws NamingException, ClientProtocolException, URISyntaxException, IOException{
+
+	public JSONObject getoAuthToken() throws NamingException, ClientProtocolException, URISyntaxException, IOException {
 		DestinationClient destClient = new DestinationClient();
 		destClient.setDestName(tokenDestName);
 		destClient.setHeaderProvider();
 		destClient.setConfiguration();
 		destClient.setDestConfiguration();
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
-		HttpResponse tokenResponse =  destClient.callDestinationPOST("", "", "");
+		HttpResponse tokenResponse = destClient.callDestinationPOST("", "", "");
 		String tokenResponseJsonString = EntityUtils.toString(tokenResponse.getEntity(), "UTF-8");
 		JSONObject tokenResponseObject = new JSONObject(tokenResponseJsonString);
-		
+
 		return tokenResponseObject;
-		
+
+	}
+
+	@GetMapping("/searchUser")
+	public ResponseEntity<?> searchUser(@RequestParam(value = "userID", required = true) String userID)
+			throws ClientProtocolException, NamingException, URISyntaxException, IOException {
+		JSONObject tokenResponseObject = getoAuthToken();
+		String aToken = tokenResponseObject.getString("access_token");
+		String tokenType = tokenResponseObject.getString("token_type");
+
+		// get the subscribed account details
+		Account subscribedAccount = getSubscribedAccount();
+
+		UrlClient client = new UrlClient();
+		String cloudHost = System.getenv("HC_HOST");
+		String cloudAccount = subscribedAccount.getId();
+		client.setBaseUrl("https://api." + cloudHost + "/authorization/v1");
+		client.setPath("/accounts/" + cloudAccount + "/users/groups/?userId=" + userID);
+		client.setFilter("");
+		client.setTokenType(tokenType);
+		client.setUserName("");
+		client.setPassword(aToken);
+		HttpResponse response = client.callDestinationGET();
+		String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+		if (response.getStatusLine().getStatusCode() == 200) {
+			return ResponseEntity.ok().body(responseString);
+		} else {
+			return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
 
 }
