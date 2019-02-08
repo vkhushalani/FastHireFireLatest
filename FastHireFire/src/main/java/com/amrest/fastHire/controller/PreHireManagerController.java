@@ -1476,8 +1476,7 @@ public class PreHireManagerController {
 					+ "'&$format=json&$select=personIdExternal,emailAddress");
 			entityMap.put("cust_Additional_Information",
 					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'");
-			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
-					+ "'&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
+			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId") + "'");
 
 			// reading the records and creating batch post body
 

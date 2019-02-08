@@ -36,6 +36,10 @@ public class CustPersonIdGen {
 	private String cust_FEOR1 = "cust_FEOR1";
 	private String paramName = null;
 	private String paramValue = null;
+	private String paramName2 = null;
+	private String paramValue2 = null;
+	private String paramName3 = null;
+	private String paramValue3 = null;
 
 	@GetMapping(value = ConstantManager.custPerIDGen, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public String generateID(HttpServletRequest request) {
@@ -85,33 +89,46 @@ public class CustPersonIdGen {
 			for (int i = 0; i < detail.length; i++) {
 				List<Field> group = detail[i].getFields();
 				for (Field field : group) {
-//					logger.error("Heiii" + field.getField().getTechnicalName().toString());
+					logger.debug("Heiii" + field.getField().getTechnicalName().toString());
 					String techName = field.getField().getTechnicalName().toString();
-
+					logger.debug("techName.toLowerCase().equals(cust_FEOR1.toLowerCase()):"
+							+ techName.toLowerCase().equals(cust_FEOR1.toLowerCase() + ""));
+					logger.debug("techName.toLowerCase().equals(\"cust_WAY\".toLowerCase()):"
+							+ techName.toLowerCase().equals("cust_WAY".toLowerCase() + ""));
+					logger.debug("techName.toLowerCase().equals(\"cust_SECTOR\".toLowerCase()):"
+							+ techName.toLowerCase().equals("cust_SECTOR".toLowerCase()) + "");
 					if (techName.toLowerCase().equals(cust_FEOR1.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
-						break;
+					} else if (techName.toLowerCase().equals("cust_WAY".toLowerCase())) {
+						paramName2 = techName;
+						paramValue2 = field.getValue().toString();
+						logger.debug(paramName2.toString());
+						logger.debug(paramValue2.toString());
+					} else if (techName.toLowerCase().equals("cust_SECTOR".toLowerCase())) {
+						paramName3 = techName;
+						paramValue3 = field.getValue().toString();
+						logger.debug(paramName3.toString());
+						logger.debug(paramValue3.toString());
 					}
 				}
 			}
 		} catch (IOException e) {
 			logger.error(e.toString());
 		}
-
 	}
 
 	@SuppressWarnings("unchecked")
 	private String postBodyCreation(String userId) {
 		JSONObject obj = new JSONObject();
-
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("uri", "cust_personIdGenerate('" + userID + "')");
 		obj.put("__metadata", jsonObj);
 		obj.put(paramName, paramValue);
+		obj.put(paramName2, paramValue2);
+		obj.put(paramName3, paramValue3);
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
