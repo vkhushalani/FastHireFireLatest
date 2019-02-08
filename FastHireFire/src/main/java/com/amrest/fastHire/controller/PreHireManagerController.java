@@ -1508,7 +1508,6 @@ public class PreHireManagerController {
 					String enityKey = batchResponseType.split("\\.")[1];
 					// logger.debug("enityKey" + enityKey);
 					entityResponseMap.put(enityKey, batchResponse.getBody());
-
 					if (enityKey.equalsIgnoreCase("EmpJob")) {
 						batchObject.put("startDate", map.get("startDate"));
 						if (batchObject.getString("countryOfCompany") != null) {
