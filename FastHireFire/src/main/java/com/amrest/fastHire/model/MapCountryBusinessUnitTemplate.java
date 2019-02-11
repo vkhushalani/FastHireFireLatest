@@ -13,33 +13,32 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_MAP_COUNTRY_UNIT_TEMPLATES\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_MAP_COUNTRY_UNIT_TEMPLATES\"", schema = "POC_FAST_HIRE")
+@NamedQueries({
 		@NamedQuery(name = "MapCountryBusinessUnitTemplate.findAll", query = "SELECT t FROM MapCountryBusinessUnitTemplate t"),
 		@NamedQuery(name = "MapCountryBusinessUnitTemplate.findByCountryBusinessUnitId", query = "SELECT t FROM MapCountryBusinessUnitTemplate t WHERE t.countryBusinessUnitId = :countryBusinessUnitId"),
-		@NamedQuery(name = "MapCountryBusinessUnitTemplate.findByCountryBusinessUnitTemplate", query = "SELECT t FROM MapCountryBusinessUnitTemplate t WHERE t.countryBusinessUnitId = :countryBusinessUnitId AND t.templateId = :templateId")
-})
+		@NamedQuery(name = "MapCountryBusinessUnitTemplate.findByCountryBusinessUnitTemplate", query = "SELECT t FROM MapCountryBusinessUnitTemplate t WHERE t.countryBusinessUnitId = :countryBusinessUnitId AND t.templateId = :templateId") })
 public class MapCountryBusinessUnitTemplate {
-	
+
 	@Id
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
 	private String id;
-	
+
 	@Column(name = "\"COUNTRY_BUSINESS_UNIT.ID\"", columnDefinition = "VARCHAR(32)")
 	private String countryBusinessUnitId;
-	
+
 	@Column(name = "\"HIRING_TEMPLATE.ID\"", columnDefinition = "VARCHAR(32)")
 	private String templateId;
-	
+
 	@ManyToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name="\"HIRING_TEMPLATE.ID\"",referencedColumnName="\"ID\"",insertable=false, updatable=false)
+	@JoinColumn(name = "\"HIRING_TEMPLATE.ID\"", referencedColumnName = "\"ID\"", insertable = false, updatable = false)
 	private Template template;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
+
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
+
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
 
 	public String getId() {
 		return id;

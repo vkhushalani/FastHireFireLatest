@@ -8,18 +8,16 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_SF_CONSTANTS\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "SFConstants.findAll", query = "SELECT bu FROM BusinessUnit bu")
-})
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_SF_CONSTANTS\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "SFConstants.findAll", query = "SELECT bu FROM BusinessUnit bu") })
 
 public class SFConstants {
 	@Id
 	@Column(name = "\"TECHNICAL_NAME\"", columnDefinition = "VARCHAR(64)")
 	private String tehcnicalName;
-	
-	@Column(name = "\"VALUE\"",columnDefinition = "VARCHAR(64)")
-     private String value;
+
+	@Column(name = "\"VALUE\"", columnDefinition = "VARCHAR(64)")
+	private String value;
 
 	public String getTehcnicalName() {
 		return tehcnicalName;

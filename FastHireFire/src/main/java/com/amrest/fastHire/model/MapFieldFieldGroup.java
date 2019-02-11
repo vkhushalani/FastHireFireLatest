@@ -13,42 +13,41 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_MAP_FIELD_GROUP_FIELDS\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_MAP_FIELD_GROUP_FIELDS\"", schema = "POC_FAST_HIRE")
+@NamedQueries({
 		@NamedQuery(name = "MapFieldFieldGroup.findAll", query = "SELECT map FROM MapFieldFieldGroup map WHERE :todayDate BETWEEN map.startDate AND map.endDate"),
 		@NamedQuery(name = "MapFieldFieldGroup.findByFieldGroupId", query = "SELECT map FROM MapFieldFieldGroup map WHERE map.fieldGroupId = :fieldGroupId"),
-		@NamedQuery(name = "MapFieldFieldGroup.findByFieldGroupFieldId", query = "SELECT map FROM MapFieldFieldGroup map WHERE map.fieldGroupId = :fieldGroupId AND map.fieldId = :fieldId")
-})
+		@NamedQuery(name = "MapFieldFieldGroup.findByFieldGroupFieldId", query = "SELECT map FROM MapFieldFieldGroup map WHERE map.fieldGroupId = :fieldGroupId AND map.fieldId = :fieldId") })
 public class MapFieldFieldGroup {
 	@Id
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
 	private String id;
-	
+
 	@Column(name = "\"FIELD_GROUP.ID\"", columnDefinition = "VARCHAR(32)")
 	private String fieldGroupId;
-	
+
 	@ManyToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name="\"FIELD_GROUP.ID\"",referencedColumnName="\"ID\"",insertable=false, updatable=false)
+	@JoinColumn(name = "\"FIELD_GROUP.ID\"", referencedColumnName = "\"ID\"", insertable = false, updatable = false)
 	private FieldGroup fieldGroup;
-	
+
 	@Column(name = "\"FIELD.ID\"", columnDefinition = "VARCHAR(32)")
 	private String fieldId;
-	
+
 	@ManyToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name="\"FIELD.ID\"",referencedColumnName="\"ID\"",insertable=false, updatable=false)
+	@JoinColumn(name = "\"FIELD.ID\"", referencedColumnName = "\"ID\"", insertable = false, updatable = false)
 	private Field field;
-	
+
 	@Column(name = "\"SF_ENTITY_NAME\"", columnDefinition = "VARCHAR(32)")
 	private String entityName;
-	
+
 	@Column(name = "\"SF_ENTITY_POST_SEQ\"", columnDefinition = "VARCHAR(32)")
 	private String postSequence;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
+
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
+
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
 
 	public String getId() {
 		return id;

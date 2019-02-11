@@ -13,12 +13,12 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_MAP_TEMPLATE_FIELD_GROUPS\"", schema = "AMREST_PREHIRE")
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_MAP_TEMPLATE_FIELD_GROUPS\"", schema = "POC_FAST_HIRE")
 @NamedQueries({
 		@NamedQuery(name = "MapTemplateFieldGroup.findAll", query = "SELECT map FROM MapTemplateFieldGroup map"),
 		@NamedQuery(name = "MapTemplateFieldGroup.findByTemplate", query = "SELECT map FROM MapTemplateFieldGroup map WHERE map.templateId = :templateId"),
 		@NamedQuery(name = "MapTemplateFieldGroup.findByTemplateFieldGroup", query = "SELECT map FROM MapTemplateFieldGroup map WHERE map.templateId = :templateId AND map.fieldGroupId = :fieldGroupId") })
-public class MapTemplateFieldGroup implements Comparable<MapTemplateFieldGroup>{
+public class MapTemplateFieldGroup implements Comparable<MapTemplateFieldGroup> {
 
 	@Id
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
@@ -59,7 +59,8 @@ public class MapTemplateFieldGroup implements Comparable<MapTemplateFieldGroup>{
 	@Column(name = "\"IS_VISIBLE_CANDIDATE\"", columnDefinition = "BOOLEAN")
 	private Boolean isVisibleCandidate;
 
-	public MapTemplateFieldGroup() {}
+	public MapTemplateFieldGroup() {
+	}
 
 	public MapTemplateFieldGroup(String id, String templateId, Template template, String fieldGroupId,
 			FieldGroup fieldGroup, Integer fieldGroupSeq, Date startDate, Date endDate, Boolean isEditableManager,
@@ -186,12 +187,12 @@ public class MapTemplateFieldGroup implements Comparable<MapTemplateFieldGroup>{
 
 	@Override
 	public int compareTo(MapTemplateFieldGroup o) {
-		int compareValue=o.getFieldGroupSeq().intValue();
-        /* For Ascending order*/
-        return this.fieldGroupSeq.intValue()-compareValue;
+		int compareValue = o.getFieldGroupSeq().intValue();
+		/* For Ascending order */
+		return this.fieldGroupSeq.intValue() - compareValue;
 
-        /* For Descending order do like this */
-        //return compareage-this.studentage;
+		/* For Descending order do like this */
+		// return compareage-this.studentage;
 //		return 0;
 	}
 

@@ -10,7 +10,7 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_CONFIRM_STATUS\"", schema = "AMREST_PREHIRE")
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_CONFIRM_STATUS\"", schema = "POC_FAST_HIRE")
 @NamedQueries({ @NamedQuery(name = "ConfirmStatus.findAll", query = "SELECT cs FROM ConfirmStatus cs"),
 		@NamedQuery(name = "ConfirmStatus.findByCountryDepartment", query = "SELECT cs FROM ConfirmStatus cs where cs.company = :company AND cs.department= :department")
 
@@ -43,11 +43,11 @@ public class ConfirmStatus {
 	private String department;
 
 	@Column(name = "\"POSITION\"", columnDefinition = "VARCHAR(32)")
-	private String position;	
-	
+	private String position;
+
 	@Column(name = "\"START_DATE\"", columnDefinition = "VARCHAR(64)")
 	private String startDate;
-	
+
 	public String getId() {
 		return id;
 	}
@@ -123,9 +123,9 @@ public class ConfirmStatus {
 	public String getStartDate() {
 		return startDate;
 	}
+
 	public void setStartDate(String startDate) {
 		this.startDate = startDate;
 	}
-
 
 }

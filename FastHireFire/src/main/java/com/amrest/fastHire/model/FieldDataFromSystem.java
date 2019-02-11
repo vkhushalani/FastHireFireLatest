@@ -8,55 +8,51 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_DROPDOWN_VALUES_FROM_SF\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "FieldDataFromSystem.findAll", query = "SELECT f FROM FieldDataFromSystem f"),
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_DROPDOWN_VALUES_FROM_SF\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "FieldDataFromSystem.findAll", query = "SELECT f FROM FieldDataFromSystem f"),
 		@NamedQuery(name = "FieldDataFromSystem.findByField", query = "SELECT f FROM FieldDataFromSystem f WHERE f.fieldId = :fieldId"),
 		@NamedQuery(name = "FieldDataFromSystem.findByFieldCountry", query = "SELECT f FROM FieldDataFromSystem f WHERE f.fieldId = :fieldId AND f.countryId = :countryId")
-		
+
 })
 public class FieldDataFromSystem {
 	@Id
 	@Column(name = "\"COUNTRY.ID\"", columnDefinition = "VARCHAR(32)")
 	private String countryId;
-	
+
 	@Id
 	@Column(name = "\"FIELD.ID\"", columnDefinition = "VARCHAR(32)")
 	private String fieldId;
-	
-	
+
 	@Column(name = "\"DESTINATION_NAME\"", columnDefinition = "VARCHAR(64)")
 	private String destinationName;
-	
-	
+
 	@Column(name = "\"PATH\"", columnDefinition = "VARCHAR(132)")
 	private String path;
-	
-	
+
 	@Column(name = "\"FILTER\"", columnDefinition = "VARCHAR(256)")
 	private String filter;
-	
+
 	@Column(name = "\"KEY_PATH\"", columnDefinition = "VARCHAR(132)")
 	private String key;
-	
+
 	@Column(name = "\"VALUE_PATH\"", columnDefinition = "VARCHAR(132)")
 	private String value;
-	
+
 	@Column(name = "\"DESCRIPTION\"", columnDefinition = "VARCHAR(152)")
 	private String description;
-	
+
 	@Column(name = "\"IS_FIELD_DEPENDENT\"", columnDefinition = "BOOLEAN")
 	private Boolean isDependentField;
-	
+
 	@Column(name = "\"REPLACE_TAG\"", columnDefinition = "VARCHAR(132)")
 	private String replaceTag;
-	
+
 	@Column(name = "\"TAG_SOURCE_SFAPI\"", columnDefinition = "VARCHAR(132)")
 	private String tagSourceFromSF;
-	
+
 	@Column(name = "\"TAG_SOURCE_FIELD_ID\"", columnDefinition = "VARCHAR(32)")
 	private String tagSourceFromField;
-	
+
 	@Column(name = "\"TAG_SOURCE_VALUE_PATH\"", columnDefinition = "VARCHAR(132)")
 	private String tagSourceValuePath;
 
@@ -131,7 +127,6 @@ public class FieldDataFromSystem {
 	public void setReplaceTag(String replaceTag) {
 		this.replaceTag = replaceTag;
 	}
-
 
 	public String getTagSourceValuePath() {
 		return tagSourceValuePath;

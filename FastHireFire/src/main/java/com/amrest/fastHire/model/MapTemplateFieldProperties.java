@@ -16,10 +16,9 @@ import javax.persistence.Transient;
 
 import com.amrest.fastHire.utilities.DropDownKeyValue;
 
-
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_MAP_TEMPLATE_FIELD_PROPERTIES\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_MAP_TEMPLATE_FIELD_PROPERTIES\"", schema = "POC_FAST_HIRE")
+@NamedQueries({
 		@NamedQuery(name = "MapTemplateFieldProperties.findAll", query = "SELECT map FROM MapTemplateFieldProperties map"),
 		@NamedQuery(name = "MapTemplateFieldProperties.findByTemplateFieldGroup", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.templateFieldGroupId = :templateFieldGroupId"),
 		@NamedQuery(name = "MapTemplateFieldProperties.findByTemplateFieldGroupManager", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.templateFieldGroupId = :templateFieldGroupId AND map.isVisibleManager = :isVisibleManager"),
@@ -27,57 +26,56 @@ import com.amrest.fastHire.utilities.DropDownKeyValue;
 		@NamedQuery(name = "MapTemplateFieldProperties.findById", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.templateFieldGroupId = :templateFieldGroupId AND map.fieldId = :fieldId"),
 		@NamedQuery(name = "MapTemplateFieldProperties.findByFieldIdVisibleManager", query = "SELECT map FROM MapTemplateFieldProperties map WHERE map.isVisibleManager = :isVisibleManager AND map.fieldId = :fieldId"),
 		@NamedQuery(name = "MapTemplateFieldProperties.getCandidateIsVisibleAndIsEditableFalse", query = "SELECT map FROM MapTemplateFieldProperties map where (map.isVisibleCandidate = :Isfalse or map.isEditableCandidate = :Isfalse) and map.templateFieldGroupId = :templateFieldGroupId")
-		
+
 })
-public class MapTemplateFieldProperties implements Comparable<MapTemplateFieldProperties>{
+public class MapTemplateFieldProperties implements Comparable<MapTemplateFieldProperties> {
 	@Id
 	@Column(name = "\"TEMPLATE_FIELD_GROUP.ID\"", columnDefinition = "VARCHAR(32)")
 	private String templateFieldGroupId;
-	
+
 	@Id
 	@Column(name = "\"FIELD.ID\"", columnDefinition = "VARCHAR(32)")
 	private String fieldId;
-	
-	@ManyToOne (cascade = CascadeType.ALL)
-	@JoinColumn(name="\"FIELD.ID\"",referencedColumnName="\"ID\"",insertable=false, updatable=false)
+
+	@ManyToOne(cascade = CascadeType.ALL)
+	@JoinColumn(name = "\"FIELD.ID\"", referencedColumnName = "\"ID\"", insertable = false, updatable = false)
 	private Field field;
-	
+
 	@Column(name = "\"FIELD_SEQ\"", columnDefinition = "INTEGER")
 	private Integer fieldSeq;
-	
+
 	@Column(name = "\"VALUE\"", columnDefinition = "VARCHAR(32)")
 	private String value;
-	
-	@Transient 
+
+	@Transient
 	private List<DropDownKeyValue> dropDownValues;
-	
+
 	@Column(name = "\"IS_EDITABLE_MANAGER\"", columnDefinition = "BOOLEAN")
 	private Boolean isEditableManager;
-	
+
 	@Column(name = "\"IS_EDITABLE_CANDIDATE\"", columnDefinition = "BOOLEAN")
 	private Boolean isEditableCandidate;
-	
+
 	@Column(name = "\"IS_VISIBLE_MANAGER\"", columnDefinition = "VARCHAR(10)")
 	private Boolean isVisibleManager;
-	
+
 	@Column(name = "\"IS_VISIBLE_CANDIDATE\"", columnDefinition = "BOOLEAN")
 	private Boolean isVisibleCandidate;
-	
+
 	@Column(name = "\"IS_MANDATORY_MANAGER\"", columnDefinition = "BOOLEAN")
 	private Boolean isMandatoryManager;
-	
+
 	@Column(name = "\"IS_MANDATORY_CANDIDATE\"", columnDefinition = "BOOLEAN")
 	private Boolean isMandatoryCandidate;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
 
-	
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
 
-	public MapTemplateFieldProperties() {}
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
+
+	public MapTemplateFieldProperties() {
+	}
 
 	public MapTemplateFieldProperties(String templateFieldGroupId, String fieldId, Field field, Integer fieldSeq,
 			String value, Boolean isEditableManager, Boolean isEditableCandidate, Boolean isVisibleManager,
@@ -105,7 +103,6 @@ public class MapTemplateFieldProperties implements Comparable<MapTemplateFieldPr
 	public void setFieldId(String fieldId) {
 		this.fieldId = fieldId;
 	}
-
 
 	public String getValue() {
 		return value;
@@ -210,17 +207,16 @@ public class MapTemplateFieldProperties implements Comparable<MapTemplateFieldPr
 	public void setDropDownValues(List<DropDownKeyValue> dropDownValues) {
 		this.dropDownValues = dropDownValues;
 	}
-	
+
 	@Override
 	public int compareTo(MapTemplateFieldProperties o) {
-		int compareValue=o.getFieldSeq().intValue();
-        /* For Ascending order*/
-        return this.fieldSeq.intValue()-compareValue;
+		int compareValue = o.getFieldSeq().intValue();
+		/* For Ascending order */
+		return this.fieldSeq.intValue() - compareValue;
 
-        /* For Descending order do like this */
-        //return compareage-this.studentage;
+		/* For Descending order do like this */
+		// return compareage-this.studentage;
 //		return 0;
 	}
-
 
 }

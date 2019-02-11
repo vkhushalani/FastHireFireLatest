@@ -8,19 +8,18 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_COUNTRIES\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "Country.findAll", query = "SELECT co FROM Country co")
-		
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_COUNTRIES\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "Country.findAll", query = "SELECT co FROM Country co")
+
 })
 public class Country {
-	
+
 	@Id
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
 	private String id;
-	
-	@Column(name = "\"NAME\"",columnDefinition = "VARCHAR(64)")
-     private String name;
+
+	@Column(name = "\"NAME\"", columnDefinition = "VARCHAR(64)")
+	private String name;
 
 	public String getId() {
 		return id;
@@ -37,6 +36,5 @@ public class Country {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
 
 }

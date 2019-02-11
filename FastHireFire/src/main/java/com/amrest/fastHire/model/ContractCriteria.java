@@ -10,37 +10,37 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_CONTRACT_CRITERIA\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_CONTRACT_CRITERIA\"", schema = "POC_FAST_HIRE")
+@NamedQueries({
 		@NamedQuery(name = "ContractCriteria.findByCountryCompany", query = "SELECT cc FROM ContractCriteria cc WHERE cc.country = :country AND cc.company = :company")
-		
+
 })
-public class ContractCriteria implements Comparable<ContractCriteria>{
+public class ContractCriteria implements Comparable<ContractCriteria> {
 
 	@Id
 	@Column(name = "\"COUNTRY\"", columnDefinition = "VARCHAR(32)")
 	private String country;
-	
+
 	@Id
 	@Column(name = "\"COMPANY\"", columnDefinition = "VARCHAR(32)")
 	private String company;
-	
+
 	@Id
 	@Column(name = "\"SFAPI.ENTITY_NAME\"", columnDefinition = "VARCHAR(64)")
 	private String entityName;
-	
+
 	@Id
 	@Column(name = "\"FIELD\"", columnDefinition = "VARCHAR(64)")
 	private String field;
-	
+
 	@Column(name = "\"SEQ\"", columnDefinition = "INTEGER")
 	private Integer sequence;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
+
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
+
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
 
 	public String getCountry() {
 		return country;
@@ -97,15 +97,15 @@ public class ContractCriteria implements Comparable<ContractCriteria>{
 	public void setField(String field) {
 		this.field = field;
 	}
-	
+
 	@Override
 	public int compareTo(ContractCriteria o) {
 		int compareValue = o.getSequence().intValue();
-        /* For Ascending order*/
-        return this.sequence.intValue()-compareValue;
+		/* For Ascending order */
+		return this.sequence.intValue() - compareValue;
 
-        /* For Descending order do like this */
-        //return compareage-this.studentage;
+		/* For Descending order do like this */
+		// return compareage-this.studentage;
 //		return 0;
 	}
 }

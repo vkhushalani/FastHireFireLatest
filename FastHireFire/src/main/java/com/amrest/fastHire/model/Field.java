@@ -11,51 +11,48 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_FIELDS\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "Field.findAll", query = "SELECT f FROM Field f")		
-})
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_FIELDS\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "Field.findAll", query = "SELECT f FROM Field f") })
 public class Field {
 	@Id
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
 	private String id;
-	
-	@Column(name = "\"TECHNICAL_FIELD_NAME\"",columnDefinition = "VARCHAR(32)")
-    private String technicalName;
-	
-	@Transient
-    private String name;
-	
-	@Column(name = "\"FIELD_TYPE\"",columnDefinition = "VARCHAR(16)")
-    private String fieldType;
-	
-	@Column(name = "\"SFAPI.ENTITY_NAME\"",columnDefinition = "VARCHAR(64)")
-    private String entityName;
-	
-	@Column(name = "\"VALUE_FROM_PATH\"",columnDefinition = "VARCHAR(132)")
-    private String valueFromPath;
-	
-	@Column(name = "\"LENGTH\"",columnDefinition = "INTEGER")
-    private Integer length;
-	
-	@Column(name = "\"INITIAL_VALUE\"",columnDefinition = "VARCHAR(32)")
-    private String initialValue;
-	
-	@Column(name = "\"DATA_TYPE\"",columnDefinition = "VARCHAR(32)")
-    private String dataType;
-	
-	@Column(name = "\"CREATED_ON\"",columnDefinition = "SECONDDATE")
-    private Date createdOn;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
-	
-	@Column(name = "\"FIELD_TRIGGER\"",columnDefinition = "VARCHAR(32)")
-    private String fieldTrigger;
 
+	@Column(name = "\"TECHNICAL_FIELD_NAME\"", columnDefinition = "VARCHAR(32)")
+	private String technicalName;
+
+	@Transient
+	private String name;
+
+	@Column(name = "\"FIELD_TYPE\"", columnDefinition = "VARCHAR(16)")
+	private String fieldType;
+
+	@Column(name = "\"SFAPI.ENTITY_NAME\"", columnDefinition = "VARCHAR(64)")
+	private String entityName;
+
+	@Column(name = "\"VALUE_FROM_PATH\"", columnDefinition = "VARCHAR(132)")
+	private String valueFromPath;
+
+	@Column(name = "\"LENGTH\"", columnDefinition = "INTEGER")
+	private Integer length;
+
+	@Column(name = "\"INITIAL_VALUE\"", columnDefinition = "VARCHAR(32)")
+	private String initialValue;
+
+	@Column(name = "\"DATA_TYPE\"", columnDefinition = "VARCHAR(32)")
+	private String dataType;
+
+	@Column(name = "\"CREATED_ON\"", columnDefinition = "SECONDDATE")
+	private Date createdOn;
+
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
+
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
+
+	@Column(name = "\"FIELD_TRIGGER\"", columnDefinition = "VARCHAR(32)")
+	private String fieldTrigger;
 
 	public String getId() {
 		return id;
@@ -64,7 +61,6 @@ public class Field {
 	public void setId(String id) {
 		this.id = id;
 	}
-
 
 	public String getTechnicalName() {
 		return technicalName;
@@ -162,6 +158,4 @@ public class Field {
 		this.fieldTrigger = fieldTrigger;
 	}
 
-	
-	
 }

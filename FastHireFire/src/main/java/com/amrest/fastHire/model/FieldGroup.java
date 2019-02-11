@@ -11,36 +11,36 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_FIELD_GROUPS\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "FieldGroup.findAll", query = "SELECT f FROM FieldGroup f")
-		
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_FIELD_GROUPS\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "FieldGroup.findAll", query = "SELECT f FROM FieldGroup f")
+
 })
 public class FieldGroup {
-	
+
 	@Id
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
 	private String id;
-	
-	@Column(name = "\"NAME\"",columnDefinition = "VARCHAR(32)")
-    private String name;
-	
-	@Column(name = "\"CREATED_ON\"",columnDefinition = "SECONDDATE")
-    private Date createdOn;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
-	
-	@Column(name = "\"DESCRIPTION\"",columnDefinition = "VARCHAR(152)")
-    private String description;
-	
-	@Transient 
-	private Integer fieldGroupSeq; 
 
-	public FieldGroup() {}
+	@Column(name = "\"NAME\"", columnDefinition = "VARCHAR(32)")
+	private String name;
+
+	@Column(name = "\"CREATED_ON\"", columnDefinition = "SECONDDATE")
+	private Date createdOn;
+
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
+
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
+
+	@Column(name = "\"DESCRIPTION\"", columnDefinition = "VARCHAR(152)")
+	private String description;
+
+	@Transient
+	private Integer fieldGroupSeq;
+
+	public FieldGroup() {
+	}
 
 	public FieldGroup(String id, String name, Date createdOn, Date startDate, Date endDate, String description,
 			Integer fieldGroupSeq) {
@@ -108,5 +108,5 @@ public class FieldGroup {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	
+
 }

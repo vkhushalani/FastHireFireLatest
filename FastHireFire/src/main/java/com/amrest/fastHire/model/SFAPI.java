@@ -8,36 +8,35 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_SFAPI\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "SFAPI.findAll", query = "SELECT sa FROM SFAPI sa"),
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_SFAPI\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "SFAPI.findAll", query = "SELECT sa FROM SFAPI sa"),
 		@NamedQuery(name = "SFAPI.findById", query = "SELECT sa FROM SFAPI sa WHERE sa.entityName = :entityName and sa.operation = :operation"),
 		@NamedQuery(name = "SFAPI.findByEntityName", query = "SELECT sa FROM SFAPI sa WHERE sa.entityName = :entityName"),
-		
+
 })
 public class SFAPI {
 	@Id
 	@Column(name = "\"ENTITY_NAME\"", columnDefinition = "VARCHAR(64)")
 	private String entityName;
-	
+
 	@Id
-	@Column(name = "\"OPERATION\"",columnDefinition = "VARCHAR(9)")
-     private String operation;
-	
-	@Column(name = "\"URL\"",columnDefinition = "VARCHAR(5000)")
-    private String url;
-	
-	@Column(name = "\"REPLACE_TAG\"",columnDefinition = "VARCHAR(132)")
-    private String replaceTag;
-	
-	@Column(name = "\"TAG_SOURCE\"",columnDefinition = "VARCHAR(132)")
-    private String tagSource;
-	
-	@Column(name = "\"TAG_SOURCE_VALUE_PATH\"",columnDefinition = "VARCHAR(132)")
-    private String tagSourceValuePath;
-	
-	@Column(name = "\"DESCRIPTION\"",columnDefinition = "VARCHAR(132)")
-    private String description;
+	@Column(name = "\"OPERATION\"", columnDefinition = "VARCHAR(9)")
+	private String operation;
+
+	@Column(name = "\"URL\"", columnDefinition = "VARCHAR(5000)")
+	private String url;
+
+	@Column(name = "\"REPLACE_TAG\"", columnDefinition = "VARCHAR(132)")
+	private String replaceTag;
+
+	@Column(name = "\"TAG_SOURCE\"", columnDefinition = "VARCHAR(132)")
+	private String tagSource;
+
+	@Column(name = "\"TAG_SOURCE_VALUE_PATH\"", columnDefinition = "VARCHAR(132)")
+	private String tagSourceValuePath;
+
+	@Column(name = "\"DESCRIPTION\"", columnDefinition = "VARCHAR(132)")
+	private String description;
 
 	public String getEntityName() {
 		return entityName;

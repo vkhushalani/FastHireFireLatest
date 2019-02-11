@@ -10,39 +10,34 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "\"com.amrest.ph.db::Table.FHD_CODELIST\"", schema = "AMREST_PREHIRE")
-@NamedQueries({ 
-		@NamedQuery(name = "CodeList.findAll", query = "SELECT f FROM CodeList f"),
+@Table(name = "\"com.nga.poc.fasthire.db::Table.FHD_CODELIST\"", schema = "POC_FAST_HIRE")
+@NamedQueries({ @NamedQuery(name = "CodeList.findAll", query = "SELECT f FROM CodeList f"),
 		@NamedQuery(name = "CodeList.findByFieldId", query = "SELECT f FROM CodeList f WHERE f.fieldId = :fieldId"),
 		@NamedQuery(name = "CodeList.findByCountryField", query = "SELECT f FROM CodeList f WHERE f.fieldId = :fieldId AND f.countryId = :countryId"),
-		@NamedQuery(name = "CodeList.findByCountryFieldDependent", query = "SELECT f FROM CodeList f WHERE f.fieldId = :fieldId AND f.countryId = :countryId AND f.dependentFieldId = :dependentFieldId AND f.dependentFieldValue = :dependentFieldValue")
-})
+		@NamedQuery(name = "CodeList.findByCountryFieldDependent", query = "SELECT f FROM CodeList f WHERE f.fieldId = :fieldId AND f.countryId = :countryId AND f.dependentFieldId = :dependentFieldId AND f.dependentFieldValue = :dependentFieldValue") })
 public class CodeList {
-
 
 	@Id
 	@Column(name = "\"FIELD.ID\"", columnDefinition = "VARCHAR(32)")
 	private String fieldId;
-	
+
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(32)")
 	private String id;
-	
+
 	@Column(name = "\"COUNTRY.ID\"", columnDefinition = "VARCHAR(32)")
 	private String countryId;
-	
+
 	@Column(name = "\"DEPENDENT_ON_FIELD\"", columnDefinition = "VARCHAR(32)")
 	private String dependentFieldId;
-	
+
 	@Column(name = "\"DEPENDENT_ON_VALUE\"", columnDefinition = "VARCHAR(64)")
 	private String dependentFieldValue;
-	
-	@Column(name = "\"START_DATE\"",columnDefinition = "SECONDDATE")
-    private Date startDate;
-	
-	@Column(name = "\"END_DATE\"",columnDefinition = "SECONDDATE")
-    private Date endDate;
-	
-	
+
+	@Column(name = "\"START_DATE\"", columnDefinition = "SECONDDATE")
+	private Date startDate;
+
+	@Column(name = "\"END_DATE\"", columnDefinition = "SECONDDATE")
+	private Date endDate;
 
 	public String getFieldId() {
 		return fieldId;
@@ -52,7 +47,6 @@ public class CodeList {
 		this.fieldId = fieldId;
 	}
 
-
 	public String getCountryId() {
 		return countryId;
 	}
@@ -60,7 +54,6 @@ public class CodeList {
 	public void setCountryId(String countryId) {
 		this.countryId = countryId;
 	}
-
 
 	public Date getStartDate() {
 		return startDate;
