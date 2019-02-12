@@ -223,7 +223,7 @@ public class PreHireManagerController {
 		logger.debug("Set country to session in PerHireManager: "
 				+ empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
 		paraMap.put("position", empJobResponseObject.getString("position"));
-		SFConstants vacantEmployeeClass = sfConstantsService.findById("vacantEmployeeClass_" + paraMap.get("country"));
+		// SFConstants vacantEmployeeClass = null;
 
 		String vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
 				+ "and department eq '" + paraMap.get("department") + "' " + "and parentPosition/code eq '"
@@ -231,16 +231,16 @@ public class PreHireManagerController {
 				+ "externalName_localized," + "externalName_defaultValue," + "payGrade,jobTitle,code,"
 				+ "employeeClassNav/label_defaultValue," + "employeeClassNav/label_localized";
 
-		if (vacantEmployeeClass != null) {
-
-			vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
-					+ "and department eq '" + paraMap.get("department") + "' " + "and employeeClass eq '"
-					+ vacantEmployeeClass.getValue() + "' " + "and parentPosition/code eq '" + paraMap.get("position")
-					+ "' " + "&$format=json" + "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
-					+ "externalName_defaultValue," + "payGrade,jobTitle,code," + "employeeClassNav/label_defaultValue,"
-					+ "employeeClassNav/label_localized";
-
-		}
+//		if (vacantEmployeeClass != null) {
+//
+//			vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
+//					+ "and department eq '" + paraMap.get("department") + "' " + "and employeeClass eq '"
+//					+ vacantEmployeeClass.getValue() + "' " + "and parentPosition/code eq '" + paraMap.get("position")
+//					+ "' " + "&$format=json" + "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
+//					+ "externalName_defaultValue," + "payGrade,jobTitle,code," + "employeeClassNav/label_defaultValue,"
+//					+ "employeeClassNav/label_localized";
+//
+//		}
 		// get Vacant Positions
 		HttpResponse vacantPosResponse = destClient.callDestinationGET("/Position", vacantPositionFilter);
 		String vacantPosResponseJsonString = EntityUtils.toString(vacantPosResponse.getEntity(), "UTF-8");
@@ -281,9 +281,9 @@ public class PreHireManagerController {
 						+ "company eq '" + paraMap.get("company") + "' and " + "department eq '"
 						+ paraMap.get("department") + "' and " + "emplStatusNav/id ne '" + empStatusConstant.getValue()
 						+ "' " + "and userNav/userId ne null &$expand=positionNav,userNav,"
-						+ "positionNav/employeeClassNav,userNav/personKeyNav"
-						+ "&$select=userId,startDate,customString11,position," + "positionNav/externalName_localized,"
-						+ "positionNav/externalName_defaultValue," + "positionNav/payGrade,positionNav/jobTitle,"
+						+ "positionNav/employeeClassNav,userNav/personKeyNav" + "&$select=userId,startDate,position,"
+						+ "positionNav/externalName_localized," + "positionNav/externalName_defaultValue,"
+						+ "positionNav/payGrade,positionNav/jobTitle,"
 						+ "userNav/userId,userNav/username,userNav/defaultFullName,"
 						+ "userNav/firstName,userNav/lastName," + "positionNav/employeeClassNav/label_localized,"
 						+ "positionNav/employeeClassNav/label_defaultValue," + "userNav/personKeyNav/perPersonUuid");
@@ -327,7 +327,7 @@ public class PreHireManagerController {
 					// pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
 					pos.setVacant(false);
 					pos.setStatuses(null);
-					String startDate = ongoingPos.getString("customString11");
+					String startDate = ongoingPos.getString("startDate");
 					String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
 					long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
 					smilliSec = Objects.toString(smilliSecLong, null);
