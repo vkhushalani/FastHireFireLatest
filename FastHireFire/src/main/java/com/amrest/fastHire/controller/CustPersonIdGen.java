@@ -56,7 +56,8 @@ public class CustPersonIdGen {
 		String result = httpConnectionPOST.connectToServer();
 		JSONObject jsonObj = (JSONObject) JSONValue.parse(result);
 		jsonObj = (JSONObject) jsonObj.get("d");
-		this.userID = jsonObj.get("externalCode").toString();
+		jsonObj = (JSONObject) jsonObj.get("GenerateNextPersonIDResponse");
+		this.userID = jsonObj.get("personID").toString();
 		HttpSession session = request.getSession(false);
 		session.setAttribute("userID", this.userID);
 		logger.error("UserId Set at session:" + this.userID);
