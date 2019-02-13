@@ -189,20 +189,21 @@ public class URLMaker {
 			break;
 
 		case "CustPersonIdGen":
-			urlToMake = urlToMake + "cust_personIdGenerate?$format=json";
+			urlToMake = urlToMake + "generateNextPersonID?$format=json";
 			break;
-		
+
 		case "CustPersonIdGenPost":
-			urlToMake = urlToMake + "upsert?$format=json";;
+			urlToMake = urlToMake + "upsert?$format=json";
+			;
 			break;
 
 		case "UserEntity":
 			urlToMake = urlToMake + "upsert?$format=json&sendWelcomeMessage=true";
 			break;
-			
+
 		case "PerPerson":
 			urlToMake = urlToMake + "upsert?$format=json";
-			break;	
+			break;
 
 		case "EmpEmployment":
 			urlToMake = urlToMake + "upsert?$format=json";

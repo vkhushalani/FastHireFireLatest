@@ -34,7 +34,6 @@ import com.amrest.fastHire.POJO.Detail;
 import com.amrest.fastHire.POJO.Field;
 import com.amrest.fastHire.SF.DestinationClient;
 import com.amrest.fastHire.connections.HttpConnectionPOST;
-import com.amrest.fastHire.model.SFConstants;
 import com.amrest.fastHire.service.SFConstantsService;
 import com.amrest.fastHire.utilities.CommonFunctions;
 import com.amrest.fastHire.utilities.ConstantManager;
@@ -55,7 +54,7 @@ public class UserEntity {
 	private String emailValue = null;
 	private String lastNameValue = null;
 	private String firstNameValue = null;
-	private String defaultLanguage = null;
+	// private String defaultLanguage = null;
 	private String loggedInUser = null;
 	@Autowired
 	SFConstantsService sfConstantsService;
@@ -170,8 +169,9 @@ public class UserEntity {
 		empJobResponseObject = (JSONObject) empJobResponseObject.get("positionNav");
 		empJobResponseObject = (JSONObject) empJobResponseObject.get("companyNav");
 		String country = (String) empJobResponseObject.get("country");
-		SFConstants defaultLanguage = sfConstantsService.findById("defaultLocale_" + country);
-		obj.put("defaultLocale", defaultLanguage.getValue());
+		// SFConstants defaultLanguage = sfConstantsService.findById("defaultLocale_" +
+		// country);
+		// obj.put("defaultLocale", defaultLanguage.getValue());
 		logger.debug("input object" + obj.toJSONString());
 		return obj.toJSONString();
 	}

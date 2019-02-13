@@ -40,6 +40,7 @@ public class EmpEmployment {
 
 	private String paramName = null;
 	private String paramValue = null;
+	private String firstDateWorkedValue = null;
 	private final String sDate = "startdate";
 
 	@PostMapping(value = ConstantManager.empEmployment, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -86,7 +87,10 @@ public class EmpEmployment {
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 						break;
+					} else if (techName.toLowerCase().equals("firstdateworked")) {
+						firstDateWorkedValue = field.getValue().toString();
 					}
+
 				}
 			}
 		} catch (IOException e) {
@@ -113,6 +117,7 @@ public class EmpEmployment {
 		jsonObj.put("uri", "EmpEmployment(personIdExternal='" + userID + "',userId='" + userID + "')");
 		obj.put("__metadata", jsonObj);
 		obj.put(paramName, dateFormatted(sdf.format(now.getTime())));
+		obj.put("firstDateWorked", firstDateWorkedValue);
 		obj.put("personIdExternal", userID);
 		obj.put("userId", userID);
 //		logger.error(obj.toJSONString());

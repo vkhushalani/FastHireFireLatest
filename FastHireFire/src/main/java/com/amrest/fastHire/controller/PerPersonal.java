@@ -141,7 +141,7 @@ public class PerPersonal {
 		obj.put(paramNationalityName, paramNationalityValue);
 		obj.put(paramFirstName, paramFirstNameValue);
 		obj.put(paramLastName, paramLastNameValue);
-		obj.put(paramPrefLang, paramPrefLangValue);
+		// obj.put(paramPrefLang, paramPrefLangValue);
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}

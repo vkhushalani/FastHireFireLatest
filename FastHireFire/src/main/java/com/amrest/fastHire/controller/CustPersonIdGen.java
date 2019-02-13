@@ -97,22 +97,22 @@ public class CustPersonIdGen {
 							+ techName.toLowerCase().equals("cust_WAY".toLowerCase() + ""));
 					logger.debug("techName.toLowerCase().equals(\"cust_SECTOR\".toLowerCase()):"
 							+ techName.toLowerCase().equals("cust_SECTOR".toLowerCase()) + "");
-					if (techName.toLowerCase().equals(cust_FEOR1.toLowerCase())) {
-						paramName = techName;
-						paramValue = field.getValue().toString();
-//						logger.error(paramName.toString());
-//						logger.error(paramValue.toString());
-					} else if (techName.toLowerCase().equals("cust_WAY".toLowerCase())) {
-						paramName2 = techName;
-						paramValue2 = field.getValue().toString();
-						logger.debug(paramName2.toString());
-						logger.debug(paramValue2.toString());
-					} else if (techName.toLowerCase().equals("cust_SECTOR".toLowerCase())) {
-						paramName3 = techName;
-						paramValue3 = field.getValue().toString();
-						logger.debug(paramName3.toString());
-						logger.debug(paramValue3.toString());
-					}
+//					if (techName.toLowerCase().equals(cust_FEOR1.toLowerCase())) {
+//						paramName = techName;
+//						paramValue = field.getValue().toString();
+////						logger.error(paramName.toString());
+////						logger.error(paramValue.toString());
+//					} else if (techName.toLowerCase().equals("cust_WAY".toLowerCase())) {
+//						paramName2 = techName;
+//						paramValue2 = field.getValue().toString();
+//						logger.debug(paramName2.toString());
+//						logger.debug(paramValue2.toString());
+//					} else if (techName.toLowerCase().equals("cust_SECTOR".toLowerCase())) {
+//						paramName3 = techName;
+//						paramValue3 = field.getValue().toString();
+//						logger.debug(paramName3.toString());
+//						logger.debug(paramValue3.toString());
+//					}
 				}
 			}
 		} catch (IOException e) {
@@ -124,11 +124,11 @@ public class CustPersonIdGen {
 	private String postBodyCreation(String userId) {
 		JSONObject obj = new JSONObject();
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("uri", "cust_personIdGenerate('" + userID + "')");
+		jsonObj.put("uri", "generateNextPersonID('" + userID + "')");
 		obj.put("__metadata", jsonObj);
-		obj.put(paramName, paramValue);
-		obj.put(paramName2, paramValue2);
-		obj.put(paramName3, paramValue3);
+//		obj.put(paramName, paramValue);
+//		obj.put(paramName2, paramValue2);
+//		obj.put(paramName3, paramValue3);
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}

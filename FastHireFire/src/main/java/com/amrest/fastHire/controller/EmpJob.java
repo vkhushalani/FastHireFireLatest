@@ -72,6 +72,18 @@ public class EmpJob {
 	private String paramFirmSubCategoryName = null;
 	private String paramFirmSubCategoryValue = null;
 
+	private String timeRecordingVariantName = null;
+	private String timeRecordingVariantValue = null;
+
+	private String payScaleTypeName = null;
+	private String payScaleTypeValue = null;
+
+	private String payScaleAreaName = null;
+	private String payScaleAreaValue = null;
+
+	private String employeeClassName = null;
+	private String employeeClassValue = null;
+
 	private final String sDate = "startdate";
 	private final String empType = "employmenttype";
 	private final String posType = "position";
@@ -316,6 +328,30 @@ public class EmpJob {
 //						logger.error(paramEmpName.toString());
 //						logger.error(paramEmpValue.toString());
 
+					} else if (name.toLowerCase().equals("timerecordingvariant")) {
+						timeRecordingVariantName = name;
+						timeRecordingVariantValue = field.getValue().toString();
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
+
+					} else if (name.toLowerCase().equals("payscaletype")) {
+						payScaleTypeName = name;
+						payScaleTypeValue = field.getValue().toString();
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
+
+					} else if (name.toLowerCase().equals("payscalearea")) {
+						payScaleAreaName = name;
+						payScaleAreaValue = field.getValue().toString();
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
+
+					} else if (name.toLowerCase().equals("employeeclass")) {
+						employeeClassName = name;
+						employeeClassValue = field.getValue().toString();
+//						logger.error(paramEmpName.toString());
+//						logger.error(paramEmpValue.toString());
+
 					}
 				}
 			}
@@ -358,6 +394,11 @@ public class EmpJob {
 		obj.put(paramcontractTypeName, paramcontractTypeValue);
 		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
 		obj.put(ConstantManager.customDateName, customDateValue);
+
+		obj.put(timeRecordingVariantName, timeRecordingVariantValue);
+		obj.put(payScaleTypeName, payScaleTypeValue);
+		obj.put(payScaleAreaName, payScaleAreaValue);
+		obj.put(employeeClassName, employeeClassValue);
 //		logger.error(obj.toJSONString()); 
 		return obj.toJSONString();
 	}
