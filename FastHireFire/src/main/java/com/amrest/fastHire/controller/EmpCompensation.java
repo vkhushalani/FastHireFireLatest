@@ -71,11 +71,14 @@ public class EmpCompensation {
 			for (int i = 0; i < detail.length; i++) {
 				List<Field> group = detail[i].getFields();
 				for (Field field : group) {
+					logger.debug("field: " + field.toString());
 					String techName = field.getField().getTechnicalName().toString();
 
 					if (techName.toLowerCase().equals(payGroup.toLowerCase())) {
 						paramName = techName;
+						logger.debug("paramName: " + paramName);
 						paramValue = field.getValue().toString();
+						logger.debug("paramValue: " + paramValue);
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 						break;
@@ -99,10 +102,10 @@ public class EmpCompensation {
 		jsonObj.put("uri", "EmpCompensation");
 		obj.put("__metadata", jsonObj);
 
-		obj.put(paramStartDateName, paramStartDateValue);
 		logger.debug(paramStartDateName + paramStartDateValue);
 //		logger.debug(ConstantManager.paramEndDateName + ConstantManager.paramEndDateValue);
 //		obj.put(ConstantManager.paramEndDateName, ConstantManager.paramEndDateValue);
+		obj.put(paramStartDateName, paramStartDateValue);
 		obj.put("userId", userID);
 		obj.put(paramName, paramValue);
 		obj.put("eventReason", "HIRNEW");

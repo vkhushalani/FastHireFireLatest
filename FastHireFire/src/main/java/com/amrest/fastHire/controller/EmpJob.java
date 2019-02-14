@@ -246,7 +246,8 @@ public class EmpJob {
 	}
 
 	// Parse the request
-	private void parseRequest(String request, HttpSession session) throws ParseException {
+	private void parseRequest(String request, HttpSession session)
+			throws ParseException, URISyntaxException, NamingException {
 		ObjectMapper mapper = new ObjectMapper();
 		Detail[] detail = null;
 		try {
@@ -306,7 +307,27 @@ public class EmpJob {
 					} else if (name.toLowerCase().equals(workSchCode.toLowerCase())) {
 						paramWorkSchName = name;
 						paramWorkSchValue = field.getValue().toString();
-//						logger.error(paramWorkSchName.toString());
+						/*
+						 * logger.error("paramWorkSchValue: " + paramWorkSchValue); DestinationClient
+						 * destClient = new DestinationClient();
+						 * destClient.setDestName(destinationName); destClient.setHeaderProvider();
+						 * destClient.setConfiguration(); destClient.setDestConfiguration();
+						 * destClient.setHeaders(destClient.getDestProperty("Authentication"));
+						 * HttpResponse userResponse = destClient.callDestinationGET("/WorkSchedule",
+						 * "?$format=json&$filter=externalCode eq '" + paramWorkSchValue +
+						 * "'&$select=timeRecordingVariant"); String userResponseJsonString =
+						 * EntityUtils.toString(userResponse.getEntity(), "UTF-8");
+						 * logger.error("userResponseJsonString: " + userResponseJsonString);
+						 * org.json.JSONObject jsonObj = new
+						 * org.json.JSONObject(userResponseJsonString); jsonObj =
+						 * jsonObj.getJSONObject("d"); jsonObj =
+						 * jsonObj.getJSONArray("results").getJSONObject(0); // Get details from server
+						 * timeRecordingVariantName = "timeRecordingVariant"; timeRecordingVariantValue
+						 * = jsonObj.getString("timeRecordingVariant");
+						 * logger.error("timeRecordingVariantValue: " + timeRecordingVariantValue);
+						 * 
+						 * logger.error("timeRecordingVariantValue: " + timeRecordingVariantValue);
+						 */
 //						logger.error(paramWorkSchValue.toString());
 
 					} else if (name.toLowerCase().equals(contractEndDate.toLowerCase())) {
@@ -328,13 +349,15 @@ public class EmpJob {
 //						logger.error(paramEmpName.toString());
 //						logger.error(paramEmpValue.toString());
 
-					} else if (name.toLowerCase().equals("timerecordingvariant")) {
-						timeRecordingVariantName = name;
-						timeRecordingVariantValue = field.getValue().toString();
-//						logger.error(paramEmpName.toString());
-//						logger.error(paramEmpValue.toString());
-
-					} else if (name.toLowerCase().equals("payscaletype")) {
+					}
+//					else if (name.toLowerCase().equals("timerecordingvariant")) {
+//						timeRecordingVariantName = name;
+//						timeRecordingVariantValue = field.getValue().toString();
+////						logger.error(paramEmpName.toString());
+////						logger.error(paramEmpValue.toString());
+//
+//					} 
+					else if (name.toLowerCase().equals("payscaletype")) {
 						payScaleTypeName = name;
 						payScaleTypeValue = field.getValue().toString();
 //						logger.error(paramEmpName.toString());
@@ -376,30 +399,35 @@ public class EmpJob {
 		obj.put("eventReason", "HIRNEW");
 		obj.put("company", company);
 		obj.put("businessUnit", businessUnit);
-		obj.put("managerId", "NO_MANAGER");
 		obj.put("costCenter", costCenter);
-		obj.put("employeeClass", "45341");
+		obj.put("employeeClass", "30094");
 		obj.put("payGrade", payGrade);
 		obj.put(paramPositionName, paramPositionValue);
 		obj.put("location", location);
-		obj.put(paramEmpName, paramEmpValue);
+		// obj.put(paramEmpName, paramEmpValue);
 		obj.put("department", deparment);
 		obj.put("division", division);
-		obj.put(paramHolCodeName, paramHolNameValue);
-		obj.put(paramTimeTypeName, paramTimeTypeValue);
-		obj.put(paramWorkSchName, paramWorkSchValue);
+		// obj.put(paramHolCodeName, paramHolNameValue);
+		// obj.put(paramTimeTypeName, paramTimeTypeValue);
+		// obj.put(paramWorkSchName, paramWorkSchValue);
 		obj.put("standardHours", standardHours);
 		obj.put("managerId", managerId);
-		obj.put(paramContractEDateName, paramContractEDateValue);
-		obj.put(paramcontractTypeName, paramcontractTypeValue);
-		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
-		obj.put(ConstantManager.customDateName, customDateValue);
+		// obj.put(paramContractEDateName, paramContractEDateValue);
+		// obj.put(paramcontractTypeName, paramcontractTypeValue);
+		// obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
+		// obj.put(ConstantManager.customDateName, customDateValue);
 
-		obj.put(timeRecordingVariantName, timeRecordingVariantValue);
+		// obj.put(timeRecordingVariantName, timeRecordingVariantValue);
 		obj.put(payScaleTypeName, payScaleTypeValue);
 		obj.put(payScaleAreaName, payScaleAreaValue);
-		obj.put(employeeClassName, employeeClassValue);
+		// obj.put(employeeClassName, employeeClassValue);
+
+		if (obj.containsKey("null")) {
+			obj.remove("null");
+			logger.error("InsideNullCheck" + obj.toJSONString());
+		}
 //		logger.error(obj.toJSONString()); 
+		logger.error("obj::::" + obj.toJSONString());
 		return obj.toJSONString();
 	}
 

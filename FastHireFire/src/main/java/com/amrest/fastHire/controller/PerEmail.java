@@ -95,12 +95,12 @@ public class PerEmail {
 		jsonObj.put("uri", "PerEmail");
 		obj.put("__metadata", jsonObj);
 
-		obj.put("emailType", "25603");
+		obj.put("emailType", "8448");
 		obj.put("personIdExternal", userID);
 		obj.put("isPrimary", true);
 		obj.put(paramName, paramValue);
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
-
+//		obj.put("PerEmail", "8448");
 }

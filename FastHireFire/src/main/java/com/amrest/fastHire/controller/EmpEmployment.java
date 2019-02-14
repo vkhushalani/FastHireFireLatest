@@ -83,12 +83,10 @@ public class EmpEmployment {
 					if (techName.toLowerCase().equals(sDate.toLowerCase())) {
 						paramName = techName;
 						paramValue = field.getValue().toString();
-
+						firstDateWorkedValue = field.getValue().toString();
 //						logger.error(paramName.toString());
 //						logger.error(paramValue.toString());
 						break;
-					} else if (techName.toLowerCase().equals("firstdateworked")) {
-						firstDateWorkedValue = field.getValue().toString();
 					}
 
 				}
@@ -117,7 +115,7 @@ public class EmpEmployment {
 		jsonObj.put("uri", "EmpEmployment(personIdExternal='" + userID + "',userId='" + userID + "')");
 		obj.put("__metadata", jsonObj);
 		obj.put(paramName, dateFormatted(sdf.format(now.getTime())));
-		obj.put("firstDateWorked", firstDateWorkedValue);
+		obj.put("firstDateWorked", dateFormatted(firstDateWorkedValue));
 		obj.put("personIdExternal", userID);
 		obj.put("userId", userID);
 //		logger.error(obj.toJSONString());

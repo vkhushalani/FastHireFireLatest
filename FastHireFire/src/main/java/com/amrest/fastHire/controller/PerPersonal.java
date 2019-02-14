@@ -51,7 +51,7 @@ public class PerPersonal {
 
 	private String paramPrefLang = null;
 	private String paramPrefLangValue = null;
-
+	private String maritalStatus = null;
 	private final String gender = "gender";
 	private final String nationality = "nationality";
 	private final String firstName = "firstname";
@@ -118,6 +118,10 @@ public class PerPersonal {
 						paramPrefLangValue = field.getValue().toString();
 //						logger.error(paramPrefLang.toString());
 //						logger.error(paramPrefLangValue.toString());
+					} else if (techName.toLowerCase().equals("maritalstatus")) {
+						maritalStatus = field.getValue().toString();
+//						logger.error(paramPrefLang.toString());
+//						logger.error(paramPrefLangValue.toString());
 					}
 				}
 			}
@@ -137,11 +141,11 @@ public class PerPersonal {
 
 		obj.put("personIdExternal", userID);
 		obj.put(paramName, paramValue);
-		obj.put("maritalStatus", "25616");
+		obj.put("maritalStatus", maritalStatus);
 		obj.put(paramNationalityName, paramNationalityValue);
 		obj.put(paramFirstName, paramFirstNameValue);
 		obj.put(paramLastName, paramLastNameValue);
-		// obj.put(paramPrefLang, paramPrefLangValue);
+
 //		logger.error(obj.toJSONString());
 		return obj.toJSONString();
 	}
