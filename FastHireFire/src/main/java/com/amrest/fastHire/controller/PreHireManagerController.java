@@ -1494,9 +1494,7 @@ public class PreHireManagerController {
 			logger.debug("After Batch Call GET" + timeStamp);
 
 			// creating map for other requests.
-
 			JSONObject sfentityObject = new JSONObject();
-
 			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 			for (BatchSingleResponse batchResponse : batchResponses) {
 				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
@@ -2960,5 +2958,88 @@ public class PreHireManagerController {
 		long difference = (dateToVerify.getTime() - currentDate.getTime()) / 86400000;
 		logger.debug("difference between dates:" + difference);
 		return (int) difference;
+	}
+
+	@PostMapping(value = "/SetDBStatuses")
+	public ResponseEntity<?> setDBStatuses(@RequestBody String postJson, HttpServletRequest request)
+			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
+			UnsupportedOperationException {
+		HttpSession session = request.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		try {
+			Map<String, String> map = new HashMap<String, String>();
+			JSONObject postObject = new JSONObject(postJson);
+			Iterator<?> keys = postObject.keys();
+			while (keys.hasNext()) {
+				String key = (String) keys.next();
+				map.put(key, postObject.getString(key));
+			}
+			// Get URI details
+			DestinationClient destClient = new DestinationClient();
+			destClient.setDestName(destinationName);
+			destClient.setHeaderProvider();
+			destClient.setConfiguration();
+			destClient.setDestConfiguration();
+			destClient.setHeaders(destClient.getDestProperty("Authentication"));
+			// batch intitialization
+			BatchRequest batchRequest = new BatchRequest();
+			batchRequest.configureDestination(destinationName);
+			Map<String, String> entityMap = new HashMap<String, String>();
+			// Map<String, String> entityResponseMap = new HashMap<String, String>();
+			entityMap.put("PerPerson",
+					"?$filter=personIdExternal  eq '" + userID + "'&$format=json&$select=perPersonUuid");
+			logger.debug("Formed EntityMap...");
+			entityMap.put("EmpJob",
+					"?$filter=userId eq '" + userID + "'&$format=json&$select=company,department,position");
+			// reading the records and creating batch post body
+			for (Map.Entry<String, String> entity : entityMap.entrySet()) {
+				batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
+			}
+			batchRequest.callBatchPOST("/$batch", "");
+			JSONObject sfentityObject = new JSONObject();
+			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+			for (BatchSingleResponse batchResponse : batchResponses) {
+				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
+				// ";"+batchResponse.getBody());
+				JSONObject batchObject = new JSONObject(batchResponse.getBody());
+				if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
+					batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+					String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
+					String enityKey = batchResponseType.split("\\.")[1];
+					// logger.debug("enityKey" + enityKey);
+
+					sfentityObject.put(enityKey, batchObject);
+				}
+			}
+			// creating entry for the confirm status flags update
+			String personId = sfentityObject.getJSONObject("PerPerson").getString("perPersonUuid");
+			String company = sfentityObject.getJSONObject("EmpJob").getString("company");
+			String department = sfentityObject.getJSONObject("EmpJob").getString("department");
+			String position = sfentityObject.getJSONObject("EmpJob").getString("position");
+			ConfirmStatus confirmStatusTemp = null;
+			logger.debug("sfentityObject: " + sfentityObject.toString());
+			// creating entry for the confirm status flags update
+			logger.debug("personId: " + personId);
+
+			confirmStatusTemp = confirmStatusService.findById(personId);
+			if (confirmStatusTemp == null) {
+				confirmStatusTemp = new ConfirmStatus();
+				confirmStatusTemp.setId(personId);
+				confirmStatusTemp.setCompany(company);
+				confirmStatusTemp.setDepartment(department);
+				confirmStatusTemp.setPosition(position);
+				confirmStatusTemp.setStartDate(map.get("startDate"));
+				confirmStatusTemp.setUpdatedOn(new Date());
+				confirmStatusTemp.setPexUpdateFlag("SUCCESS");
+				confirmStatusTemp.setSfEntityFlag("SUCCESS");
+				confirmStatusTemp = confirmStatusService.create(confirmStatusTemp);
+				ConfirmStatus confirmStatus = confirmStatusTemp;
+				logger.debug("confirmStatus OK Confirm ID:" + confirmStatus.getId());
+			}
+			return ResponseEntity.ok().body("SUCCESS");
+		} catch (Exception e) {
+			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
+			return ResponseEntity.ok().body("ERROR");
+		}
 	}
 }
