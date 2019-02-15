@@ -99,6 +99,7 @@ public class EmpJob {
 	@PostMapping(value = ConstantManager.empJob, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession)
 			throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
+		logger.error("EmpbjobBodyGet:" + request);
 		HttpSession session = requestForSession.getSession(false);
 
 		// Extract the params and their values
@@ -151,7 +152,7 @@ public class EmpJob {
 		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "/Position?$filter=code%20eq%20'" + position
 				+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
 		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
-//		logger.error(urlToCall);
+		logger.error("callAPI Empjob:" + urlToCall);
 
 		// Get details from server
 		URI uri = CommonFunctions.convertToURI(urlToCall);
@@ -358,7 +359,7 @@ public class EmpJob {
 		obj.put(paramcontractTypeName, paramcontractTypeValue);
 		obj.put(paramFirmSubCategoryName, paramFirmSubCategoryValue);
 		obj.put(ConstantManager.customDateName, customDateValue);
-//		logger.error(obj.toJSONString()); 
+		logger.error("EmpbjobPost:" + obj.toJSONString());
 		return obj.toJSONString();
 	}
 

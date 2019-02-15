@@ -71,7 +71,7 @@ public class CustPersonIdGen {
 		URLManager genURL = new URLManager(getClass().getSimpleName() + "Post", configName);
 		String urlToCall = genURL.formURLToCall();
 		HttpSession session = requestForSession.getSession(false);
-		String userID = (String) session.getAttribute("userID");
+		userID = (String) session.getAttribute("userID");
 		logger.error("Got UserId from session in CustPersonIdGen: " + userID);
 		URI uri = CommonFunctions.convertToURI(urlToCall);
 		HttpConnectionPOST httpConnectionPOST = new HttpConnectionPOST(uri, URLManager.dConfiguration,
@@ -124,7 +124,7 @@ public class CustPersonIdGen {
 	private String postBodyCreation(String userId) {
 		JSONObject obj = new JSONObject();
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("uri", "cust_personIdGenerate('" + userID + "')");
+		jsonObj.put("uri", "cust_personIdGenerate('" + userId + "')");
 		obj.put("__metadata", jsonObj);
 		obj.put(paramName, paramValue);
 		obj.put(paramName2, paramValue2);
