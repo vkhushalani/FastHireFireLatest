@@ -1922,20 +1922,16 @@ public class PreHireManagerController {
 					+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 			entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
 					+ dateString
-					+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
+					+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,maritalStatus,certificateStartDate,title,salutation,since,gender,lastName,firstName,certificateEndDate,preferredName,nationality");
 			entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
 					+ dateString
-					+ "&$format=json&$expand=address9Nav/picklistLabels,countryNav&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8,address9Nav/picklistLabels/label,address9Nav/picklistLabels/locale,countryNav/territoryName");
+					+ "&$format=json&$expand=countryNav&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address5,address4,county,countryNav/territoryName");
 			entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
-					+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,positionNav/externalName_localized");
+					+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,positionNav/externalName_localized");
 			entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate="
-					+ dateString + "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
+					+ dateString + "&$format=json&$select=personIdExternal,dateOfBirth,perPersonUuid");
 			entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
 					+ "&$format=json&$select=personIdExternal,emailAddress");
-			entityMap.put("cust_Additional_Information",
-					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
-			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
-					+ "'&fromDate=" + dateString + "&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
 
 			// reading the records and creating batch post body
 
@@ -1954,7 +1950,7 @@ public class PreHireManagerController {
 			for (BatchSingleResponse batchResponse : batchResponses) {
 				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
 				// ";"+batchResponse.getBody());
-
+				logger.debug("batchResponse string: " + batchResponse.getBody());
 				JSONObject batchObject = new JSONObject(batchResponse.getBody());
 				if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
 					batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
@@ -2472,8 +2468,8 @@ public class PreHireManagerController {
 			throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException,
 			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
-		logger.debug("Doc Genetration: gotRequest");
-		logger.debug("GenerateDoc reqString:" + reqString);
+		logger.debug("Doc Genetration: reqString" + reqString);
+
 		JSONObject reqObject = new JSONObject(reqString);
 
 		JSONObject reqBodyObj = new JSONObject();
@@ -2483,10 +2479,11 @@ public class PreHireManagerController {
 		String country = reqObject.getJSONObject("EmpJob").getJSONObject("positionNav").getJSONObject("companyNav")
 				.getString("country");
 		List<ContractCriteria> contractCriteriaList = contractCriteriaService.findByCountryCompany(country, company);
-
+		logger.debug("GenerateDoc country:" + country);
 		Collections.sort(contractCriteriaList);
 		String templateID = country.toUpperCase() + "|" + company.toUpperCase() + "|" + "CONFIRM";
-
+		logger.debug("templateID: " + templateID);
+		logger.debug("contractCriteriaList: " + contractCriteriaList.toString());
 		for (ContractCriteria contractCriteria : contractCriteriaList) {
 
 			String criteriaValue;
@@ -2506,7 +2503,9 @@ public class PreHireManagerController {
 
 			logger.debug("templateID " + templateID);
 		}
+		logger.debug("templateID: " + templateID);
 		Contract contract = contractService.findById(templateID);
+		logger.debug("contract: " + contract);
 		if (contract != null) {
 			logger.debug("contract.getTemplate()" + contract.getTemplate());
 			reqBodyObj.put("TemplateName", contract.getTemplate());
@@ -2617,8 +2616,6 @@ public class PreHireManagerController {
 				getValuesDynamically(propertiesADDRESS8, reqObject)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
 				getValuesDynamically(propertiesADDRESS2, reqObject)));
-		logger.debug(
-				"EN_CS_JOBINFO_CONTRACT_END_DATE" + reqObject.getJSONObject("EmpJob").getString("contractEndDate"));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
 				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
 						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), Locale.US,

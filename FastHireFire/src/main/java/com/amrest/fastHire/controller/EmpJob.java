@@ -404,7 +404,7 @@ public class EmpJob {
 		obj.put("payGrade", payGrade);
 		obj.put(paramPositionName, paramPositionValue);
 		obj.put("location", location);
-		// obj.put(paramEmpName, paramEmpValue);
+		obj.put(paramEmpName, paramEmpValue);
 		obj.put("department", deparment);
 		obj.put("division", division);
 		// obj.put(paramHolCodeName, paramHolNameValue);
