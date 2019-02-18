@@ -2517,9 +2517,9 @@ public class PreHireManagerController {
 			// reqBodyObj.put("TemplateName", "AmRest Kávézó Kft_40H");
 		}
 
-		reqBodyObj.put("CompanyCode", company);
-		reqBodyObj.put("CompanyCode", "US001");
-		reqBodyObj.put("Gcc", "Z05");
+		// reqBodyObj.put("CompanyCode", company);
+		reqBodyObj.put("CompanyCode", "");
+		reqBodyObj.put("Gcc", "AMR");
 		reqBodyObj.put("HrisId", reqObject.getJSONObject("PerPerson").getString("personIdExternal"));
 		reqBodyObj.put("OutputType", "pdf");
 		reqBodyObj.put("Email", reqObject.getJSONObject("PerEmail").getString("emailAddress"));
