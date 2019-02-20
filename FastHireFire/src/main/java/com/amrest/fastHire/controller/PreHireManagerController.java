@@ -100,6 +100,7 @@ public class PreHireManagerController {
 	public static final String scpDestinationName = "scpiBasic";
 	public static final String pexDestinationName = "FastHirePEX";
 	public static final String docdestinationName = "DocumentGeneration";
+	public static final String pocDocDestinationName = "DocGeneration";
 
 	private enum hunLocale {
 		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
@@ -3034,6 +3035,48 @@ public class PreHireManagerController {
 				logger.debug("confirmStatus OK Confirm ID:" + confirmStatus.getId());
 			}
 			return ResponseEntity.ok().body("SUCCESS");
+		} catch (Exception e) {
+			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
+			return ResponseEntity.ok().body("ERROR");
+		}
+	}
+
+	@PostMapping(value = "/contractgeneration")
+	public ResponseEntity<?> contractGeneration(@RequestBody String postJson, HttpServletRequest request)
+			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
+			UnsupportedOperationException {
+		logger.debug("contractgeneration Contract Generation Request Got" + postJson);
+		try {
+			DestinationClient docDestination = new DestinationClient();
+			docDestination.setDestName(pocDocDestinationName);
+			docDestination.setHeaderProvider();
+			docDestination.setConfiguration();
+			docDestination.setDestConfiguration();
+			docDestination.setHeaders(docDestination.getDestProperty("Authentication"));
+			logger.debug("contractgeneration");
+			HttpResponse response = docDestination.callDestinationPOST("", "", postJson);
+			timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+			logger.debug("After doc generation" + timeStamp);
+			if (response.getStatusLine().getStatusCode() == 200) {
+				String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+				// String stringBody = response.getBody();
+				logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+				JSONObject docJson = new JSONObject(docGenerationResponseJsonString);
+				if (docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
+					logger.debug("docJson.document " + docJson.getString("document"));
+					byte[] decodedString = Base64
+							.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+					return ResponseEntity.ok().body(decodedString);
+					// logger.debug("bytes " + decodedString);
+				} else {
+					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
+				}
+			} else {
+				logger.debug("contractgeneration In else 2:" + response.getStatusLine().getStatusCode());
+			}
+
+			return ResponseEntity.ok().body("Error");
+
 		} catch (Exception e) {
 			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
 			return ResponseEntity.ok().body("ERROR");
