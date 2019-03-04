@@ -44,8 +44,10 @@ public class CommonFunctions {
 		try {
 			uri = new URI(url);
 		} catch (URISyntaxException e) {
+			e.printStackTrace();
 			logger.error(ConstantManager.lineSeparator + "URI Syntax exception ", e);
 		} catch (Exception f) {
+			f.printStackTrace();
 			logger.error(ConstantManager.lineSeparator + "Exception exception ", f);
 		}
 
@@ -65,7 +67,7 @@ public class CommonFunctions {
 
 			user = userProvider.getUser(request.getUserPrincipal().getName());
 			userID = user.getAttribute("name");
-			
+
 		} catch (PersistenceException ee) {
 			logger.error(ConstantManager.lineSeparator + "PersistenceException ", ee);
 		} catch (UnsupportedUserAttributeException ee) {

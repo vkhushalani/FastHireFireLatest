@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.amrest.fastHire.POJO.Detail;
 import com.amrest.fastHire.POJO.Field;
 import com.amrest.fastHire.SF.DestinationClient;
-import com.amrest.fastHire.connections.HttpConnectionGET;
 import com.amrest.fastHire.connections.HttpConnectionPOST;
 import com.amrest.fastHire.utilities.CommonFunctions;
 import com.amrest.fastHire.utilities.ConstantManager;
@@ -99,6 +98,7 @@ public class EmpJob {
 	@PostMapping(value = ConstantManager.empJob, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public String perPerson(@RequestBody String request, HttpServletRequest requestForSession)
 			throws ParseException, NamingException, ClientProtocolException, IOException, URISyntaxException {
+
 		logger.error("EmpbjobBodyGet:" + request);
 		HttpSession session = requestForSession.getSession(false);
 
@@ -149,88 +149,112 @@ public class EmpJob {
 
 	// Call another api
 	private void callAPI(String position, HttpSession session) {
-		String urlToCall = URLManager.dConfiguration.getProperty("URL") + "/Position?$filter=code%20eq%20'" + position
-				+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
-		logger.info(ConstantManager.lineSeparator + ConstantManager.urlLog + urlToCall + ConstantManager.lineSeparator);
-		logger.error("callAPI Empjob:" + urlToCall);
+		try {
+			// INSERT START
+			DestinationClient destClient = new DestinationClient();
+			destClient.setDestName(destinationName);
+			destClient.setHeaderProvider();
+			destClient.setConfiguration();
+			destClient.setDestConfiguration();
+			destClient.setHeaders(destClient.getDestProperty("Authentication"));
+			HttpResponse response = destClient.callDestinationGET("/Position?$filter=code eq '" + position
+					+ "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code",
+					"");
+			String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+			JSONObject jsonObject = (JSONObject) JSONValue.parse(responseString);
+			jsonObject = (JSONObject) jsonObject.get("d");
+			JSONArray jsonArray = (JSONArray) jsonObject.get("results");
+			// INSERT End
 
-		// Get details from server
-		URI uri = CommonFunctions.convertToURI(urlToCall);
-		HttpConnectionGET get = new HttpConnectionGET(uri, URLManager.dConfiguration, EmpJob.class);
-		String result = get.connectToServer();
+			/*
+			 * COMMENT START String urlToCall = URLManager.dConfiguration.getProperty("URL")
+			 * + "/Position?$filter=code%20eq%20'" + position +
+			 * "'&$format=json&$expand=parentPosition&$select=code,location,payGrade,businessUnit,jobCode,department,division,company,costCenter,standardHours,parentPosition/code";
+			 * logger.info( ConstantManager.lineSeparator + ConstantManager.urlLog +
+			 * urlToCall + ConstantManager.lineSeparator); logger.error("callAPI Empjob:" +
+			 * urlToCall);
+			 * 
+			 * // Get details from server URI uri = CommonFunctions.convertToURI(urlToCall);
+			 * logger.debug("uri:" + uri.toString()); HttpConnectionGET get = new
+			 * HttpConnectionGET(uri, URLManager.dConfiguration, EmpJob.class);
+			 * logger.debug("get:" + get.toString()); String result = get.connectToServer();
+			 * 
+			 * // parsing Position Details JSONObject jsonObj = (JSONObject)
+			 * JSONValue.parse(result); jsonObj = (JSONObject) jsonObj.get("d"); JSONArray
+			 * jsonArray = (JSONArray) jsonObj.get("results"); COMMENT END
+			 */
 
-		// parsing Position Details
-		JSONObject jsonObj = (JSONObject) JSONValue.parse(result);
-		jsonObj = (JSONObject) jsonObj.get("d");
-		JSONArray jsonArray = (JSONArray) jsonObj.get("results");
-
-		for (int i = 0; i < jsonArray.size(); i++) {
-			JSONObject jsonObject = (JSONObject) JSONValue.parse(jsonArray.get(i).toString());
-			JSONObject metaData = (JSONObject) jsonObject.get("__metadata");
-			session.setAttribute("metaDataUpdatePosVac", metaData.get("uri").toString());
-			logger.error("metaDataUpdatePosVac Set at session:" + metaData.get("uri").toString());
+			for (int i = 0; i < jsonArray.size(); i++) {
+				jsonObject = (JSONObject) JSONValue.parse(jsonArray.get(i).toString());
+				JSONObject metaData = (JSONObject) jsonObject.get("__metadata");
+				session.setAttribute("metaDataUpdatePosVac", metaData.get("uri").toString());
+				logger.error("metaDataUpdatePosVac Set at session:" + metaData.get("uri").toString());
 //			logger.error(jsonObject.toJSONString());
 
-			if (jsonObject.get("jobCode") != null) {
-				jobCode = jsonObject.get("jobCode").toString();
-			} else {
-				jobCode = "";
-			}
+				if (jsonObject.get("jobCode") != null) {
+					jobCode = jsonObject.get("jobCode").toString();
+				} else {
+					jobCode = "";
+				}
 
-			if (jsonObject.get("company") != null) {
-				company = jsonObject.get("company").toString();
-			} else {
-				company = "";
-			}
+				if (jsonObject.get("company") != null) {
+					company = jsonObject.get("company").toString();
+				} else {
+					company = "";
+				}
 
-			if (jsonObject.get("businessUnit") != null) {
-				businessUnit = jsonObject.get("businessUnit").toString();
-			} else {
-				businessUnit = "";
-			}
+				if (jsonObject.get("businessUnit") != null) {
+					businessUnit = jsonObject.get("businessUnit").toString();
+				} else {
+					businessUnit = "";
+				}
 
-			if (jsonObject.get("costCenter") != null) {
-				costCenter = jsonObject.get("costCenter").toString();
-			} else {
-				costCenter = "";
-			}
+				if (jsonObject.get("costCenter") != null) {
+					costCenter = jsonObject.get("costCenter").toString();
+				} else {
+					costCenter = "";
+				}
 
-			if (jsonObject.get("payGrade") != null) {
-				payGrade = jsonObject.get("payGrade").toString();
-			} else {
-				payGrade = "";
-			}
+				if (jsonObject.get("payGrade") != null) {
+					payGrade = jsonObject.get("payGrade").toString();
+				} else {
+					payGrade = "";
+				}
 
-			if (jsonObject.get("location") != null) {
-				location = jsonObject.get("location").toString();
-			} else {
-				location = "";
-			}
+				if (jsonObject.get("location") != null) {
+					location = jsonObject.get("location").toString();
+				} else {
+					location = "";
+				}
 
-			if (jsonObject.get("department") != null) {
-				deparment = jsonObject.get("department").toString();
-			} else {
-				deparment = "";
-			}
+				if (jsonObject.get("department") != null) {
+					deparment = jsonObject.get("department").toString();
+				} else {
+					deparment = "";
+				}
 
-			if (jsonObject.get("division") != null) {
-				division = jsonObject.get("division").toString();
-			} else {
-				division = "";
-			}
+				if (jsonObject.get("division") != null) {
+					division = jsonObject.get("division").toString();
+				} else {
+					division = "";
+				}
 
-			if (jsonObject.get("standardHours") != null) {
-				standardHours = jsonObject.get("standardHours").toString();
-			} else {
-				standardHours = "0";
+				if (jsonObject.get("standardHours") != null) {
+					standardHours = jsonObject.get("standardHours").toString();
+				} else {
+					standardHours = "0";
+				}
+				if (jsonObject.get("parentPosition") != null) {
+					JSONObject parentPositionObject = (JSONObject) JSONValue
+							.parse(jsonObject.get("parentPosition").toString());
+					parentCode = parentPositionObject.get("code").toString();
+				} else {
+					parentCode = "";
+				}
 			}
-			if (jsonObject.get("parentPosition") != null) {
-				JSONObject parentPositionObject = (JSONObject) JSONValue
-						.parse(jsonObject.get("parentPosition").toString());
-				parentCode = parentPositionObject.get("code").toString();
-			} else {
-				parentCode = "";
-			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error(ConstantManager.lineSeparator + "Error in callAPI:: ", e);
 		}
 	}
 

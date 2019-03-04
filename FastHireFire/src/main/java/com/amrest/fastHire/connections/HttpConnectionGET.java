@@ -55,7 +55,6 @@ public class HttpConnectionGET {
 		this.destinationConfiguration = dConfig;
 		this.className = className;
 	}
-	
 
 	/*
 	 * This method is used to connect to the server. It takes the basic
@@ -72,12 +71,13 @@ public class HttpConnectionGET {
 		HttpURLConnection connection = null;
 		InputStream inputStream = null;
 		Proxy proxy = GetProxy.getProxy();
+		logger.debug("proxy:" + proxy.toString());
 		BufferedReader bufferedReader = null;
 		String response = "";
 
 		try {
 			url = new URL(uri.normalize().toString());
-
+			logger.debug("url:" + url.toString());
 			connection = (HttpURLConnection) url.openConnection(proxy);
 			connection.addRequestProperty("Content-Type", "application/json; charset=UTF-8");
 			connection.setRequestProperty("SAP-Connectivity-ConsumerAccount", URLManager.tContext.getAccountName());
@@ -113,6 +113,7 @@ public class HttpConnectionGET {
 				}
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
 			logger.error(ConstantManager.lineSeparator + "Error description for connectToServer :: ", e);
 		} finally {
 			if (connection != null) {
@@ -122,7 +123,9 @@ public class HttpConnectionGET {
 				try {
 					inputStream.close();
 				} catch (IOException e) {
+					e.printStackTrace();
 					logger.error(ConstantManager.lineSeparator + "Error description for connectToServer :: ", e);
+
 				}
 			}
 		}
@@ -175,6 +178,7 @@ public class HttpConnectionGET {
 				}
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
 			logger.error(ConstantManager.lineSeparator + "Error description for connectToServerNoProxy :: ", e);
 		} finally {
 			if (connection != null) {
@@ -184,6 +188,7 @@ public class HttpConnectionGET {
 				try {
 					inputStream.close();
 				} catch (IOException e) {
+					e.printStackTrace();
 					logger.error(ConstantManager.lineSeparator + "Error description for connectToServerNoProxy :: ", e);
 				}
 			}
@@ -209,15 +214,17 @@ public class HttpConnectionGET {
 			if (authTypeBasic.equalsIgnoreCase((authenticationType))) {
 				BasicAuthenticationHeaderProvider headerProvider = new BasicAuthenticationHeaderProvider();
 				authenticationHeaders.add(headerProvider.getAuthenticationHeader(destinationConfiguration));
-			}
-			else if (oAuthauthType.equalsIgnoreCase(authenticationType)){
+			} else if (oAuthauthType.equalsIgnoreCase(authenticationType)) {
 				Context ctx = new InitialContext();
-				AuthenticationHeaderProvider authHeaderProvider = (AuthenticationHeaderProvider) ctx.lookup("java:comp/env/myAuthHeaderProvider");
-				authenticationHeaders = authHeaderProvider.getOAuth2SAMLBearerAssertionHeaders(destinationConfiguration);
+				AuthenticationHeaderProvider authHeaderProvider = (AuthenticationHeaderProvider) ctx
+						.lookup("java:comp/env/myAuthHeaderProvider");
+				authenticationHeaders = authHeaderProvider
+						.getOAuth2SAMLBearerAssertionHeaders(destinationConfiguration);
 			}
 			return authenticationHeaders;
 
 		} catch (Exception e) {
+			e.printStackTrace();
 			logger.error(ConstantManager.lineSeparator + "Error description for getAuthenticationHeaders :: ", e);
 		}
 		return authenticationHeaders;
