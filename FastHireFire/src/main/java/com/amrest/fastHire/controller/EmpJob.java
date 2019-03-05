@@ -21,6 +21,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +32,8 @@ import com.amrest.fastHire.POJO.Detail;
 import com.amrest.fastHire.POJO.Field;
 import com.amrest.fastHire.SF.DestinationClient;
 import com.amrest.fastHire.connections.HttpConnectionPOST;
+import com.amrest.fastHire.model.SFConstants;
+import com.amrest.fastHire.service.SFConstantsService;
 import com.amrest.fastHire.utilities.CommonFunctions;
 import com.amrest.fastHire.utilities.ConstantManager;
 import com.amrest.fastHire.utilities.URLManager;
@@ -39,6 +42,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RestController
 @RequestMapping(value = ConstantManager.genAPI)
 public class EmpJob {
+	@Autowired
+	SFConstantsService sfConstantsService;
 
 	private static final String configName = "sfconfigname";
 	public static final String destinationName = "prehiremgrSFTest";
@@ -367,7 +372,9 @@ public class EmpJob {
 		obj.put("businessUnit", businessUnit);
 		obj.put("managerId", "NO_MANAGER");
 		obj.put("costCenter", costCenter);
-		obj.put("employeeClass", "45341");
+		SFConstants employeeClassConstant = sfConstantsService.findById("employeeClassId");
+
+		obj.put("employeeClass", employeeClassConstant.getValue());
 		obj.put("payGrade", payGrade);
 		obj.put(paramPositionName, paramPositionValue);
 		obj.put("location", location);
