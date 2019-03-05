@@ -1,6 +1,7 @@
 package com.amrest.fastHire.controller;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.message.BasicHttpResponse;
@@ -3066,6 +3068,11 @@ public class PreHireManagerController {
 					logger.debug("docJson.document " + docJson.getString("document"));
 					byte[] decodedString = Base64
 							.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+					File file = new File("contract1.pdf");
+					FileUtils.writeByteArrayToFile(file, decodedString);
+
+					List<File> fileList = new ArrayList<>();
+					fileList.add(file);
 					return ResponseEntity.ok().body(decodedString);
 					// logger.debug("bytes " + decodedString);
 				} else {
