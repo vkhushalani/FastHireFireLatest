@@ -100,6 +100,7 @@ public class PreHireManagerController {
 	public static final String scpDestinationName = "scpiBasic";
 	public static final String pexDestinationName = "FastHirePEX";
 	public static final String docdestinationName = "DocumentGeneration";
+	public static final String pocDocDestinationName = "DocGeneration";
 
 	private enum hunLocale {
 		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
@@ -223,7 +224,7 @@ public class PreHireManagerController {
 		logger.debug("Set country to session in PerHireManager: "
 				+ empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
 		paraMap.put("position", empJobResponseObject.getString("position"));
-		SFConstants vacantEmployeeClass = sfConstantsService.findById("vacantEmployeeClass_" + paraMap.get("country"));
+		// SFConstants vacantEmployeeClass = null;
 
 		String vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
 				+ "and department eq '" + paraMap.get("department") + "' " + "and parentPosition/code eq '"
@@ -231,16 +232,16 @@ public class PreHireManagerController {
 				+ "externalName_localized," + "externalName_defaultValue," + "payGrade,jobTitle,code,"
 				+ "employeeClassNav/label_defaultValue," + "employeeClassNav/label_localized";
 
-		if (vacantEmployeeClass != null) {
-
-			vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
-					+ "and department eq '" + paraMap.get("department") + "' " + "and employeeClass eq '"
-					+ vacantEmployeeClass.getValue() + "' " + "and parentPosition/code eq '" + paraMap.get("position")
-					+ "' " + "&$format=json" + "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
-					+ "externalName_defaultValue," + "payGrade,jobTitle,code," + "employeeClassNav/label_defaultValue,"
-					+ "employeeClassNav/label_localized";
-
-		}
+//		if (vacantEmployeeClass != null) {
+//
+//			vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
+//					+ "and department eq '" + paraMap.get("department") + "' " + "and employeeClass eq '"
+//					+ vacantEmployeeClass.getValue() + "' " + "and parentPosition/code eq '" + paraMap.get("position")
+//					+ "' " + "&$format=json" + "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
+//					+ "externalName_defaultValue," + "payGrade,jobTitle,code," + "employeeClassNav/label_defaultValue,"
+//					+ "employeeClassNav/label_localized";
+//
+//		}
 		// get Vacant Positions
 		HttpResponse vacantPosResponse = destClient.callDestinationGET("/Position", vacantPositionFilter);
 		String vacantPosResponseJsonString = EntityUtils.toString(vacantPosResponse.getEntity(), "UTF-8");
@@ -281,9 +282,9 @@ public class PreHireManagerController {
 						+ "company eq '" + paraMap.get("company") + "' and " + "department eq '"
 						+ paraMap.get("department") + "' and " + "emplStatusNav/id ne '" + empStatusConstant.getValue()
 						+ "' " + "and userNav/userId ne null &$expand=positionNav,userNav,"
-						+ "positionNav/employeeClassNav,userNav/personKeyNav"
-						+ "&$select=userId,startDate,customString11,position," + "positionNav/externalName_localized,"
-						+ "positionNav/externalName_defaultValue," + "positionNav/payGrade,positionNav/jobTitle,"
+						+ "positionNav/employeeClassNav,userNav/personKeyNav" + "&$select=userId,startDate,position,"
+						+ "positionNav/externalName_localized," + "positionNav/externalName_defaultValue,"
+						+ "positionNav/payGrade,positionNav/jobTitle,"
 						+ "userNav/userId,userNav/username,userNav/defaultFullName,"
 						+ "userNav/firstName,userNav/lastName," + "positionNav/employeeClassNav/label_localized,"
 						+ "positionNav/employeeClassNav/label_defaultValue," + "userNav/personKeyNav/perPersonUuid");
@@ -327,7 +328,7 @@ public class PreHireManagerController {
 					// pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
 					pos.setVacant(false);
 					pos.setStatuses(null);
-					String startDate = ongoingPos.getString("customString11");
+					String startDate = ongoingPos.getString("startDate");
 					String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
 					long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
 					smilliSec = Objects.toString(smilliSecLong, null);
@@ -1385,7 +1386,7 @@ public class PreHireManagerController {
 		// of
 		// candidates
 
-		EmpJobResponseObject.put("location", "NA");
+		// EmpJobResponseObject.put("location", "NA");
 		EmpJobResponseObject.put("eventReason", "CS_JobAbandonment");
 		EmpJobResponseObject.getJSONObject("__metadata").put("uri", "EmpJob");
 		HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("/upsert", "?$format=json",
@@ -1418,6 +1419,7 @@ public class PreHireManagerController {
 			}
 		}
 		// }
+		logger.debug(status.toString());
 		return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
@@ -1465,11 +1467,11 @@ public class PreHireManagerController {
 			entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '" + map.get("userId")
 					+ "'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 			entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId")
-					+ "'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
+					+ "'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 			entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId")
 					+ "'&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
 			entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId")
-					+ "'&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/externalName_localized,positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
+					+ "'&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/externalName_localized,positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,customDate18");
 			entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId")
 					+ "'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
 			entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId")
@@ -1493,9 +1495,7 @@ public class PreHireManagerController {
 			logger.debug("After Batch Call GET" + timeStamp);
 
 			// creating map for other requests.
-
 			JSONObject sfentityObject = new JSONObject();
-
 			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
 			for (BatchSingleResponse batchResponse : batchResponses) {
 				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
@@ -1824,6 +1824,11 @@ public class PreHireManagerController {
 
 											} catch (URISyntaxException | IOException e) {
 												// TODO Auto-generated catch block
+												ConfirmStatus temp = confirmStatusService
+														.findById(confirmStatus.getId());
+												temp.setUpdatedOn(new Date());
+												temp.setPexUpdateFlag("FAILED");
+												confirmStatusService.update(temp);
 												e.printStackTrace();
 											}
 										}
@@ -1923,20 +1928,16 @@ public class PreHireManagerController {
 					+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 			entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
 					+ dateString
-					+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
+					+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,maritalStatus,certificateStartDate,title,salutation,since,gender,lastName,firstName,certificateEndDate,preferredName,nationality");
 			entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
 					+ dateString
-					+ "&$format=json&$expand=address9Nav/picklistLabels,countryNav&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8,address9Nav/picklistLabels/label,address9Nav/picklistLabels/locale,countryNav/territoryName");
+					+ "&$format=json&$expand=countryNav&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address5,address4,county,countryNav/territoryName");
 			entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
-					+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,positionNav/externalName_localized");
+					+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,positionNav/externalName_localized");
 			entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate="
-					+ dateString + "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
+					+ dateString + "&$format=json&$select=personIdExternal,dateOfBirth,perPersonUuid");
 			entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
 					+ "&$format=json&$select=personIdExternal,emailAddress");
-			entityMap.put("cust_Additional_Information",
-					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
-			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
-					+ "'&fromDate=" + dateString + "&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
 
 			// reading the records and creating batch post body
 
@@ -1955,7 +1956,7 @@ public class PreHireManagerController {
 			for (BatchSingleResponse batchResponse : batchResponses) {
 				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
 				// ";"+batchResponse.getBody());
-
+				logger.debug("batchResponse string: " + batchResponse.getBody());
 				JSONObject batchObject = new JSONObject(batchResponse.getBody());
 				if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
 					batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
@@ -2061,12 +2062,12 @@ public class PreHireManagerController {
 				+ dateString
 				+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
 		entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
+				+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 		entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
 				+ dateString
 				+ "&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
 		entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,positionNav/externalName_localized");
+				+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,positionNav/externalName_localized,customDate18");
 		entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate=" + dateString
 				+ "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
 		entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
@@ -2473,8 +2474,8 @@ public class PreHireManagerController {
 			throws NamingException, IOException, URISyntaxException, NoSuchMethodException, SecurityException,
 			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
-		logger.debug("Doc Genetration: gotRequest");
-		logger.debug("GenerateDoc reqString:" + reqString);
+		logger.debug("Doc Genetration: reqString" + reqString);
+
 		JSONObject reqObject = new JSONObject(reqString);
 
 		JSONObject reqBodyObj = new JSONObject();
@@ -2484,10 +2485,11 @@ public class PreHireManagerController {
 		String country = reqObject.getJSONObject("EmpJob").getJSONObject("positionNav").getJSONObject("companyNav")
 				.getString("country");
 		List<ContractCriteria> contractCriteriaList = contractCriteriaService.findByCountryCompany(country, company);
-
+		logger.debug("GenerateDoc country:" + country);
 		Collections.sort(contractCriteriaList);
 		String templateID = country.toUpperCase() + "|" + company.toUpperCase() + "|" + "CONFIRM";
-
+		logger.debug("templateID: " + templateID);
+		logger.debug("contractCriteriaList: " + contractCriteriaList.toString());
 		for (ContractCriteria contractCriteria : contractCriteriaList) {
 
 			String criteriaValue;
@@ -2507,7 +2509,9 @@ public class PreHireManagerController {
 
 			logger.debug("templateID " + templateID);
 		}
+		logger.debug("templateID: " + templateID);
 		Contract contract = contractService.findById(templateID);
+		logger.debug("contract: " + contract);
 		if (contract != null) {
 			logger.debug("contract.getTemplate()" + contract.getTemplate());
 			reqBodyObj.put("TemplateName", contract.getTemplate());
@@ -2618,8 +2622,6 @@ public class PreHireManagerController {
 				getValuesDynamically(propertiesADDRESS8, reqObject)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
 				getValuesDynamically(propertiesADDRESS2, reqObject)));
-		logger.debug(
-				"EN_CS_JOBINFO_CONTRACT_END_DATE" + reqObject.getJSONObject("EmpJob").getString("contractEndDate"));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
 				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
 						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), Locale.US,
@@ -2959,5 +2961,130 @@ public class PreHireManagerController {
 		long difference = (dateToVerify.getTime() - currentDate.getTime()) / 86400000;
 		logger.debug("difference between dates:" + difference);
 		return (int) difference;
+	}
+
+	@PostMapping(value = "/SetDBStatuses")
+	public ResponseEntity<?> setDBStatuses(@RequestBody String postJson, HttpServletRequest request)
+			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
+			UnsupportedOperationException {
+		HttpSession session = request.getSession(false);
+		String userID = (String) session.getAttribute("userID");
+		try {
+			Map<String, String> map = new HashMap<String, String>();
+			JSONObject postObject = new JSONObject(postJson);
+			Iterator<?> keys = postObject.keys();
+			while (keys.hasNext()) {
+				String key = (String) keys.next();
+				map.put(key, postObject.getString(key));
+			}
+			// Get URI details
+			DestinationClient destClient = new DestinationClient();
+			destClient.setDestName(destinationName);
+			destClient.setHeaderProvider();
+			destClient.setConfiguration();
+			destClient.setDestConfiguration();
+			destClient.setHeaders(destClient.getDestProperty("Authentication"));
+			// batch intitialization
+			BatchRequest batchRequest = new BatchRequest();
+			batchRequest.configureDestination(destinationName);
+			Map<String, String> entityMap = new HashMap<String, String>();
+			// Map<String, String> entityResponseMap = new HashMap<String, String>();
+			entityMap.put("PerPerson",
+					"?$filter=personIdExternal  eq '" + userID + "'&$format=json&$select=perPersonUuid");
+			logger.debug("Formed EntityMap...");
+			entityMap.put("EmpJob",
+					"?$filter=userId eq '" + userID + "'&$format=json&$select=company,department,position");
+			// reading the records and creating batch post body
+			for (Map.Entry<String, String> entity : entityMap.entrySet()) {
+				batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
+			}
+			batchRequest.callBatchPOST("/$batch", "");
+			JSONObject sfentityObject = new JSONObject();
+			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+			for (BatchSingleResponse batchResponse : batchResponses) {
+				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
+				// ";"+batchResponse.getBody());
+				JSONObject batchObject = new JSONObject(batchResponse.getBody());
+				if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
+					batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+					String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
+					String enityKey = batchResponseType.split("\\.")[1];
+					// logger.debug("enityKey" + enityKey);
+
+					sfentityObject.put(enityKey, batchObject);
+				}
+			}
+			// creating entry for the confirm status flags update
+			String personId = sfentityObject.getJSONObject("PerPerson").getString("perPersonUuid");
+			String company = sfentityObject.getJSONObject("EmpJob").getString("company");
+			String department = sfentityObject.getJSONObject("EmpJob").getString("department");
+			String position = sfentityObject.getJSONObject("EmpJob").getString("position");
+			ConfirmStatus confirmStatusTemp = null;
+			logger.debug("sfentityObject: " + sfentityObject.toString());
+			// creating entry for the confirm status flags update
+			logger.debug("personId: " + personId);
+
+			confirmStatusTemp = confirmStatusService.findById(personId);
+			if (confirmStatusTemp == null) {
+				confirmStatusTemp = new ConfirmStatus();
+				confirmStatusTemp.setId(personId);
+				confirmStatusTemp.setCompany(company);
+				confirmStatusTemp.setDepartment(department);
+				confirmStatusTemp.setPosition(position);
+				confirmStatusTemp.setStartDate(map.get("startDate"));
+				confirmStatusTemp.setUpdatedOn(new Date());
+				confirmStatusTemp.setPexUpdateFlag("SUCCESS");
+				confirmStatusTemp.setSfEntityFlag("SUCCESS");
+				confirmStatusTemp = confirmStatusService.create(confirmStatusTemp);
+				ConfirmStatus confirmStatus = confirmStatusTemp;
+				logger.debug("confirmStatus OK Confirm ID:" + confirmStatus.getId());
+			}
+			return ResponseEntity.ok().body("SUCCESS");
+		} catch (Exception e) {
+			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
+			return ResponseEntity.ok().body("ERROR");
+		}
+	}
+
+	@PostMapping(value = "/contractgeneration")
+	public ResponseEntity<?> contractGeneration(@RequestBody String postJson, HttpServletRequest request)
+			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
+			UnsupportedOperationException {
+		logger.debug("contractgeneration Contract Generation Request Got" + postJson);
+		try {
+			DestinationClient docDestination = new DestinationClient();
+			docDestination.setDestName(pocDocDestinationName);
+			docDestination.setHeaderProvider();
+			docDestination.setConfiguration();
+			docDestination.setDestConfiguration();
+			docDestination.setHeaders(docDestination.getDestProperty("Authentication"));
+			logger.debug("contractgeneration");
+			HttpResponse response = docDestination.callDestinationPOST("", "", postJson);
+			timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+			logger.debug("After doc generation" + timeStamp);
+			if (response.getStatusLine().getStatusCode() == 200) {
+				String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+				// String stringBody = response.getBody();
+				logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+				JSONObject docJson = new JSONObject(docGenerationResponseJsonString);
+				if (docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
+					logger.debug("docJson.document " + docJson.getString("document"));
+					byte[] decodedString = Base64
+							.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+					return ResponseEntity.ok().body(decodedString);
+					// logger.debug("bytes " + decodedString);
+				} else {
+					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
+				}
+			} else {
+				logger.debug("contractgeneration In else 2:" + response.getStatusLine().getStatusCode());
+			}
+
+			return ResponseEntity.ok().body("Error");
+
+		} catch (Exception e) {
+			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
+			return ResponseEntity.ok().body("ERROR");
+		}
 	}
 }
