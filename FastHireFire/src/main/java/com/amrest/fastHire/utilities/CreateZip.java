@@ -28,6 +28,6 @@ public class CreateZip {
 		}
 		zipOut.close();
 		fos.close();
-		return null;
+		return zipOut;
 	}
 }

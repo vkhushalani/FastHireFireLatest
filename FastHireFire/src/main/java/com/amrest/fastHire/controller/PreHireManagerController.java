@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipOutputStream;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
@@ -91,6 +92,7 @@ import com.amrest.fastHire.service.MapTemplateFieldGroupService;
 import com.amrest.fastHire.service.MapTemplateFieldPropertiesService;
 import com.amrest.fastHire.service.SFAPIService;
 import com.amrest.fastHire.service.SFConstantsService;
+import com.amrest.fastHire.utilities.CreateZip;
 import com.amrest.fastHire.utilities.DashBoardPositionClass;
 import com.amrest.fastHire.utilities.DropDownKeyValue;
 import com.google.gson.Gson;
@@ -3073,7 +3075,10 @@ public class PreHireManagerController {
 
 					List<File> fileList = new ArrayList<>();
 					fileList.add(file);
-					return ResponseEntity.ok().body(decodedString);
+					CreateZip oCreateZip = new CreateZip();
+					ZipOutputStream zipFile = oCreateZip.generateZip(fileList);
+
+					return ResponseEntity.ok().body(zipFile);
 					// logger.debug("bytes " + decodedString);
 				} else {
 					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
