@@ -3046,7 +3046,7 @@ public class PreHireManagerController {
 	}
 
 	@PostMapping(value = "/contractgeneration")
-	public ResponseEntity<?> contractGeneration(@RequestBody String postJson, HttpServletRequest request)
+	public JSONObject contractGeneration(@RequestBody String postJson, HttpServletRequest request)
 			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
 			UnsupportedOperationException {
 		logger.debug("contractgeneration Contract Generation Request Got" + postJson);
@@ -3077,8 +3077,10 @@ public class PreHireManagerController {
 					fileList.add(file);
 					CreateZip oCreateZip = new CreateZip();
 					ZipOutputStream zipFile = oCreateZip.generateZip(fileList);
-
-					return ResponseEntity.ok().body(zipFile);
+					JSONObject responseObj = new JSONObject();
+					responseObj.put("status", "SUCCESS");
+					responseObj.putOnce("file", zipFile);
+					return responseObj;
 					// logger.debug("bytes " + decodedString);
 				} else {
 					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
@@ -3086,12 +3088,15 @@ public class PreHireManagerController {
 			} else {
 				logger.debug("contractgeneration In else 2:" + response.getStatusLine().getStatusCode());
 			}
-
-			return ResponseEntity.ok().body("Error");
+			JSONObject responseObj = new JSONObject();
+			responseObj.put("status", "SUCCESS");
+			return responseObj;
 
 		} catch (Exception e) {
 			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
-			return ResponseEntity.ok().body("ERROR");
+			JSONObject responseObj = new JSONObject();
+			responseObj.put("status", "SUCCESS");
+			return responseObj;
 		}
 	}
 }
