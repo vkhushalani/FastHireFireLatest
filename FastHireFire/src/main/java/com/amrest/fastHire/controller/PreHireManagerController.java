@@ -1886,6 +1886,7 @@ public class PreHireManagerController {
 			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
 			UnsupportedOperationException, NoSuchMethodException, SecurityException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException {
+
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("userId", personId);
 
@@ -1907,103 +1908,111 @@ public class PreHireManagerController {
 		confirmStatus.setUpdatedOn(new Date());
 		confirmStatus.setDocGenFlag("BEGIN");
 		confirmStatusService.update(confirmStatus);
+		try {
+			SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd");
+			Date today = new Date();
+			String dateString = dateformatter.format(today);
 
-		SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd");
-		Date today = new Date();
-		String dateString = dateformatter.format(today);
+			BatchRequest batchRequest = new BatchRequest();
+			batchRequest.configureDestination(destinationName);
 
-		BatchRequest batchRequest = new BatchRequest();
-		batchRequest.configureDestination(destinationName);
+			Map<String, String> entityMap = new HashMap<String, String>();
 
-		Map<String, String> entityMap = new HashMap<String, String>();
+			entityMap.put("User", "?$filter=userId eq '" + map.get("userId") + "'&$format=json&$select=defaultLocale");
+			entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
+					+ "&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency,notes");
+			entityMap.put("EmpCompensation", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
+					+ "&$format=json&$select=userId,startDate,payGroup,eventReason");
+			entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
+					+ dateString + "&$format=json&$select=userId,startDate,personIdExternal");
+			entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '" + map.get("userId")
+					+ "'&fromDate=" + dateString
+					+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
+			entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
+					+ dateString
+					+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
+			entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
+					+ dateString
+					+ "&$format=json&$expand=address9Nav/picklistLabels,countryNav&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8,address9Nav/picklistLabels/label,address9Nav/picklistLabels/locale,countryNav/territoryName");
+			entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
+					+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,positionNav/externalName_localized");
+			entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate="
+					+ dateString + "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
+			entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
+					+ "&$format=json&$select=personIdExternal,emailAddress");
+			entityMap.put("cust_Additional_Information",
+					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
+			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
+					+ "'&fromDate=" + dateString + "&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
 
-		entityMap.put("EmpPayCompRecurring", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=userId,startDate,payComponent,paycompvalue,currencyCode,frequency,notes");
-		entityMap.put("EmpCompensation", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=userId,startDate,payGroup,eventReason");
-		entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=userId,startDate,personIdExternal");
-		entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '" + map.get("userId") + "'&fromDate="
-				+ dateString
-				+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
-		entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,customDate4,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
-		entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
-				+ dateString
-				+ "&$format=json&$select=startDate,personIdExternal,addressType,address1,address2,address3,city,zipCode,country,address7,address6,address5,address4,county,address9,address8");
-		entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$expand=positionNav/companyNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1");
-		entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
-		entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=personIdExternal,emailAddress");
-		entityMap.put("cust_Additional_Information",
-				"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
-		entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
-				+ "'&fromDate=" + dateString + "&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
+			// reading the records and creating batch post body
 
-		// reading the records and creating batch post body
+			for (Map.Entry<String, String> entity : entityMap.entrySet()) {
+				batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
+			}
 
-		for (Map.Entry<String, String> entity : entityMap.entrySet()) {
-			batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
-		}
+			// call Get Batch with all entities
+			batchRequest.callBatchPOST("/$batch", "");
 
-		// call Get Batch with all entities
-		batchRequest.callBatchPOST("/$batch", "");
+			// creating map for other requests.
 
-		// creating map for other requests.
+			JSONObject docGenerationObject = new JSONObject();
 
-		JSONObject docGenerationObject = new JSONObject();
-
-		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
-		for (BatchSingleResponse batchResponse : batchResponses) {
+			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+			for (BatchSingleResponse batchResponse : batchResponses) {
 //			logger.debug("batch Response: " + batchResponse.getStatusCode() + ";"+batchResponse.getBody());
 
-			JSONObject batchObject = new JSONObject(batchResponse.getBody());
-			if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
-				batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-				String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
-				String enityKey = batchResponseType.split("\\.")[1];
+				JSONObject batchObject = new JSONObject(batchResponse.getBody());
+				if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
+					batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+					String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
+					String enityKey = batchResponseType.split("\\.")[1];
 
-				docGenerationObject.put(enityKey, batchObject);
+					docGenerationObject.put(enityKey, batchObject);
+				}
 			}
-		}
 
-		HttpResponse response = generateDoc(docGenerationObject.toString());
-		if (response != null) {
-			if (response.getStatusLine().getStatusCode() == 200) {
-				String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
+			HttpResponse response = generateDoc(docGenerationObject.toString());
+			if (response != null) {
+				if (response.getStatusLine().getStatusCode() == 200) {
+					String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
 //			  String stringBody = response.getBody();
-				logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
-				JSONObject docJson = new JSONObject(docGenerationResponseJsonString);
-				if (docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
-					logger.debug("docJson.document " + docJson.getString("document"));
-					byte[] decodedString = Base64
-							.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
-					confirmStatus.setUpdatedOn(new Date());
-					confirmStatus.setDocGenFlag("SUCCESS");
-					confirmStatusService.update(confirmStatus);
-					return ResponseEntity.ok().body(decodedString);
+					logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
+					JSONObject docJson = new JSONObject(docGenerationResponseJsonString);
+					if (docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
+						logger.debug("docJson.document " + docJson.getString("document"));
+						byte[] decodedString = Base64
+								.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
+						confirmStatus.setUpdatedOn(new Date());
+						confirmStatus.setDocGenFlag("SUCCESS");
+						confirmStatusService.update(confirmStatus);
+						return ResponseEntity.ok().body(decodedString);
 //				 logger.debug("bytes " + decodedString);
+					} else {
+						confirmStatus.setUpdatedOn(new Date());
+						confirmStatus.setDocGenFlag("FAILED");
+						confirmStatusService.update(confirmStatus);
+
+					}
+
 				} else {
 					confirmStatus.setUpdatedOn(new Date());
 					confirmStatus.setDocGenFlag("FAILED");
 					confirmStatusService.update(confirmStatus);
-
 				}
-
+				;
 			} else {
 				confirmStatus.setUpdatedOn(new Date());
 				confirmStatus.setDocGenFlag("FAILED");
 				confirmStatusService.update(confirmStatus);
 			}
-			;
-		} else {
+//		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
+			return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (Exception e) {
 			confirmStatus.setUpdatedOn(new Date());
 			confirmStatus.setDocGenFlag("FAILED");
 			confirmStatusService.update(confirmStatus);
 		}
-//		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
 		return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
