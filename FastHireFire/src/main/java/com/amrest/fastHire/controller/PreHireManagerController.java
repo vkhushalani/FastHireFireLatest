@@ -1643,221 +1643,223 @@ public class PreHireManagerController {
 									entityResponseMap.get("cust_Additional_Information"));
 							JSONObject mdfFieldsObject2 = new JSONObject(
 									entityResponseMap.get("cust_personIdGenerate"));
-							if (mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0) {
+							try {
+								if (mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0) {
 
-								mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results")
-										.getJSONObject(0);
-								mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results")
-										.getJSONObject(0);
+									mdfFieldsObject = mdfFieldsObject.getJSONObject("d").getJSONArray("results")
+											.getJSONObject(0);
+									mdfFieldsObject2 = mdfFieldsObject2.getJSONObject("d").getJSONArray("results")
+											.getJSONObject(0);
 
-								// logger.debug("mdfFieldsObject" +
-								// mdfFieldsObject.toString());
+									// logger.debug("mdfFieldsObject" +
+									// mdfFieldsObject.toString());
 
-								Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
-								Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String, ArrayList<String[]>>();
-								ArrayList<String[]> fieldValues;
-								while (mdfFieldKeys.hasNext()) {
-									String key = (String) mdfFieldKeys.next();
-									if (key.contains("cust_ZZ_MDF2PEX_")) {
-										String customField = mdfFieldsObject.getString(key);
-										String[] parts = customField.split("\\|\\|");
-										if (parts.length == 3) {
-											// logger.debug("pexFormMap - key :
-											// "+key+",FormId : "+parts[1]+", FieldId:
-											// "+parts[2]+", FieldName: "+parts[0]);
-											fieldValues = pexFormMap.get(parts[1]);
-											if (fieldValues == null) {
-												fieldValues = new ArrayList<String[]>();
+									Iterator<?> mdfFieldKeys = mdfFieldsObject.keys();
+									Map<String, ArrayList<String[]>> pexFormMap = new HashMap<String, ArrayList<String[]>>();
+									ArrayList<String[]> fieldValues;
+									while (mdfFieldKeys.hasNext()) {
+										String key = (String) mdfFieldKeys.next();
+										if (key.contains("cust_ZZ_MDF2PEX_")) {
+											String customField = mdfFieldsObject.getString(key);
+											String[] parts = customField.split("\\|\\|");
+											if (parts.length == 3) {
+												// logger.debug("pexFormMap - key :
+												// "+key+",FormId : "+parts[1]+", FieldId:
+												// "+parts[2]+", FieldName: "+parts[0]);
+												fieldValues = pexFormMap.get(parts[1]);
+												if (fieldValues == null) {
+													fieldValues = new ArrayList<String[]>();
+												}
+												fieldValues.add(new String[] { parts[2], parts[0],
+														"cust_Additional_Information" });
+												// logger.debug("pexFormMap fieldValues:
+												// "+fieldValues.get(0));
+												pexFormMap.put(parts[1], fieldValues);
 											}
-											fieldValues.add(
-													new String[] { parts[2], parts[0], "cust_Additional_Information" });
-											// logger.debug("pexFormMap fieldValues:
-											// "+fieldValues.get(0));
-											pexFormMap.put(parts[1], fieldValues);
 										}
-									}
 
-								}
-								mdfFieldKeys = mdfFieldsObject2.keys();
-								while (mdfFieldKeys.hasNext()) {
-									String key = (String) mdfFieldKeys.next();
-									if (key.contains("cust_ZZ_MDF2PEX_")) {
-										String customField = mdfFieldsObject2.getString(key);
-										String[] parts = customField.split("\\|\\|");
-										if (parts.length == 3) {
-											// logger.debug("pexFormMap - key :
-											// "+key+",FormId : "+parts[1]+", FieldId:
-											// "+parts[2]+", FieldName: "+parts[0]);
-											fieldValues = pexFormMap.get(parts[1]);
-											if (fieldValues == null) {
-												fieldValues = new ArrayList<String[]>();
+									}
+									mdfFieldKeys = mdfFieldsObject2.keys();
+									while (mdfFieldKeys.hasNext()) {
+										String key = (String) mdfFieldKeys.next();
+										if (key.contains("cust_ZZ_MDF2PEX_")) {
+											String customField = mdfFieldsObject2.getString(key);
+											String[] parts = customField.split("\\|\\|");
+											if (parts.length == 3) {
+												// logger.debug("pexFormMap - key :
+												// "+key+",FormId : "+parts[1]+", FieldId:
+												// "+parts[2]+", FieldName: "+parts[0]);
+												fieldValues = pexFormMap.get(parts[1]);
+												if (fieldValues == null) {
+													fieldValues = new ArrayList<String[]>();
+												}
+												fieldValues.add(
+														new String[] { parts[2], parts[0], "cust_personIdGenerate" });
+												// logger.debug("pexFormMap fieldValues:
+												// "+fieldValues.get(0));
+												pexFormMap.put(parts[1], fieldValues);
 											}
-											fieldValues
-													.add(new String[] { parts[2], parts[0], "cust_personIdGenerate" });
-											// logger.debug("pexFormMap fieldValues:
-											// "+fieldValues.get(0));
-											pexFormMap.put(parts[1], fieldValues);
 										}
+
 									}
 
-								}
+									JSONObject empJobResponseJsonObject = new JSONObject(
+											entityResponseMap.get("EmpJob"));
+									empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d")
+											.getJSONArray("results").getJSONObject(0);
+									// logger.debug("empJobResponseJsonObject" +
+									// empJobResponseJsonObject.toString());
+									PexClient pexClient = new PexClient();
+									pexClient.setDestination(pexDestinationName);
+									pexClient.setJWTInitalization(loggedInUser,
+											empJobResponseJsonObject.getString("company"));
+									counter = 0;
 
-								JSONObject empJobResponseJsonObject = new JSONObject(entityResponseMap.get("EmpJob"));
-								empJobResponseJsonObject = empJobResponseJsonObject.getJSONObject("d")
-										.getJSONArray("results").getJSONObject(0);
-								// logger.debug("empJobResponseJsonObject" +
-								// empJobResponseJsonObject.toString());
-								PexClient pexClient = new PexClient();
-								pexClient.setDestination(pexDestinationName);
-								pexClient.setJWTInitalization(loggedInUser,
-										empJobResponseJsonObject.getString("company"));
-								counter = 0;
+									for (String pexFormMapKey : pexFormMap.keySet()) {
+										Map<String, String> pexFormJsonRepMap = new HashMap<String, String>();
+										pexFormJsonRepMap.put("candidateId", map.get("userId"));
+										pexFormJsonRepMap.put("formId", pexFormMapKey);
+										pexFormJsonRepMap.put("companyCode",
+												empJobResponseJsonObject.getString("company"));
 
-								for (String pexFormMapKey : pexFormMap.keySet()) {
-									Map<String, String> pexFormJsonRepMap = new HashMap<String, String>();
-									pexFormJsonRepMap.put("candidateId", map.get("userId"));
-									pexFormJsonRepMap.put("formId", pexFormMapKey);
-									pexFormJsonRepMap.put("companyCode", empJobResponseJsonObject.getString("company"));
+										JSONArray postFieldsArray = new JSONArray();
+										String validFromDate = map.get("startDate");
+										Calendar cal = Calendar.getInstance();
+										String milliSec = validFromDate.substring(validFromDate.indexOf("(") + 1,
+												validFromDate.indexOf(")"));
+										long milliSecLong = Long.valueOf(milliSec).longValue();
+										cal.setTimeInMillis(milliSecLong);
+										validFromDate = formatter.format(cal.getTime());
+										validFromDate = validFromDate + "T00:00:00.000Z";
+										// valid from and valid to dates.
+										JSONObject validFromPostField = new JSONObject();
+										validFromPostField.put("fieldId", "valid_from");
+										validFromPostField.put("value", validFromDate);
+										postFieldsArray.put(validFromPostField);
 
-									JSONArray postFieldsArray = new JSONArray();
-									String validFromDate = map.get("startDate");
-									Calendar cal = Calendar.getInstance();
-									String milliSec = validFromDate.substring(validFromDate.indexOf("(") + 1,
-											validFromDate.indexOf(")"));
-									long milliSecLong = Long.valueOf(milliSec).longValue();
-									cal.setTimeInMillis(milliSecLong);
-									validFromDate = formatter.format(cal.getTime());
-									validFromDate = validFromDate + "T00:00:00.000Z";
-									// valid from and valid to dates.
-									JSONObject validFromPostField = new JSONObject();
-									validFromPostField.put("fieldId", "valid_from");
-									validFromPostField.put("value", validFromDate);
-									postFieldsArray.put(validFromPostField);
+										JSONObject validToPostField = new JSONObject();
+										validToPostField.put("fieldId", "valid_to");
+										validToPostField.put("value", "9999-12-31T00:00:00.000Z");
+										postFieldsArray.put(validToPostField);
 
-									JSONObject validToPostField = new JSONObject();
-									validToPostField.put("fieldId", "valid_to");
-									validToPostField.put("value", "9999-12-31T00:00:00.000Z");
-									postFieldsArray.put(validToPostField);
-
-									fieldValues = pexFormMap.get(pexFormMapKey);
-									for (String[] values : fieldValues) {
-										// logger.debug("post fields: "+values[0] +" :
-										// "+values[1]);
-										JSONObject postField = new JSONObject();
-										postField.put("fieldId", values[0]);
-										if (values[2].equalsIgnoreCase("cust_personIdGenerate")) {
-											postField
-													.put("value",
-															String.valueOf(mdfFieldsObject2.get(values[1]))
-																	.equalsIgnoreCase("null") ? ""
-																			: mdfFieldsObject2.getString(values[1]));
-										} else {
-											postField
-													.put("value",
-															String.valueOf(mdfFieldsObject.get(values[1]))
-																	.equalsIgnoreCase("null") ? ""
-																			: mdfFieldsObject.getString(values[1]));
+										fieldValues = pexFormMap.get(pexFormMapKey);
+										for (String[] values : fieldValues) {
+											// logger.debug("post fields: "+values[0] +" :
+											// "+values[1]);
+											JSONObject postField = new JSONObject();
+											postField.put("fieldId", values[0]);
+											if (values[2].equalsIgnoreCase("cust_personIdGenerate")) {
+												postField.put("value",
+														String.valueOf(mdfFieldsObject2.get(values[1]))
+																.equalsIgnoreCase("null") ? ""
+																		: mdfFieldsObject2.getString(values[1]));
+											} else {
+												postField
+														.put("value",
+																String.valueOf(mdfFieldsObject.get(values[1]))
+																		.equalsIgnoreCase("null") ? ""
+																				: mdfFieldsObject.getString(values[1]));
+											}
+											postFieldsArray.put(postField);
 										}
-										postFieldsArray.put(postField);
-									}
-									pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
-									// logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
-									JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
-									String pexFormPostString = pexFormPostObj.toString();
+										pexFormJsonRepMap.put("fieldsArray", postFieldsArray.toString());
+										// logger.debug("pexFormJsonRepMap"+pexFormJsonRepMap);
+										JSONObject pexFormPostObj = readJSONFile("/JSONFiles/PexForm.json");
+										String pexFormPostString = pexFormPostObj.toString();
 
-									for (Map.Entry<String, String> entry : pexFormJsonRepMap.entrySet()) {
-										if (!entry.getKey().equalsIgnoreCase("fieldsArray")) {
-											pexFormPostString = pexFormPostString.replaceAll("<" + entry.getKey() + ">",
-													entry.getValue());
-										} else {
-											pexFormPostString = pexFormPostString
-													.replaceAll("\"<" + entry.getKey() + ">\"", entry.getValue());
+										for (Map.Entry<String, String> entry : pexFormJsonRepMap.entrySet()) {
+											if (!entry.getKey().equalsIgnoreCase("fieldsArray")) {
+												pexFormPostString = pexFormPostString
+														.replaceAll("<" + entry.getKey() + ">", entry.getValue());
+											} else {
+												pexFormPostString = pexFormPostString
+														.replaceAll("\"<" + entry.getKey() + ">\"", entry.getValue());
 
+											}
 										}
-									}
-									logger.debug("pexFormPostString : " + pexFormPostString);
-									final String finalPexFormPostString = pexFormPostString;
-									Thread pexThread = new Thread(new Runnable() {
-										@Override
-										public void run() {
+										logger.debug("pexFormPostString : " + pexFormPostString);
+										final String finalPexFormPostString = pexFormPostString;
+										Thread pexThread = new Thread(new Runnable() {
+											@Override
+											public void run() {
 
-											try {
-												timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss")
-														.format(new Date());
-												logger.debug("Before PEX Updates" + timeStamp);
-
-												HttpResponse pexPostResponse = pexClient.callDestinationPOST(
-														"api/v3/forms/submit", "", finalPexFormPostString);
-												String pexPostResponseJsonString = EntityUtils
-														.toString(pexPostResponse.getEntity(), "UTF-8");
 												try {
+													timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss")
+															.format(new Date());
+													logger.debug("Before PEX Updates" + timeStamp);
 
-													if (pexPostResponse.getStatusLine().getStatusCode() == 200) {
-														JSONObject pexResponseObject = new JSONObject(
-																pexPostResponseJsonString);
-														counter = counter + 1;
-														if (counter == pexFormMap.keySet().size()) {
+													HttpResponse pexPostResponse = pexClient.callDestinationPOST(
+															"api/v3/forms/submit", "", finalPexFormPostString);
+													String pexPostResponseJsonString = EntityUtils
+															.toString(pexPostResponse.getEntity(), "UTF-8");
+													try {
+
+														if (pexPostResponse.getStatusLine().getStatusCode() == 200) {
+															JSONObject pexResponseObject = new JSONObject(
+																	pexPostResponseJsonString);
+															counter = counter + 1;
+															if (counter == pexFormMap.keySet().size()) {
+																ConfirmStatus temp = confirmStatusService
+																		.findById(confirmStatus.getId());
+																temp.setUpdatedOn(new Date());
+																temp.setPexUpdateFlag("SUCCESS");
+																confirmStatusService.update(temp);
+															}
+														} else {
 															ConfirmStatus temp = confirmStatusService
 																	.findById(confirmStatus.getId());
 															temp.setUpdatedOn(new Date());
-															temp.setPexUpdateFlag("SUCCESS");
+															temp.setPexUpdateFlag("FAILED");
 															confirmStatusService.update(temp);
+
 														}
-													} else {
+
+													} catch (JSONException ex) {
 														ConfirmStatus temp = confirmStatusService
 																.findById(confirmStatus.getId());
 														temp.setUpdatedOn(new Date());
 														temp.setPexUpdateFlag("FAILED");
 														confirmStatusService.update(temp);
-
 													}
+													logger.error(
+															"pexPostResponseJsonString : " + pexPostResponseJsonString);
 
-												} catch (JSONException ex) {
+												} catch (URISyntaxException | IOException e) {
+													// TODO Auto-generated catch block
 													ConfirmStatus temp = confirmStatusService
 															.findById(confirmStatus.getId());
 													temp.setUpdatedOn(new Date());
 													temp.setPexUpdateFlag("FAILED");
 													confirmStatusService.update(temp);
+													e.printStackTrace();
 												}
-												logger.error(
-														"pexPostResponseJsonString : " + pexPostResponseJsonString);
-
-											} catch (URISyntaxException | IOException e) {
-												// TODO Auto-generated catch block
-												ConfirmStatus temp = confirmStatusService
-														.findById(confirmStatus.getId());
-												temp.setUpdatedOn(new Date());
-												temp.setPexUpdateFlag("FAILED");
-												confirmStatusService.update(temp);
-												e.printStackTrace();
 											}
-										}
-									});
+										});
 
-									pexThread.start();
+										pexThread.start();
 
+									}
+
+									timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+									logger.debug("After Pex Updates" + timeStamp);
+									// delete the MDF Object
+									// timeStamp = new
+									// SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new
+									// Date());
+									// logger.debug("Before MDF DELETE "+ timeStamp);
+									// destClient.callDestinationDelete(mdfFieldsObject.getJSONObject("__metadata").getString("uri"),"?$format=json");
+									// timeStamp = new
+									// SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new
+									// Date());
+									// logger.debug("After MDF Delete"+ timeStamp);
 								}
-
-								timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-								logger.debug("After Pex Updates" + timeStamp);
-								// delete the MDF Object
-								// timeStamp = new
-								// SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new
-								// Date());
-								// logger.debug("Before MDF DELETE "+ timeStamp);
-								// destClient.callDestinationDelete(mdfFieldsObject.getJSONObject("__metadata").getString("uri"),"?$format=json");
-								// timeStamp = new
-								// SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new
-								// Date());
-								// logger.debug("After MDF Delete"+ timeStamp);
+							} catch (Exception e) {
+								temp = confirmStatusService.findById(confirmStatus.getId());
+								temp.setUpdatedOn(new Date());
+								temp.setPexUpdateFlag("FAILED");
+								confirmStatusService.update(temp);
+								e.printStackTrace();
 							}
-
-						} catch (NamingException e) {
-
-							e.printStackTrace();
-						} catch (ClientProtocolException e) {
-
-							e.printStackTrace();
 						} catch (IOException e) {
 
 							e.printStackTrace();
