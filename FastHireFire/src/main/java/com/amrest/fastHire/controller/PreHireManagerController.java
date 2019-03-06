@@ -1386,7 +1386,7 @@ public class PreHireManagerController {
 		// of
 		// candidates
 
-		// EmpJobResponseObject.put("location", "NA");
+		EmpJobResponseObject.put("location", "NA");
 		EmpJobResponseObject.put("eventReason", "CS_JobAbandonment");
 		EmpJobResponseObject.getJSONObject("__metadata").put("uri", "EmpJob");
 		HttpResponse EmpJobPostResponse = destClient.callDestinationPOST("/upsert", "?$format=json",
