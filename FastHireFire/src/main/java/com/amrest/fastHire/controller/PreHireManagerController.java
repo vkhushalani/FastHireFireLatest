@@ -224,7 +224,7 @@ public class PreHireManagerController {
 		logger.debug("Set country to session in PerHireManager: "
 				+ empJobResponseObject.getJSONObject("positionNav").getJSONObject("companyNav").getString("country"));
 		paraMap.put("position", empJobResponseObject.getString("position"));
-		// SFConstants vacantEmployeeClass = null;
+		SFConstants vacantEmployeeClass = sfConstantsService.findById("vacantEmployeeClass_" + paraMap.get("country"));
 
 		String vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
 				+ "and department eq '" + paraMap.get("department") + "' " + "and parentPosition/code eq '"
@@ -232,16 +232,15 @@ public class PreHireManagerController {
 				+ "externalName_localized," + "externalName_defaultValue," + "payGrade,jobTitle,code,"
 				+ "employeeClassNav/label_defaultValue," + "employeeClassNav/label_localized";
 
-//		if (vacantEmployeeClass != null) {
-//
-//			vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
-//					+ "and department eq '" + paraMap.get("department") + "' " + "and employeeClass eq '"
-//					+ vacantEmployeeClass.getValue() + "' " + "and parentPosition/code eq '" + paraMap.get("position")
-//					+ "' " + "&$format=json" + "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
-//					+ "externalName_defaultValue," + "payGrade,jobTitle,code," + "employeeClassNav/label_defaultValue,"
-//					+ "employeeClassNav/label_localized";
-//
-//		}
+		if (vacantEmployeeClass != null) {
+			vacantPositionFilter = "?$filter=" + "vacant eq true and company eq '" + paraMap.get("company") + "' "
+					+ "and department eq '" + paraMap.get("department") + "' " + "and employeeClass eq '"
+					+ vacantEmployeeClass.getValue() + "' " + "and parentPosition/code eq '" + paraMap.get("position")
+					+ "' " + "&$format=json" + "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
+					+ "externalName_defaultValue," + "payGrade,jobTitle,code," + "employeeClassNav/label_defaultValue,"
+					+ "employeeClassNav/label_localized";
+
+		}
 		// get Vacant Positions
 		HttpResponse vacantPosResponse = destClient.callDestinationGET("/Position", vacantPositionFilter);
 		String vacantPosResponseJsonString = EntityUtils.toString(vacantPosResponse.getEntity(), "UTF-8");
@@ -277,14 +276,15 @@ public class PreHireManagerController {
 		SFConstants empStatusConstant = sfConstantsService.findById("emplStatusId");
 
 		// get OnGoing Hiring
+		// get OnGoing Hiring
 		HttpResponse ongoingPosResponse = destClient.callDestinationGET("/EmpJob",
 				"?$format=json&$filter=" + "employeeClass eq '" + employeeClassConstant.getValue() + "' and "
 						+ "company eq '" + paraMap.get("company") + "' and " + "department eq '"
 						+ paraMap.get("department") + "' and " + "emplStatusNav/id ne '" + empStatusConstant.getValue()
 						+ "' " + "and userNav/userId ne null &$expand=positionNav,userNav,"
-						+ "positionNav/employeeClassNav,userNav/personKeyNav" + "&$select=userId,startDate,position,"
-						+ "positionNav/externalName_localized," + "positionNav/externalName_defaultValue,"
-						+ "positionNav/payGrade,positionNav/jobTitle,"
+						+ "positionNav/employeeClassNav,userNav/personKeyNav"
+						+ "&$select=userId,startDate,customString11,position," + "positionNav/externalName_localized,"
+						+ "positionNav/externalName_defaultValue," + "positionNav/payGrade,positionNav/jobTitle,"
 						+ "userNav/userId,userNav/username,userNav/defaultFullName,"
 						+ "userNav/firstName,userNav/lastName," + "positionNav/employeeClassNav/label_localized,"
 						+ "positionNav/employeeClassNav/label_defaultValue," + "userNav/personKeyNav/perPersonUuid");
@@ -328,7 +328,7 @@ public class PreHireManagerController {
 					// pos.setLastUpdatedDate(ongoingPos.getString("createdOn"));
 					pos.setVacant(false);
 					pos.setStatuses(null);
-					String startDate = ongoingPos.getString("startDate");
+					String startDate = ongoingPos.getString("customString11");
 					String smilliSec = startDate.substring(startDate.indexOf("(") + 1, startDate.indexOf(")"));
 					long smilliSecLong = Long.valueOf(smilliSec).longValue() - TimeUnit.DAYS.toMillis(padStartDate);
 					smilliSec = Objects.toString(smilliSecLong, null);
@@ -1976,7 +1976,8 @@ public class PreHireManagerController {
 			}
 
 			HttpResponse response = generateDoc(docGenerationObject.toString());
-			if (response != null) {
+			String msg = response.getAllHeaders()[0].getValue();
+			if (response != null && !msg.equals("NoTemplateFound")) {
 				if (response.getStatusLine().getStatusCode() == 200) {
 					String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
 //			  String stringBody = response.getBody();
@@ -2004,12 +2005,18 @@ public class PreHireManagerController {
 					confirmStatusService.update(confirmStatus);
 				}
 				;
+			} else if (msg.equals("NoTemplateFound")) {
+				ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
+				temp.setUpdatedOn(new Date());
+				temp.setDocGenFlag("FAILED");
+				confirmStatusService.update(temp);
+				return new ResponseEntity<>("NoTemplateFound", HttpStatus.INTERNAL_SERVER_ERROR);
 			} else {
-				confirmStatus.setUpdatedOn(new Date());
-				confirmStatus.setDocGenFlag("FAILED");
-				confirmStatusService.update(confirmStatus);
+				ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
+				temp.setUpdatedOn(new Date());
+				temp.setDocGenFlag("FAILED");
+				confirmStatusService.update(temp);
 			}
-//		logger.debug("confirmStatus.getDocument()" + confirmStatus.getDocument());
 			return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (Exception e) {
 			confirmStatus.setUpdatedOn(new Date());
@@ -2957,128 +2964,4 @@ public class PreHireManagerController {
 		return (int) difference;
 	}
 
-	@PostMapping(value = "/SetDBStatuses")
-	public ResponseEntity<?> setDBStatuses(@RequestBody String postJson, HttpServletRequest request)
-			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
-			UnsupportedOperationException {
-		HttpSession session = request.getSession(false);
-		String userID = (String) session.getAttribute("userID");
-		try {
-			Map<String, String> map = new HashMap<String, String>();
-			JSONObject postObject = new JSONObject(postJson);
-			Iterator<?> keys = postObject.keys();
-			while (keys.hasNext()) {
-				String key = (String) keys.next();
-				map.put(key, postObject.getString(key));
-			}
-			// Get URI details
-			DestinationClient destClient = new DestinationClient();
-			destClient.setDestName(destinationName);
-			destClient.setHeaderProvider();
-			destClient.setConfiguration();
-			destClient.setDestConfiguration();
-			destClient.setHeaders(destClient.getDestProperty("Authentication"));
-			// batch intitialization
-			BatchRequest batchRequest = new BatchRequest();
-			batchRequest.configureDestination(destinationName);
-			Map<String, String> entityMap = new HashMap<String, String>();
-			// Map<String, String> entityResponseMap = new HashMap<String, String>();
-			entityMap.put("PerPerson",
-					"?$filter=personIdExternal  eq '" + userID + "'&$format=json&$select=perPersonUuid");
-			logger.debug("Formed EntityMap...");
-			entityMap.put("EmpJob",
-					"?$filter=userId eq '" + userID + "'&$format=json&$select=company,department,position");
-			// reading the records and creating batch post body
-			for (Map.Entry<String, String> entity : entityMap.entrySet()) {
-				batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
-			}
-			batchRequest.callBatchPOST("/$batch", "");
-			JSONObject sfentityObject = new JSONObject();
-			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
-			for (BatchSingleResponse batchResponse : batchResponses) {
-				// logger.debug("batch Response: " + batchResponse.getStatusCode() +
-				// ";"+batchResponse.getBody());
-				JSONObject batchObject = new JSONObject(batchResponse.getBody());
-				if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
-					batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-					String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
-					String enityKey = batchResponseType.split("\\.")[1];
-					// logger.debug("enityKey" + enityKey);
-
-					sfentityObject.put(enityKey, batchObject);
-				}
-			}
-			// creating entry for the confirm status flags update
-			String personId = sfentityObject.getJSONObject("PerPerson").getString("perPersonUuid");
-			String company = sfentityObject.getJSONObject("EmpJob").getString("company");
-			String department = sfentityObject.getJSONObject("EmpJob").getString("department");
-			String position = sfentityObject.getJSONObject("EmpJob").getString("position");
-			ConfirmStatus confirmStatusTemp = null;
-			logger.debug("sfentityObject: " + sfentityObject.toString());
-			// creating entry for the confirm status flags update
-			logger.debug("personId: " + personId);
-
-			confirmStatusTemp = confirmStatusService.findById(personId);
-			if (confirmStatusTemp == null) {
-				confirmStatusTemp = new ConfirmStatus();
-				confirmStatusTemp.setId(personId);
-				confirmStatusTemp.setCompany(company);
-				confirmStatusTemp.setDepartment(department);
-				confirmStatusTemp.setPosition(position);
-				confirmStatusTemp.setStartDate(map.get("startDate"));
-				confirmStatusTemp.setUpdatedOn(new Date());
-				confirmStatusTemp.setPexUpdateFlag("SUCCESS");
-				confirmStatusTemp.setSfEntityFlag("SUCCESS");
-				confirmStatusTemp = confirmStatusService.create(confirmStatusTemp);
-				ConfirmStatus confirmStatus = confirmStatusTemp;
-				logger.debug("confirmStatus OK Confirm ID:" + confirmStatus.getId());
-			}
-			return ResponseEntity.ok().body("SUCCESS");
-		} catch (Exception e) {
-			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
-			return ResponseEntity.ok().body("ERROR");
-		}
-	}
-
-	@PostMapping(value = "/contractgeneration")
-	public ResponseEntity<?> contractGeneration(@RequestBody String postJson, HttpServletRequest request)
-			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
-			UnsupportedOperationException {
-		logger.debug("contractgeneration Contract Generation Request Got" + postJson);
-		try {
-			DestinationClient docDestination = new DestinationClient();
-			docDestination.setDestName(pocDocDestinationName);
-			docDestination.setHeaderProvider();
-			docDestination.setConfiguration();
-			docDestination.setDestConfiguration();
-			docDestination.setHeaders(docDestination.getDestProperty("Authentication"));
-			logger.debug("contractgeneration");
-			HttpResponse response = docDestination.callDestinationPOST("", "", postJson);
-			timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-			logger.debug("After doc generation" + timeStamp);
-			if (response.getStatusLine().getStatusCode() == 200) {
-				String docGenerationResponseJsonString = EntityUtils.toString(response.getEntity(), "UTF-8");
-				// String stringBody = response.getBody();
-				logger.debug("docGenerationResponseJsonString: " + docGenerationResponseJsonString);
-				JSONObject docJson = new JSONObject(docGenerationResponseJsonString);
-				if (docJson.getString("status").equalsIgnoreCase("SUCCESS")) {
-					logger.debug("docJson.document " + docJson.getString("document"));
-					byte[] decodedString = Base64
-							.decodeBase64(new String(docJson.getString("document")).getBytes("UTF-8"));
-					return ResponseEntity.ok().body(decodedString);
-					// logger.debug("bytes " + decodedString);
-				} else {
-					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
-				}
-			} else {
-				logger.debug("contractgeneration In else 2:" + response.getStatusLine().getStatusCode());
-			}
-
-			return ResponseEntity.ok().body("Error");
-
-		} catch (Exception e) {
-			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
-			return ResponseEntity.ok().body("ERROR");
-		}
-	}
 }
