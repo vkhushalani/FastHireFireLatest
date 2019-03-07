@@ -109,6 +109,7 @@ public class PreHireManagerController {
 		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
 	};
 
+// Test comment
 	String timeStamp;
 	int counter;
 
