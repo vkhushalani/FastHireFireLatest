@@ -1,5 +1,6 @@
 package com.amrest.fastHire.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -14,6 +15,7 @@ public class CreateZip {
 	public ZipOutputStream generateZip(List<File> fileList) throws IOException {
 		FileOutputStream fos = new FileOutputStream("multiCompressed.zip");
 		ZipOutputStream zipOut = new ZipOutputStream(fos);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		for (File fileToZip : fileList) {
 			FileInputStream fis = new FileInputStream(fileToZip);
 			ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
