@@ -39,6 +39,7 @@ import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.olingo.odata2.api.batch.BatchException;
 import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
+import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -3046,7 +3047,7 @@ public class PreHireManagerController {
 	}
 
 	@PostMapping(value = "/contractgeneration")
-	public JSONObject contractGeneration(@RequestBody String postJson, HttpServletRequest request)
+	public ResponseEntity<?> contractGeneration(@RequestBody String postJson, HttpServletRequest request)
 			throws NamingException, ClientProtocolException, IOException, URISyntaxException, BatchException,
 			UnsupportedOperationException {
 		logger.debug("contractgeneration Contract Generation Request Got" + postJson);
@@ -3077,10 +3078,10 @@ public class PreHireManagerController {
 					fileList.add(file);
 					CreateZip oCreateZip = new CreateZip();
 					ZipOutputStream zipFile = oCreateZip.generateZip(fileList);
-					JSONObject responseObj = new JSONObject();
-					responseObj.put("status", "SUCCESS");
-					responseObj.putOnce("file", zipFile);
-					return responseObj;
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					ZipOutputStream zos = new ZipOutputStream(baos);
+
+					return ResponseEntity.ok().body(decodedString);
 					// logger.debug("bytes " + decodedString);
 				} else {
 					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
@@ -3088,15 +3089,12 @@ public class PreHireManagerController {
 			} else {
 				logger.debug("contractgeneration In else 2:" + response.getStatusLine().getStatusCode());
 			}
-			JSONObject responseObj = new JSONObject();
-			responseObj.put("status", "SUCCESS");
-			return responseObj;
+			return ResponseEntity.ok().body("Error");
 
 		} catch (Exception e) {
 			logger.debug("{\"message\":\"Error\",\"msg\":\"" + e.getMessage() + "\"}:");
-			JSONObject responseObj = new JSONObject();
-			responseObj.put("status", "SUCCESS");
-			return responseObj;
+
+			return ResponseEntity.ok().body("Error");
 		}
 	}
 }
