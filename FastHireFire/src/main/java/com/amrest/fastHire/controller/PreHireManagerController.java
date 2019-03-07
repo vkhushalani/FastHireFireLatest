@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipOutputStream;
 
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +38,6 @@ import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.olingo.odata2.api.batch.BatchException;
 import org.apache.olingo.odata2.api.client.batch.BatchSingleResponse;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -3077,11 +3075,9 @@ public class PreHireManagerController {
 					List<File> fileList = new ArrayList<>();
 					fileList.add(file);
 					CreateZip oCreateZip = new CreateZip();
-					ZipOutputStream zipFile = oCreateZip.generateZip(fileList);
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					ZipOutputStream zos = new ZipOutputStream(baos);
+					byte[] decodedStringBase64Zip = oCreateZip.generateZip(fileList);
 
-					return ResponseEntity.ok().body(decodedString);
+					return ResponseEntity.ok().body(decodedStringBase64Zip);
 					// logger.debug("bytes " + decodedString);
 				} else {
 					logger.debug("contractgeneration In else" + response.getStatusLine().getStatusCode());
