@@ -1454,7 +1454,9 @@ public class PreHireManagerController {
 			// batch intitialization
 			BatchRequest batchRequest = new BatchRequest();
 			batchRequest.configureDestination(destinationName);
-
+			Date today = new Date();
+			SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd");
+			String dateString = dateformatter.format(today);
 			Map<String, String> entityMap = new HashMap<String, String>();
 			Map<String, String> entityResponseMap = new HashMap<String, String>();
 
@@ -1477,8 +1479,9 @@ public class PreHireManagerController {
 			entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId")
 					+ "'&$format=json&$select=personIdExternal,emailAddress");
 			entityMap.put("cust_Additional_Information",
-					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'");
-			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId") + "'");
+					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
+			entityMap.put("cust_personIdGenerate",
+					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
 
 			// reading the records and creating batch post body
 
@@ -1942,8 +1945,8 @@ public class PreHireManagerController {
 					+ "&$format=json&$select=personIdExternal,emailAddress");
 			entityMap.put("cust_Additional_Information",
 					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
-			entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
-					+ "'&fromDate=" + dateString + "&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
+			entityMap.put("cust_personIdGenerate",
+					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
 
 			// reading the records and creating batch post body
 
@@ -2065,8 +2068,8 @@ public class PreHireManagerController {
 				+ "&$format=json&$select=personIdExternal,emailAddress");
 		entityMap.put("cust_Additional_Information",
 				"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
-		entityMap.put("cust_personIdGenerate", "?$format=json&$filter=externalCode eq '" + map.get("userId")
-				+ "'&fromDate=" + dateString + "&$select=cust_ZZ_MDF2PEX_FEOR1,cust_FEOR1");
+		entityMap.put("cust_personIdGenerate",
+				"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
 
 		// reading the records and creating batch post body
 
