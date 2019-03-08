@@ -95,6 +95,7 @@ import com.amrest.fastHire.utilities.CreateZip;
 import com.amrest.fastHire.utilities.DashBoardPositionClass;
 import com.amrest.fastHire.utilities.DropDownKeyValue;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 
 @RestController
 @RequestMapping("/PreHireManager")
@@ -3094,4 +3095,54 @@ public class PreHireManagerController {
 			return ResponseEntity.ok().body("Error");
 		}
 	}
+
+	@GetMapping(value = "/testApi")
+	public String testApi(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException,
+			URISyntaxException, BatchException, UnsupportedOperationException {
+		String loggedInUser = request.getUserPrincipal().getName();
+		// need to remove this code
+		if (loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
+				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")) {
+			loggedInUser = "E00000118";
+		}
+
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(destinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+
+		// get the Emjob Details of the logged In user
+		Map<String, String> entityMap = new HashMap<String, String>();
+		Map<String, String> entityResponseMap = new HashMap<String, String>();
+		BatchRequest batchRequest = new BatchRequest();
+		batchRequest.configureDestination(destinationName);
+		entityMap.put("EmpJob", "?$filter=userId eq '" + loggedInUser
+				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
+		entityMap.put("User", "?$filter=userId eq '" + loggedInUser
+				+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
+		// reading the records and creating batch post body
+		for (Map.Entry<String, String> entity : entityMap.entrySet()) {
+			batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
+		}
+		batchRequest.callBatchPOST("/$batch", "");
+		JsonArray sfentityArray = new JsonArray();
+		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+		for (BatchSingleResponse batchResponse : batchResponses) {
+			// logger.debug("batch Response: " + batchResponse.getStatusCode() +
+			// ";"+batchResponse.getBody());
+			// JSONObject batchObject = new JSONObject(batchResponse.getBody());
+			sfentityArray.add(batchResponse.getBody());
+//			if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
+//				batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+//				String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
+//				String enityKey = batchResponseType.split("\\.")[1];
+//				// logger.debug("enityKey" + enityKey);
+//				sfentityObject.put(enityKey, batchObject);
+//			}
+		}
+		return sfentityArray.toString();
+	}
+
 }
