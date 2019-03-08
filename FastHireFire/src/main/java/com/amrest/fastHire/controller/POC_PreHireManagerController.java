@@ -99,7 +99,7 @@ import com.google.gson.JsonArray;
 
 @RestController
 @RequestMapping("/PreHireManager")
-public class PreHireManagerController {
+public class POC_PreHireManagerController {
 	public static final String destinationName = "prehiremgrSFTest";
 	public static final String scpDestinationName = "scpiBasic";
 	public static final String pexDestinationName = "FastHirePEX";
@@ -117,7 +117,7 @@ public class PreHireManagerController {
 	public static final Integer padStartDate = 15;
 	public static final Integer confirmStartDateDiffDays = 2;
 
-	Logger logger = LoggerFactory.getLogger(PreHireManagerController.class);
+	Logger logger = LoggerFactory.getLogger(POC_PreHireManagerController.class);
 
 	@Autowired
 	MapCountryBusinessUnitService mapCountryBusinessUnitService;
@@ -3103,7 +3103,7 @@ public class PreHireManagerController {
 		// need to remove this code
 		if (loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
 				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")) {
-			loggedInUser = "E00000118";
+			loggedInUser = "sfadmin";
 		}
 
 		DestinationClient destClient = new DestinationClient();
