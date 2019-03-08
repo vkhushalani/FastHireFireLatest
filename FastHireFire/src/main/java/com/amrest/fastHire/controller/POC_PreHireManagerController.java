@@ -3101,7 +3101,7 @@ public class POC_PreHireManagerController {
 			URISyntaxException, BatchException, UnsupportedOperationException {
 		String loggedInUser = request.getUserPrincipal().getName();
 		// need to remove this code
-		if (loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0018269301")
+		if (loggedInUser.equalsIgnoreCase("S0012467286") || loggedInUser.equalsIgnoreCase("S0018269301")
 				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")) {
 			loggedInUser = "sfadmin";
 		}
