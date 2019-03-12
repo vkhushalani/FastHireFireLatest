@@ -1467,7 +1467,7 @@ public class PreHireManagerController {
 			entityMap.put("EmpEmployment", "?$filter=personIdExternal eq '" + map.get("userId")
 					+ "'&$format=json&$select=userId,startDate,personIdExternal");
 			entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '" + map.get("userId")
-					+ "'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
+					+ "'&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod,toPaymentInformationDetailV3/accountOwner");
 			entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId")
 					+ "'&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 			entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId")
@@ -1802,11 +1802,14 @@ public class PreHireManagerController {
 																	pexPostResponseJsonString);
 															counter = counter + 1;
 															if (counter == pexFormMap.keySet().size()) {
-																ConfirmStatus temp = confirmStatusService
-																		.findById(confirmStatus.getId());
-																temp.setUpdatedOn(new Date());
-																temp.setPexUpdateFlag("SUCCESS");
-																confirmStatusService.update(temp);
+																if (!confirmStatus.getSfEntityFlag()
+																		.equalsIgnoreCase("FAILED")) {
+																	ConfirmStatus temp = confirmStatusService
+																			.findById(confirmStatus.getId());
+																	temp.setUpdatedOn(new Date());
+																	temp.setPexUpdateFlag("SUCCESS");
+																	confirmStatusService.update(temp);
+																}
 															}
 														} else {
 															ConfirmStatus temp = confirmStatusService
@@ -2061,7 +2064,7 @@ public class PreHireManagerController {
 				+ "&$format=json&$select=userId,startDate,personIdExternal");
 		entityMap.put("PaymentInformationV3", "?$format=json&$filter=worker eq '" + map.get("userId") + "'&fromDate="
 				+ dateString
-				+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod");
+				+ "&$expand=toPaymentInformationDetailV3&$select=effectiveStartDate,worker,toPaymentInformationDetailV3/PaymentInformationV3_effectiveStartDate,toPaymentInformationDetailV3/PaymentInformationV3_worker,toPaymentInformationDetailV3/amount,toPaymentInformationDetailV3/accountNumber,toPaymentInformationDetailV3/bank,toPaymentInformationDetailV3/payType,toPaymentInformationDetailV3/iban,toPaymentInformationDetailV3/purpose,toPaymentInformationDetailV3/routingNumber,toPaymentInformationDetailV3/bankCountry,toPaymentInformationDetailV3/currency,toPaymentInformationDetailV3/businessIdentifierCode,toPaymentInformationDetailV3/paymentMethod,toPaymentInformationDetailV3/accountOwner");
 		entityMap.put("PerPersonal", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
 				+ "&$format=json&$select=startDate,personIdExternal,birthName,initials,middleName,customString1,maritalStatus,certificateStartDate,title,namePrefix,salutation,nativePreferredLang,since,gender,lastName,nameFormat,firstName,certificateEndDate,preferredName,secondNationality,suffix,formalName,nationality");
 		entityMap.put("PerAddressDEFLT", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate="
@@ -2394,11 +2397,13 @@ public class PreHireManagerController {
 											JSONObject pexResponseObject = new JSONObject(pexPostResponseJsonString);
 											counter = counter + 1;
 											if (counter == pexFormMap.keySet().size()) {
-												ConfirmStatus temp = confirmStatusService
-														.findById(confirmStatus.getId());
-												temp.setUpdatedOn(new Date());
-												temp.setPexUpdateFlag("SUCCESS");
-												confirmStatusService.update(temp);
+												if (!confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
+													ConfirmStatus temp = confirmStatusService
+															.findById(confirmStatus.getId());
+													temp.setUpdatedOn(new Date());
+													temp.setPexUpdateFlag("SUCCESS");
+													confirmStatusService.update(temp);
+												}
 											}
 										} else {
 											ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
