@@ -369,46 +369,48 @@ public class PreHireManagerController {
 
 				String userResponseString = EntityUtils.toString(userResponse.getEntity(), "UTF-8");
 				JSONObject userResponseObject = new JSONObject(userResponseString);
-				userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+				if (userResponseObject.getJSONObject("d").getJSONArray("results").length() != 0) {
+					userResponseObject = userResponseObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
+					HttpResponse empResponse = destClient.callDestinationGET("/Position",
+							"?$filter=code eq '" + confirmStatus.getPosition() + "'&$format=json"
+									+ "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
+									+ "externalName_defaultValue," + "payGrade,jobTitle,code,"
+									+ "employeeClassNav/label_defaultValue," + "employeeClassNav/label_localized");
 
-				HttpResponse empResponse = destClient.callDestinationGET("/Position",
-						"?$filter=code eq '" + confirmStatus.getPosition() + "'&$format=json"
-								+ "&$expand=employeeClassNav" + "&$select=" + "externalName_localized,"
-								+ "externalName_defaultValue," + "payGrade,jobTitle,code,"
-								+ "employeeClassNav/label_defaultValue," + "employeeClassNav/label_localized");
+					String empResponseJsonString = EntityUtils.toString(empResponse.getEntity(), "UTF-8");
+					JSONObject empResponseObject = new JSONObject(empResponseJsonString);
+					JSONObject empResultObject = empResponseObject.getJSONObject("d").getJSONArray("results")
+							.getJSONObject(0);
 
-				String empResponseJsonString = EntityUtils.toString(empResponse.getEntity(), "UTF-8");
-				JSONObject empResponseObject = new JSONObject(empResponseJsonString);
-				JSONObject empResultObject = empResponseObject.getJSONObject("d").getJSONArray("results")
-						.getJSONObject(0);
+					DashBoardPositionClass pos = new DashBoardPositionClass();
+					pos.setPayGrade(empResultObject.getString("payGrade"));
+					pos.setPositionCode(empResultObject.getString("code"));
+					pos.setPositionTitle(empResultObject.getString("externalName_localized") != null
+							? empResultObject.getString("externalName_localized")
+							: empResultObject.getString("externalName_defaultValue"));// null
+																						// check
+					pos.setEmployeeClassName(
+							empResultObject.getJSONObject("employeeClassNav").getString("label_localized") != null
+									? empResultObject.getJSONObject("employeeClassNav").getString("label_localized")
+									: empResultObject.getJSONObject("employeeClassNav")
+											.getString("label_defaultValue"));// null
+																				// check
+					pos.setUserFirstName(userResponseObject.getString("firstName"));
+					pos.setUserLastName(userResponseObject.getString("lastName"));
+					pos.setUserId(personResponseObject.getString("personIdExternal"));
+					pos.setDayDiff(null);
+					pos.setVacant(false);
+					pos.setStartDate(null);
 
-				DashBoardPositionClass pos = new DashBoardPositionClass();
-				pos.setPayGrade(empResultObject.getString("payGrade"));
-				pos.setPositionCode(empResultObject.getString("code"));
-				pos.setPositionTitle(empResultObject.getString("externalName_localized") != null
-						? empResultObject.getString("externalName_localized")
-						: empResultObject.getString("externalName_defaultValue"));// null
-																					// check
-				pos.setEmployeeClassName(
-						empResultObject.getJSONObject("employeeClassNav").getString("label_localized") != null
-								? empResultObject.getJSONObject("employeeClassNav").getString("label_localized")
-								: empResultObject.getJSONObject("employeeClassNav").getString("label_defaultValue"));// null
-																														// check
-				pos.setUserFirstName(userResponseObject.getString("firstName"));
-				pos.setUserLastName(userResponseObject.getString("lastName"));
-				pos.setUserId(personResponseObject.getString("personIdExternal"));
-				pos.setDayDiff(null);
-				pos.setVacant(false);
-				pos.setStartDate(null);
+					Map<String, String> statusMap = new HashMap<String, String>();
 
-				Map<String, String> statusMap = new HashMap<String, String>();
+					statusMap.put("SFFlag", confirmStatus.getSfEntityFlag());
+					statusMap.put("PexFlag", confirmStatus.getPexUpdateFlag());
+					statusMap.put("DocFlag", confirmStatus.getDocGenFlag());
+					pos.setStatuses(statusMap);
 
-				statusMap.put("SFFlag", confirmStatus.getSfEntityFlag());
-				statusMap.put("PexFlag", confirmStatus.getPexUpdateFlag());
-				statusMap.put("DocFlag", confirmStatus.getDocGenFlag());
-				pos.setStatuses(statusMap);
-
-				returnPositions.add(pos);
+					returnPositions.add(pos);
+				}
 			}
 		}
 		// return the JSON Object
