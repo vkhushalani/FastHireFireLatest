@@ -2412,7 +2412,6 @@ public class PreHireManagerController {
 											confirmStatusService.update(temp);
 
 										}
-
 									} catch (JSONException ex) {
 										ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
 										temp.setUpdatedOn(new Date());
