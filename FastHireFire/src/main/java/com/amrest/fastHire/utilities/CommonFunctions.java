@@ -65,7 +65,7 @@ public class CommonFunctions {
 
 			user = userProvider.getUser(request.getUserPrincipal().getName());
 			userID = user.getAttribute("name");
-			
+
 		} catch (PersistenceException ee) {
 			logger.error(ConstantManager.lineSeparator + "PersistenceException ", ee);
 		} catch (UnsupportedUserAttributeException ee) {
@@ -105,4 +105,5 @@ public class CommonFunctions {
 		return emailID;
 	}
 
+	public static final String CRLF = System.getProperty("line.separator");
 }
