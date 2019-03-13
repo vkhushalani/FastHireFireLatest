@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.naming.NamingException;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -13,104 +13,84 @@ import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.amrest.fastHire.SF.DestinationClient;
+
 public class SCPOperationsForScheduler {
 	private static final String sFDestinationName = "configurationnameSF";
+	private static final String scpAuthToken = "Scheduler_PlatFormClientAuthToken";
 	private static final Logger logger = LoggerFactory.getLogger(SCPOperationsForScheduler.class);
 
-	private final String urlLog = "URL : ";
-	private final String resultLog = "Body : ";
-	private final String groupresultLog = "Group Body : ";
-
-	public String getGroups(HttpServletRequest request) {
-
-		ArrayList<String> paramList = new ArrayList<>();
-
-		URLManager genURL = new URLManager(paramList, "CollectRBPGroups", sFDestinationName);
-
-		String urlToCall = genURL.formURLToCall();
-		logger.info(urlLog + urlToCall);
-
-		// Get details from server
-		HttpConnectionGET httpConnectionGET = new HttpConnectionGET(urlToCall, URLManager.dConfiguration);
-		String result = httpConnectionGET.connectToServer();
-
-		logger.info(groupresultLog + result);
-
-		result = parseGroups(result);
-		return result;
-	}
-
 	@SuppressWarnings("unchecked")
-	private String parseGroups(String result) {
-		long startTime = System.nanoTime();
-
-		JSONObject jsonObject = (JSONObject) JSONValue.parse(result);
-		jsonObject = (JSONObject) JSONValue.parse(jsonObject.get("d").toString());
-
-		JSONArray jsonArray = (JSONArray) JSONValue.parse(jsonObject.get("results").toString());
-
-		Set<String> RBPGroups = new HashSet<String>();
+	public String getUsers() throws NamingException {
+		logger.debug("Inside getUsers function");
+		JSONArray sfGroupNameArray = getGroupNames();
+		Set<String> uniqueSFGroupsSet = new HashSet<String>();
 		JSONArray tempArray = new JSONArray();
-		for (int i = 0; i < jsonArray.size(); i++) {
-			JSONObject jsonObject1 = (JSONObject) JSONValue.parse(jsonArray.get(i).toString());
-			String groupName = jsonObject1.get("technicalRole").toString();
-
-			if (RBPGroups.contains(groupName)) {
+		for (int i = 0; i < sfGroupNameArray.size(); i++) {
+			String groupName = sfGroupNameArray.get(i).toString();
+			if (uniqueSFGroupsSet.contains(groupName)) {
 				continue;
 			} else {
-				RBPGroups.add(groupName);
-				tempArray.add(jsonObject1);
+				uniqueSFGroupsSet.add(groupName);
+				tempArray.add(groupName);
 			}
 		}
-
-		jsonArray = tempArray;
-
+		sfGroupNameArray = tempArray;
+		logger.debug("sfGroupNameArray without duplicates:" + sfGroupNameArray.toString());
 		List<JSONObject> jsonValues = new ArrayList<JSONObject>();
-
-		for (int i = 0; i < jsonArray.size(); i++) {
-			JSONObject jsonObject1 = (JSONObject) JSONValue.parse(jsonArray.get(i).toString());
-
+		for (int i = 0; i < sfGroupNameArray.size(); i++) {
 			ArrayList<String> paramList = new ArrayList<>();
-			paramList.add(0, jsonObject1.get("technicalRole").toString());
-
+			paramList.add(0, sfGroupNameArray.get(0).toString());
 			URLManager genURL = new URLManager(paramList, "DynamicGroup", sFDestinationName);
-
 			String urlToCall = genURL.formURLToCall();
-
+			logger.debug("urlToCall:" + urlToCall);
 			// Get details from server
 			HttpConnectionGET httpConnectionGET = new HttpConnectionGET(urlToCall, URLManager.dConfiguration);
 			String dynamicGroups = httpConnectionGET.connectToServer();
-
+			logger.debug("dynamicGroups:" + dynamicGroups);
 			jsonValues = parseDynamicGroups(jsonValues, dynamicGroups);
-
 		}
-
-		long endTime = System.nanoTime();
-		logger.info("Time used (in second) parseDynamicGroups: " + (endTime - startTime) / 1000000000);
-
 		JSONObject obj = new JSONObject();
 		JSONObject groupIDObj = new JSONObject();
 		obj.put("results", jsonValues);
 		groupIDObj.put("d", obj);
-
-		logger.info("Group ID object: " + groupIDObj.toString());
-
+		logger.debug("Group ID object: " + groupIDObj.toString());
 		String usersObject = parseGroupIDs(groupIDObj.toString());
-		logger.info("Users object: " + usersObject);
-
+		logger.debug("Users object: " + usersObject);
 		String finalUsers = removeDuplicateUsers(usersObject);
-
-		logger.info("Users final list: " + finalUsers);
+		logger.debug("Users final list: " + finalUsers);
 		return finalUsers;
 	}
 
+	@SuppressWarnings("unchecked")
+	public JSONArray getGroupNames() throws NamingException {
+		logger.debug("Inside getGroupNames function");
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(scpAuthToken);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		String sfGroupNameString = destClient.getDestProperty("SF_GROUP_NAMES");
+		logger.debug("sfGroupNameString:" + sfGroupNameString);
+		String[] sfGroupName = sfGroupNameString.split(",");
+		JSONArray sfGroupNameArray = new JSONArray();
+		for (int i = 0; i < sfGroupName.length; i++) {
+			sfGroupNameArray.add(sfGroupName[i]);
+		}
+		logger.debug("sfGroupNameArray:" + sfGroupNameArray.toString());
+		return sfGroupNameArray;
+	}
+
 	private List<JSONObject> parseDynamicGroups(List<JSONObject> jsonValues, String result) {
+		logger.debug("inside parseDynamicGroups");
 		JSONObject jsonObject = (JSONObject) JSONValue.parse(result);
 		jsonObject = (JSONObject) JSONValue.parse(jsonObject.get("d").toString());
 
 		JSONArray jsonArray = (JSONArray) JSONValue.parse(jsonObject.get("results").toString());
 
 		for (int i = 0; i < jsonArray.size(); i++) {
+			logger.debug("inside parseDynamicGroups jsonArray.get(i).toString(): " + jsonArray.get(i).toString());
 			jsonValues.add((JSONObject) JSONValue.parse(jsonArray.get(i).toString()));
 		}
 		return jsonValues;
