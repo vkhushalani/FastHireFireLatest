@@ -86,7 +86,7 @@ public class HttpConnectionGET {
 			int respCode = connection.getResponseCode();
 
 			// logging the response
-			logger.info(MessageFormat.format("Resp code for {0}{1}{2}", className, respCode, CommonFunctions.CRLF));
+			logger.info(MessageFormat.format("Resp code for {0}{1}", respCode, CommonFunctions.CRLF));
 
 			if (respCode != HttpURLConnection.HTTP_OK) {
 				throw new ServletException("Expected response status code is 200 but it is " + respCode + " .");
@@ -156,7 +156,7 @@ public class HttpConnectionGET {
 			int respCode = connection.getResponseCode();
 
 			// logging the response
-			logger.info(MessageFormat.format("Resp code for {0}{1}{2}", className, respCode, CommonFunctions.CRLF));
+			logger.info(MessageFormat.format("Resp code for {0}{1}", respCode, CommonFunctions.CRLF));
 
 			if (respCode != HttpURLConnection.HTTP_OK) {
 				throw new ServletException("Expected response status code is 200 but it is " + respCode + " .");
@@ -285,7 +285,7 @@ public class HttpConnectionGET {
 			int respCode = connection.getResponseCode();
 
 			// logging the response
-			logger.info(MessageFormat.format("Resp code for {0}{1}{2}", className, respCode, CommonFunctions.CRLF));
+			logger.info(MessageFormat.format("Resp code for {0}{1}", respCode, CommonFunctions.CRLF));
 
 			if (respCode != HttpURLConnection.HTTP_OK) {
 				throw new ServletException("Expected response status code is 200 but it is " + respCode + " .");

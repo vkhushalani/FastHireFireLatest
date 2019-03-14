@@ -106,4 +106,5 @@ public class CommonFunctions {
 	}
 
 	public static final String CRLF = System.getProperty("line.separator");
+
 }

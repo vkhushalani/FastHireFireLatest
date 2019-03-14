@@ -202,7 +202,6 @@ public class SCPOperations {
 		JSONObject tokenResponseObject = new JSONObject(tokenResponseJsonString);
 
 		return tokenResponseObject;
-
 	}
 
 	@GetMapping("/searchUser")
