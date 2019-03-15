@@ -24,6 +24,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
@@ -34,6 +36,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.olingo.odata2.api.batch.BatchException;
@@ -45,8 +50,14 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,6 +66,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.amrest.fastHire.SF.BatchRequest;
 import com.amrest.fastHire.SF.DestinationClient;
@@ -95,7 +107,6 @@ import com.amrest.fastHire.utilities.CreateZip;
 import com.amrest.fastHire.utilities.DashBoardPositionClass;
 import com.amrest.fastHire.utilities.DropDownKeyValue;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 
 @RestController
 @RequestMapping("/PreHireManager")
@@ -105,6 +116,8 @@ public class POC_PreHireManagerController {
 	public static final String pexDestinationName = "FastHirePEX";
 	public static final String docdestinationName = "DocumentGeneration";
 	public static final String pocDocDestinationName = "DocGeneration";
+	public static final String amitSFDestinationName = "AmitSF";
+	public static final String amitPexDestinationName = "AmitPex";
 
 	private enum hunLocale {
 		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
@@ -3098,51 +3111,101 @@ public class POC_PreHireManagerController {
 
 	@GetMapping(value = "/testApi")
 	public String testApi(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException,
-			URISyntaxException, BatchException, UnsupportedOperationException {
+			URISyntaxException, BatchException, UnsupportedOperationException, InterruptedException {
 		String loggedInUser = request.getUserPrincipal().getName();
 		// need to remove this code
 		if (loggedInUser.equalsIgnoreCase("S0012467286") || loggedInUser.equalsIgnoreCase("S0018269301")
 				|| loggedInUser.equalsIgnoreCase("S0018810731") || loggedInUser.equalsIgnoreCase("S0019013022")) {
-			loggedInUser = "sfadmin";
+			loggedInUser = "E00000023";
 		}
-
-		DestinationClient destClient = new DestinationClient();
-		destClient.setDestName(destinationName);
-		destClient.setHeaderProvider();
-		destClient.setConfiguration();
-		destClient.setDestConfiguration();
-		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 
 		// get the Emjob Details of the logged In user
 		Map<String, String> entityMap = new HashMap<String, String>();
-		Map<String, String> entityResponseMap = new HashMap<String, String>();
 		BatchRequest batchRequest = new BatchRequest();
-		batchRequest.configureDestination(destinationName);
+		batchRequest.configureDestination(amitSFDestinationName);
 		entityMap.put("EmpJob", "?$filter=userId eq '" + loggedInUser
-				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
-		entityMap.put("User", "?$filter=userId eq '" + loggedInUser
-				+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
+				+ "' &$expand=companyNav,userNav&$select=company,companyNav/name_defaultValue,userNav/defaultFullName,userNav/defaultLocale&$format=JSON");
+//		entityMap.put("User", "?$filter=userId eq '" + loggedInUser
+//				+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
 		// reading the records and creating batch post body
 		for (Map.Entry<String, String> entity : entityMap.entrySet()) {
 			batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
 		}
-		batchRequest.callBatchPOST("/$batch", "");
-		JsonArray sfentityArray = new JsonArray();
-		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
-		for (BatchSingleResponse batchResponse : batchResponses) {
-			// logger.debug("batch Response: " + batchResponse.getStatusCode() +
-			// ";"+batchResponse.getBody());
-			// JSONObject batchObject = new JSONObject(batchResponse.getBody());
-			sfentityArray.add(batchResponse.getBody());
-//			if (batchObject.getJSONObject("d").getJSONArray("results").length() != 0) {
-//				batchObject = batchObject.getJSONObject("d").getJSONArray("results").getJSONObject(0);
-//				String batchResponseType = batchObject.getJSONObject("__metadata").getString("type");
-//				String enityKey = batchResponseType.split("\\.")[1];
-//				// logger.debug("enityKey" + enityKey);
-//				sfentityObject.put(enityKey, batchObject);
-//			}
+
+		ExecutorService es = Executors.newCachedThreadPool();
+		es.execute(new Runnable() {
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				try {
+					logger.debug("Running Batch Thread::: " + new Date());
+					batchRequest.callBatchPOST("/$batch", "");
+					logger.debug("Completed Batch Thread::: " + new Date());
+				} catch (BatchException | UnsupportedOperationException | URISyntaxException | IOException
+						| NamingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+
+		ClientHttpRequestFactory requestFactory = getClientHttpRequestFactory();
+		RestTemplate restTemplate = new RestTemplate(requestFactory);
+
+		DestinationClient destClient = new DestinationClient();
+		destClient.setDestName(amitPexDestinationName);
+		destClient.setHeaderProvider();
+		destClient.setConfiguration();
+		destClient.setDestConfiguration();
+		destClient.setHeaders(destClient.getDestProperty("Authentication"));
+		String url = destClient.getDestProperty("URL");
+		String jwtToken = destClient.getDestProperty("Password");
+		logger.debug("jwtTokenjwtToken::: " + jwtToken);
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+		headers.set("Authorization", "Bearer " + jwtToken);
+		logger.debug("headers::: " + headers.toString());
+		HttpEntity<?> entity = new HttpEntity<>(headers);
+		JSONObject pexResponseObj = new JSONObject();
+		es.execute(new Runnable() {
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				try {
+					logger.debug("Running PEX GET Thread::: " + new Date());
+					ResponseEntity<String> restTemplateResponse = restTemplate.exchange(url + "/forms?locale=en",
+							HttpMethod.GET, entity, String.class);
+					pexResponseObj.put("pexForms", new JSONObject(restTemplateResponse.getBody()));
+					logger.debug("Completed PEX GET Thread::: " + new Date());
+				} catch (UnsupportedOperationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		es.shutdown();
+		boolean threadFinished = es.awaitTermination(2, TimeUnit.MINUTES);
+		logger.debug("All Threads finished::: " + new Date());
+		JSONArray sfentityArray = new JSONArray();
+		logger.debug("threadFinished::: " + threadFinished);
+		if (threadFinished) {
+			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+			for (BatchSingleResponse batchResponse : batchResponses) {
+				sfentityArray.put(new JSONObject(batchResponse.getBody()));
+			}
 		}
-		return sfentityArray.toString();
+		logger.debug("sfentityArray::: " + sfentityArray);
+		JSONObject responeObj = new JSONObject();
+		responeObj.put("SF_Data", sfentityArray);
+		responeObj.put("PEX_Data", pexResponseObj.getJSONObject("pexForms"));
+		return responeObj.toString();
 	}
 
+	private ClientHttpRequestFactory getClientHttpRequestFactory() {
+		int timeout = 5000;
+		RequestConfig config = RequestConfig.custom().setConnectTimeout(timeout).setConnectionRequestTimeout(timeout)
+				.setSocketTimeout(timeout).build();
+		CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+		return new HttpComponentsClientHttpRequestFactory(client);
+	}
 }
