@@ -3143,7 +3143,7 @@ public class POC_PreHireManagerController {
 		for (BatchSingleResponse batchResponse : batchResponses) {
 			sfentityArray.put(new JSONObject(batchResponse.getBody()));
 		}
-		logger.debug("sfentityArray::: " + sfentityArray.toString());
+		// logger.debug("sfentityArray::: " + sfentityArray.toString());
 		// logger.debug("Completed Batch Thread::: " + new Date());
 //				} catch (BatchException | UnsupportedOperationException | URISyntaxException | IOException
 //						| NamingException e) {
@@ -3164,11 +3164,11 @@ public class POC_PreHireManagerController {
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 		String url = destClient.getDestProperty("URL");
 		String jwtToken = destClient.getDestProperty("Password");
-		logger.debug("jwtTokenjwtToken::: " + jwtToken);
+		// logger.debug("jwtTokenjwtToken::: " + jwtToken);
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
 		headers.set("Authorization", "Bearer " + jwtToken);
-		logger.debug("headers::: " + headers.toString());
+		// logger.debug("headers::: " + headers.toString());
 		HttpEntity<?> entity = new HttpEntity<>(headers);
 		JSONObject pexResponseObj = new JSONObject();
 		// es.execute(new Runnable() {
@@ -3188,7 +3188,7 @@ public class POC_PreHireManagerController {
 				url + "/forms?personId=" + loggedInUser + "&countryCode=" + countryCode + "&locale=" + locale,
 				HttpMethod.GET, entity, String.class);
 		pexResponseObj.put("pexForms", new JSONObject(restTemplateResponse.getBody()));
-		logger.debug("sfentityArray::: " + restTemplateResponse.getBody());
+		// logger.debug("sfentityArray::: " + restTemplateResponse.getBody());
 		// } catch (UnsupportedOperationException e) {
 		// TODO Auto-generated catch block
 		// e.printStackTrace();
@@ -3203,7 +3203,7 @@ public class POC_PreHireManagerController {
 		// if (threadFinished) {
 
 		// }
-		logger.debug("sfentityArray::: " + sfentityArray);
+		// logger.debug("sfentityArray::: " + sfentityArray);
 		JSONObject responeObj = new JSONObject();
 		responeObj.put("SF_Data", sfentityArray);
 		responeObj.put("PEX_Data", pexResponseObj.getJSONObject("pexForms"));
