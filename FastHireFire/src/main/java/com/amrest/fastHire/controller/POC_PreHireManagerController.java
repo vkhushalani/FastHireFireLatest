@@ -24,8 +24,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
@@ -3124,7 +3122,7 @@ public class POC_PreHireManagerController {
 		BatchRequest batchRequest = new BatchRequest();
 		batchRequest.configureDestination(amitSFDestinationName);
 		entityMap.put("EmpJob", "?$filter=userId eq '" + loggedInUser
-				+ "' &$expand=companyNav,userNav&$select=company,companyNav/name_defaultValue,userNav/defaultFullName,userNav/defaultLocale&$format=JSON");
+				+ "' &$expand=userNav&$select=company,userNav/defaultFullName,userNav/defaultLocale,userNav/firstName,userNav/lastName&$format=JSON");
 //		entityMap.put("User", "?$filter=userId eq '" + loggedInUser
 //				+ "'&$format=json&$select=userId,lastName,firstName,email,defaultLocale");
 		// reading the records and creating batch post body
@@ -3132,22 +3130,28 @@ public class POC_PreHireManagerController {
 			batchRequest.createQueryPart("/" + entity.getKey() + entity.getValue(), entity.getKey());
 		}
 
-		ExecutorService es = Executors.newCachedThreadPool();
-		es.execute(new Runnable() {
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				try {
-					logger.debug("Running Batch Thread::: " + new Date());
-					batchRequest.callBatchPOST("/$batch", "");
-					logger.debug("Completed Batch Thread::: " + new Date());
-				} catch (BatchException | UnsupportedOperationException | URISyntaxException | IOException
-						| NamingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		});
+//		ExecutorService es = Executors.newCachedThreadPool();
+//		es.execute(new Runnable() {
+//			@Override
+//			public void run() {
+//				// TODO Auto-generated method stub
+//				try {
+		// logger.debug("Running Batch Thread::: " + new Date());
+		batchRequest.callBatchPOST("/$batch", "");
+		JSONArray sfentityArray = new JSONArray();
+		List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
+		for (BatchSingleResponse batchResponse : batchResponses) {
+			sfentityArray.put(new JSONObject(batchResponse.getBody()));
+		}
+		logger.debug("sfentityArray::: " + sfentityArray.toString());
+		// logger.debug("Completed Batch Thread::: " + new Date());
+//				} catch (BatchException | UnsupportedOperationException | URISyntaxException | IOException
+//						| NamingException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		});
 
 		ClientHttpRequestFactory requestFactory = getClientHttpRequestFactory();
 		RestTemplate restTemplate = new RestTemplate(requestFactory);
@@ -3167,33 +3171,38 @@ public class POC_PreHireManagerController {
 		logger.debug("headers::: " + headers.toString());
 		HttpEntity<?> entity = new HttpEntity<>(headers);
 		JSONObject pexResponseObj = new JSONObject();
-		es.execute(new Runnable() {
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				try {
-					logger.debug("Running PEX GET Thread::: " + new Date());
-					ResponseEntity<String> restTemplateResponse = restTemplate.exchange(url + "/forms?locale=en",
-							HttpMethod.GET, entity, String.class);
-					pexResponseObj.put("pexForms", new JSONObject(restTemplateResponse.getBody()));
-					logger.debug("Completed PEX GET Thread::: " + new Date());
-				} catch (UnsupportedOperationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		});
-		es.shutdown();
-		boolean threadFinished = es.awaitTermination(2, TimeUnit.MINUTES);
-		logger.debug("All Threads finished::: " + new Date());
-		JSONArray sfentityArray = new JSONArray();
-		logger.debug("threadFinished::: " + threadFinished);
-		if (threadFinished) {
-			List<BatchSingleResponse> batchResponses = batchRequest.getResponses();
-			for (BatchSingleResponse batchResponse : batchResponses) {
-				sfentityArray.put(new JSONObject(batchResponse.getBody()));
-			}
-		}
+		// es.execute(new Runnable() {
+		// @Override
+		// public void run() {
+		// TODO Auto-generated method stub
+		// try {
+		// logger.debug("Running PEX GET Thread::: " + new Date());
+		HttpSession session = request.getSession(false);
+
+		JSONObject resObj = sfentityArray.getJSONObject(0).getJSONObject("d").getJSONArray("results").getJSONObject(0);
+		String countryCode = resObj.getString("company");
+		String locale = resObj.getJSONObject("userNav").getString("defaultLocale");
+		session.setAttribute("company", countryCode);
+		session.setAttribute("defaultLocale", locale);
+		ResponseEntity<String> restTemplateResponse = restTemplate.exchange(
+				url + "/forms?personId=" + loggedInUser + "&countryCode=" + countryCode + "&locale=" + locale,
+				HttpMethod.GET, entity, String.class);
+		pexResponseObj.put("pexForms", new JSONObject(restTemplateResponse.getBody()));
+		logger.debug("sfentityArray::: " + restTemplateResponse.getBody());
+		// } catch (UnsupportedOperationException e) {
+		// TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// }
+		// });
+		// es.shutdown();
+		// boolean threadFinished = es.awaitTermination(2, TimeUnit.MINUTES);
+		// logger.debug("All Threads finished::: " + new Date());
+
+		// logger.debug("threadFinished::: " + threadFinished);
+		// if (threadFinished) {
+
+		// }
 		logger.debug("sfentityArray::: " + sfentityArray);
 		JSONObject responeObj = new JSONObject();
 		responeObj.put("SF_Data", sfentityArray);
