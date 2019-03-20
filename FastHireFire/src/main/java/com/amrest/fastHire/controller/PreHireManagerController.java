@@ -1438,7 +1438,7 @@ public class PreHireManagerController {
 		// get post JSON Object
 		JSONObject postObject = new JSONObject(postJson);
 		int startDateCheck = daysBetween(postObject.getString("startDate"));
-		if (startDateCheck >= 2) {
+		if (startDateCheck >= 3) {
 			Iterator<?> keys = postObject.keys();
 			while (keys.hasNext()) {
 				String key = (String) keys.next();
@@ -1885,7 +1885,7 @@ public class PreHireManagerController {
 			}
 			return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		logger.debug("Error: StartDate is less then 2 days!");
+		logger.debug("Error: StartDate is less then 3 days!");
 		return new ResponseEntity<>("Error: StartDate is less then 2 days!", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
