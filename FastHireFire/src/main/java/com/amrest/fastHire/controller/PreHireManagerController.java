@@ -1886,7 +1886,7 @@ public class PreHireManagerController {
 			return new ResponseEntity<>("Error", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		logger.debug("Error: StartDate is less then 3 days!");
-		return new ResponseEntity<>("Error: StartDate is less then 2 days!", HttpStatus.INTERNAL_SERVER_ERROR);
+		return new ResponseEntity<>("Error: StartDate is less then 3 days!", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
 	@GetMapping(value = "/DocDownload/{personId}")
