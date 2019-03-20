@@ -3108,8 +3108,8 @@ public class POC_PreHireManagerController {
 	}
 
 	@GetMapping(value = "/testApi")
-	public String testApi(HttpServletRequest request) throws NamingException, ClientProtocolException, IOException,
-			URISyntaxException, BatchException, UnsupportedOperationException, InterruptedException {
+	public String testApi(HttpServletRequest request) throws NamingException, IOException, URISyntaxException,
+			BatchException, UnsupportedOperationException, InterruptedException {
 		String loggedInUser = request.getUserPrincipal().getName();
 		// need to remove this code
 		if (loggedInUser.equalsIgnoreCase("S0012467286") || loggedInUser.equalsIgnoreCase("S0018269301")
