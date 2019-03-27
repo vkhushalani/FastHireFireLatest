@@ -21,19 +21,19 @@ public class ConfirmStatus {
 	@Column(name = "\"ID\"", columnDefinition = "VARCHAR(164)")
 	private String id;
 
-	@Column(name = "\"SF_ENTITY\"", columnDefinition = "VARCHAR(16)")
+	@Column(name = "\"IS_SF_ENTITY_SUCCESS\"", columnDefinition = "VARCHAR(16)")
 	private String sfEntityFlag = "";
 
-	@Column(name = "\"PEX\"", columnDefinition = "VARCHAR(16)")
+	@Column(name = "\"IS_PEX_SUCCESS\"", columnDefinition = "VARCHAR(16)")
 	private String pexUpdateFlag = "";
 
-	@Column(name = "\"DOC_GEN\"", columnDefinition = "VARCHAR(16)")
+	@Column(name = "\"IS_DOC_GEN_SUCCESS\"", columnDefinition = "VARCHAR(16)")
 	private String docGenFlag = "";
 
 	@Column(name = "\"UPDATED_ON\"", columnDefinition = "SECONDDATE")
 	private Date updatedOn;
 
-	@Column(name = "\"ENTITY_NAME\"", columnDefinition = "VARCHAR(16)")
+	@Column(name = "\"SF_ENTITYNAME_FAILED\"", columnDefinition = "VARCHAR(1024)")
 	private String entityName;
 
 	@Column(name = "\"COMPANY\"", columnDefinition = "VARCHAR(32)")
@@ -43,11 +43,14 @@ public class ConfirmStatus {
 	private String department;
 
 	@Column(name = "\"POSITION\"", columnDefinition = "VARCHAR(32)")
-	private String position;	
-	
+	private String position;
+
 	@Column(name = "\"START_DATE\"", columnDefinition = "VARCHAR(64)")
 	private String startDate;
-	
+
+	@Column(name = "\"PEX_FORM_FAILED\"", columnDefinition = "VARCHAR(1024)")
+	private String pexFormFailed;
+
 	public String getId() {
 		return id;
 	}
@@ -70,6 +73,14 @@ public class ConfirmStatus {
 
 	public void setPexUpdateFlag(String pexUpdateFlag) {
 		this.pexUpdateFlag = pexUpdateFlag;
+	}
+
+	public String getPexFormFailed() {
+		return pexFormFailed;
+	}
+
+	public void setPexFormFailed(String pexFormFailed) {
+		this.pexFormFailed = pexFormFailed;
 	}
 
 	public String getDocGenFlag() {
@@ -123,9 +134,9 @@ public class ConfirmStatus {
 	public String getStartDate() {
 		return startDate;
 	}
+
 	public void setStartDate(String startDate) {
 		this.startDate = startDate;
 	}
-
 
 }
