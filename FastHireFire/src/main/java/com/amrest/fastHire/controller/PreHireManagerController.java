@@ -208,7 +208,7 @@ public class PreHireManagerController {
 		destClient.setDestConfiguration();
 		destClient.setHeaders(destClient.getDestProperty("Authentication"));
 
-		// get the Emjob Details of the logged In user
+		// get the Emjob Details of the logged In user Added for commit
 
 		HttpResponse empJobResponse = destClient.callDestinationGET("/EmpJob", "?$filter=userId eq '" + loggedInUser
 				+ "' &$format=json&$expand=positionNav,positionNav/companyNav&$select=positionNav/company,positionNav/department,position,positionNav/companyNav/country");
