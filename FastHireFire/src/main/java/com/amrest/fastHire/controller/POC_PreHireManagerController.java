@@ -2634,9 +2634,13 @@ public class POC_PreHireManagerController {
 		parameters.put(new JSONObject().put("Key", "EN_CS_HUN_HOMEADDRESS_ADDRESS2").put("Value",
 				getValuesDynamically(propertiesADDRESS2, reqObject)));
 		parameters.put(new JSONObject().put("Key", "EN_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
-				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
-						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), Locale.US,
-								false)));// Check for contractEndDate
+				reqObject.getJSONObject("EmpJob").has("contractEndDate")
+						? String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate"))
+								.equalsIgnoreCase("null")
+										? ""
+										: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"),
+												Locale.US, false)
+						: ""));// Check for contractEndDate
 		// this
 		parameters.put(new JSONObject().put("Key", "EN_CS_CALC3_FT_PT").put("Value", fulltimeOrPartimeEN));
 		parameters.put(new JSONObject().put("Key", "HU_CS_CALC3_FT_PT").put("Value", fulltimeOrPartimeHU));
@@ -2645,9 +2649,15 @@ public class POC_PreHireManagerController {
 		logger.debug("HU_CS_EMPLOYMENTDETAILS_HIRE_DATE" + sDateString);
 		parameters.put(new JSONObject().put("Key", "HU_CS_EMPLOYMENTDETAILS_HIRE_DATE").put("Value",
 				formatDate(sDateString, "HUN", true)));
+		// reqObject.has("cust_Additional_Information")
 		parameters.put(new JSONObject().put("Key", "HU_CS_JOBINFO_CONTRACT_END_DATE").put("Value",
-				String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate")).equalsIgnoreCase("null") ? ""
-						: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"), "HUN", true)));// Check
+				reqObject.getJSONObject("EmpJob").has("contractEndDate")
+						? String.valueOf(reqObject.getJSONObject("EmpJob").get("contractEndDate"))
+								.equalsIgnoreCase("null")
+										? ""
+										: formatDate(reqObject.getJSONObject("EmpJob").getString("contractEndDate"),
+												"HUN", true)
+						: ""));// Check
 		parameters.put(new JSONObject().put("Key", "EN_CS_CALC5_LAST_DAY_YEAR_PLUS1").put("Value",
 
 				formatLastYearDay(sDateString, Locale.US, false))); // contractEndDate
