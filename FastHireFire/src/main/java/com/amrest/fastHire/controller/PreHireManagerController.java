@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -92,6 +94,8 @@ import com.amrest.fastHire.service.SFConstantsService;
 import com.amrest.fastHire.utilities.DashBoardPositionClass;
 import com.amrest.fastHire.utilities.DropDownKeyValue;
 import com.google.gson.Gson;
+import com.sap.core.connectivity.api.configuration.ConnectivityConfiguration;
+import com.sap.core.connectivity.api.configuration.DestinationConfiguration;
 
 @RestController
 @RequestMapping("/PreHireManager")
@@ -101,6 +105,8 @@ public class PreHireManagerController {
 	public static final String pexDestinationName = "FastHirePEX";
 	public static final String docdestinationName = "DocumentGeneration";
 	public static final String pocDocDestinationName = "DocGeneration";
+	private Context ctx;
+	private ConnectivityConfiguration configuration;
 
 	private enum hunLocale {
 		január, február, március, április, május, junius, julius, augusztus, szeptember, október, november, december
@@ -1431,8 +1437,13 @@ public class PreHireManagerController {
 			throws FileNotFoundException, IOException, ParseException, URISyntaxException, NamingException,
 			java.text.ParseException, BatchException, UnsupportedOperationException, NoSuchMethodException,
 			SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		ctx = new InitialContext();
+		configuration = (ConnectivityConfiguration) ctx.lookup("java:comp/env/connectivityConfiguration");
+		logger.debug("pexDestinationName: " + pexDestinationName);
+		logger.debug("configuration.getConfiguration(pexDestinationName): "
+				+ configuration.getConfiguration(pexDestinationName));
+		DestinationConfiguration pexDestination = configuration.getConfiguration(pexDestinationName);
 		String loggedInUser = request.getUserPrincipal().getName();
-
 		Map<String, String> map = new HashMap<String, String>();
 
 		// get post JSON Object
@@ -1715,7 +1726,8 @@ public class PreHireManagerController {
 									// logger.debug("empJobResponseJsonObject" +
 									// empJobResponseJsonObject.toString());
 									PexClient pexClient = new PexClient();
-									pexClient.setDestination(pexDestinationName);
+									logger.debug("setting pexDestination: " + pexDestination);
+									pexClient.setDestination(pexDestination);
 									pexClient.setJWTInitalization(loggedInUser,
 											empJobResponseJsonObject.getString("company"));
 									counter = 0;
@@ -2035,6 +2047,12 @@ public class PreHireManagerController {
 	public ResponseEntity<?> ReUpdate(@PathVariable("personId") String personId, HttpServletRequest request)
 			throws NamingException, BatchException, ClientProtocolException, UnsupportedOperationException,
 			URISyntaxException, IOException {
+		ctx = new InitialContext();
+		configuration = (ConnectivityConfiguration) ctx.lookup("java:comp/env/connectivityConfiguration");
+		logger.debug("pexDestinationName: " + pexDestinationName);
+		logger.debug("configuration.getConfiguration(pexDestinationName): "
+				+ configuration.getConfiguration(pexDestinationName));
+		DestinationConfiguration pexDestination = configuration.getConfiguration(pexDestinationName);
 		String loggedInUser = request.getUserPrincipal().getName();
 		Map<String, String> map = new HashMap<String, String>();
 		logger.debug("START REPSOT");
@@ -2316,7 +2334,8 @@ public class PreHireManagerController {
 							.getJSONObject(0);
 					logger.debug("empJobResponseJsonObject" + empJobResponseJsonObject.toString());
 					PexClient pexClient = new PexClient();
-					pexClient.setDestination(pexDestinationName);
+					logger.debug("setting pexDestination: " + pexDestination);
+					pexClient.setDestination(pexDestination);
 					pexClient.setJWTInitalization(loggedInUser, empJobResponseJsonObject.getString("company"));
 					counter = 0;
 
