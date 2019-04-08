@@ -1559,94 +1559,9 @@ public class PreHireManagerController {
 
 						try {
 
-							// updating the startDate and employeeClass to confirm the
-							// hire
-							logger.debug("confirmStatus.getId():" + confirmStatus.getId());
-							ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
-							logger.debug("ctemp:" + temp);
-							temp.setUpdatedOn(new Date());
-							temp.setSfEntityFlag("BEGIN");
-							confirmStatusService.update(temp);
-							timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-							logger.debug("before SF Updates" + timeStamp);
-
-							for (Map.Entry<String, String> entity : entityMap.entrySet()) {
-
-								if (!(entity.getKey().equalsIgnoreCase("PerPerson")
-										|| entity.getKey().equalsIgnoreCase("PerEmail")
-										|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
-										|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate"))) {
-
-									String getresponseJson = entityResponseMap.get(entity.getKey());
-									if (getresponseJson != null) {
-										JSONObject getresponseJsonObject = new JSONObject(getresponseJson);
-										// logger.debug("getresponseJson"+getresponseJson);
-										if (getresponseJsonObject.getJSONObject("d").getJSONArray("results")
-												.length() != 0) {
-											JSONObject getresultObj = getresponseJsonObject.getJSONObject("d")
-													.getJSONArray("results").getJSONObject(0);
-
-											if (entity.getKey().equalsIgnoreCase("PaymentInformationV3")) {
-												getresultObj.put("effectiveStartDate", map.get("startDate"));
-												JSONObject paymentInfoDetail = getresultObj
-														.getJSONObject("toPaymentInformationDetailV3")
-														.getJSONArray("results").getJSONObject(0);
-												paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",
-														map.get("startDate"));
-												getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
-
-											} else if (entity.getKey().equalsIgnoreCase("EmpJob")) {
-												getresultObj.put("startDate", map.get("startDate"));
-												if (getresultObj.getString("countryOfCompany") != null) {
-													SFConstants employeeClassConst = sfConstantsService
-															.findById("employeeClassId_"
-																	+ getresultObj.getString("countryOfCompany"));
-													getresultObj.put("employeeClass", employeeClassConst.getValue());
-
-												}
-
-												// remove countryOfCompany due to un
-												// upsertable field
-												getresultObj.remove("countryOfCompany");
-												getresultObj.remove("jobTitle");
-												getresultObj.remove("positionNav");
-
-											} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
-												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
-											} else {
-												getresultObj.put("startDate", map.get("startDate"));
-											}
-
-											String postJsonString = getresultObj.toString();
-
-											HttpResponse updateresponse = destClient.callDestinationPOST("/upsert",
-													"?$format=json&purgeType=full", postJsonString);
-											// String entityPostResponseJsonString =
-											// EntityUtils.toString(updateresponse.getEntity(),
-											// "UTF-8");
-											if (updateresponse.getStatusLine().getStatusCode() != 200) {
-												temp = confirmStatusService.findById(confirmStatus.getId());
-												temp.setUpdatedOn(new Date());
-												temp.setSfEntityFlag("FAILED");
-												temp.setEntityName(entity.getKey());
-												confirmStatusService.update(temp);
-											}
-											// logger.debug(entity.getKey() + "
-											// updateresponse" + updateresponse);
-										}
-									}
-								}
-							}
-							if (!confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
-								temp = confirmStatusService.findById(confirmStatus.getId());
-								temp.setUpdatedOn(new Date());
-								temp.setSfEntityFlag("SUCCESS");
-								confirmStatusService.update(temp);
-							}
 							timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 							logger.debug("After SF Updates" + timeStamp);
-							temp = confirmStatusService.findById(confirmStatus.getId());
+							ConfirmStatus temp = confirmStatusService.findById(confirmStatus.getId());
 							temp.setUpdatedOn(new Date());
 							temp.setPexUpdateFlag("BEGIN");
 							confirmStatusService.update(temp);
@@ -1659,6 +1574,7 @@ public class PreHireManagerController {
 									entityResponseMap.get("cust_Additional_Information"));
 							JSONObject mdfFieldsObject2 = new JSONObject(
 									entityResponseMap.get("cust_personIdGenerate"));
+							/* PEX Started */
 							try {
 								if (mdfFieldsObject.getJSONObject("d").getJSONArray("results").length() > 0) {
 
@@ -1880,6 +1796,94 @@ public class PreHireManagerController {
 								confirmStatusService.update(temp);
 								e.printStackTrace();
 							}
+							/* PEX Ended */
+							// updating the startDate and employeeClass to confirm the
+							// hire
+							logger.debug("confirmStatus.getId():" + confirmStatus.getId());
+							temp = confirmStatusService.findById(confirmStatus.getId());
+							logger.debug("ctemp:" + temp);
+							temp.setUpdatedOn(new Date());
+							/* SF Started */
+							temp.setSfEntityFlag("BEGIN");
+							confirmStatusService.update(temp);
+							timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+							logger.debug("before SF Updates" + timeStamp);
+
+							for (Map.Entry<String, String> entity : entityMap.entrySet()) {
+
+								if (!(entity.getKey().equalsIgnoreCase("PerPerson")
+										|| entity.getKey().equalsIgnoreCase("PerEmail")
+										|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
+										|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate"))) {
+
+									String getresponseJson = entityResponseMap.get(entity.getKey());
+									if (getresponseJson != null) {
+										JSONObject getresponseJsonObject = new JSONObject(getresponseJson);
+										// logger.debug("getresponseJson"+getresponseJson);
+										if (getresponseJsonObject.getJSONObject("d").getJSONArray("results")
+												.length() != 0) {
+											JSONObject getresultObj = getresponseJsonObject.getJSONObject("d")
+													.getJSONArray("results").getJSONObject(0);
+
+											if (entity.getKey().equalsIgnoreCase("PaymentInformationV3")) {
+												getresultObj.put("effectiveStartDate", map.get("startDate"));
+												JSONObject paymentInfoDetail = getresultObj
+														.getJSONObject("toPaymentInformationDetailV3")
+														.getJSONArray("results").getJSONObject(0);
+												paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",
+														map.get("startDate"));
+												getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
+
+											} else if (entity.getKey().equalsIgnoreCase("EmpJob")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												if (getresultObj.getString("countryOfCompany") != null) {
+													SFConstants employeeClassConst = sfConstantsService
+															.findById("employeeClassId_"
+																	+ getresultObj.getString("countryOfCompany"));
+													getresultObj.put("employeeClass", employeeClassConst.getValue());
+
+												}
+
+												// remove countryOfCompany due to un
+												// upsertable field
+												getresultObj.remove("countryOfCompany");
+												getresultObj.remove("jobTitle");
+												getresultObj.remove("positionNav");
+
+											} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												getresultObj.put("notes", "Date updated");
+											} else {
+												getresultObj.put("startDate", map.get("startDate"));
+											}
+
+											String postJsonString = getresultObj.toString();
+
+											HttpResponse updateresponse = destClient.callDestinationPOST("/upsert",
+													"?$format=json&purgeType=full", postJsonString);
+											// String entityPostResponseJsonString =
+											// EntityUtils.toString(updateresponse.getEntity(),
+											// "UTF-8");
+											if (updateresponse.getStatusLine().getStatusCode() != 200) {
+												temp = confirmStatusService.findById(confirmStatus.getId());
+												temp.setUpdatedOn(new Date());
+												temp.setSfEntityFlag("FAILED");
+												temp.setEntityName(entity.getKey());
+												confirmStatusService.update(temp);
+											}
+											// logger.debug(entity.getKey() + "
+											// updateresponse" + updateresponse);
+										}
+									}
+								}
+							}
+							if (!confirmStatus.getSfEntityFlag().equalsIgnoreCase("FAILED")) {
+								temp = confirmStatusService.findById(confirmStatus.getId());
+								temp.setUpdatedOn(new Date());
+								temp.setSfEntityFlag("SUCCESS");
+								confirmStatusService.update(temp);
+							}
+
 						} catch (IOException e) {
 
 							e.printStackTrace();
