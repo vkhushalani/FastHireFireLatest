@@ -1856,9 +1856,10 @@ public class PreHireManagerController {
 											} else if (entity.getKey().equalsIgnoreCase("EmpCompensation")) {
 												getresultObj.put("startDate", map.get("startDate"));
 												getresultObj.put("notes", "Date updated");
-											}
-
-											else {
+											} else if (entity.getKey().equalsIgnoreCase("PerAddressDEFLT")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												getresultObj.put("notes", "Date updated");
+											} else {
 												getresultObj.put("startDate", map.get("startDate"));
 											}
 
@@ -2210,6 +2211,12 @@ public class PreHireManagerController {
 												getresultObj.remove("positionNav");
 
 											} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												getresultObj.put("notes", "Date updated");
+											} else if (entity.getKey().equalsIgnoreCase("EmpCompensation")) {
+												getresultObj.put("startDate", map.get("startDate"));
+												getresultObj.put("notes", "Date updated");
+											} else if (entity.getKey().equalsIgnoreCase("PerAddressDEFLT")) {
 												getresultObj.put("startDate", map.get("startDate"));
 												getresultObj.put("notes", "Date updated");
 											} else {
