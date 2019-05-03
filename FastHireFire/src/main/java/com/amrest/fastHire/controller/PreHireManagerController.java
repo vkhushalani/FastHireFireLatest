@@ -1488,9 +1488,9 @@ public class PreHireManagerController {
 			entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId")
 					+ "'&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/externalName_localized,positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,customDate18");
 			entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId")
-					+ "'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
+					+ "'&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid,countryOfBirth");
 			entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId")
-					+ "'&$format=json&$select=personIdExternal,emailAddress");
+					+ "'&$format=json&$select=personIdExternal,emailAddress,isPrimary");
 			entityMap.put("cust_Additional_Information",
 					"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
 			entityMap.put("cust_personIdGenerate",
@@ -1811,9 +1811,7 @@ public class PreHireManagerController {
 
 							for (Map.Entry<String, String> entity : entityMap.entrySet()) {
 
-								if (!(entity.getKey().equalsIgnoreCase("PerPerson")
-										|| entity.getKey().equalsIgnoreCase("PerEmail")
-										|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
+								if (!(entity.getKey().equalsIgnoreCase("cust_Additional_Information")
 										|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate"))) {
 
 									String getresponseJson = entityResponseMap.get(entity.getKey());
@@ -1832,8 +1830,9 @@ public class PreHireManagerController {
 														.getJSONArray("results").getJSONObject(0);
 												paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",
 														map.get("startDate"));
+												paymentInfoDetail.put("cust_notes", "Updated by Fast Hire App");
 												getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
-
+												getresultObj.put("cust_notes", "Updated by Fast Hire App");
 											} else if (entity.getKey().equalsIgnoreCase("EmpJob")) {
 												getresultObj.put("startDate", map.get("startDate"));
 												if (getresultObj.getString("countryOfCompany") != null) {
@@ -1849,16 +1848,29 @@ public class PreHireManagerController {
 												getresultObj.remove("countryOfCompany");
 												getresultObj.remove("jobTitle");
 												getresultObj.remove("positionNav");
-
+												getresultObj.put("notes", "Updated by Fast Hire App");
 											} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
 												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
+												getresultObj.put("notes", "Updated by Fast hire app");
 											} else if (entity.getKey().equalsIgnoreCase("EmpCompensation")) {
 												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
+												getresultObj.put("notes", "Updated by Fast hire app");
 											} else if (entity.getKey().equalsIgnoreCase("PerAddressDEFLT")) {
 												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
+												getresultObj.put("notes", "Updated by Fast hire app");
+											}
+
+											else if (entity.getKey().equalsIgnoreCase("PerPersonal")) {
+												getresultObj.put("notes", "Updated by Fast Hire App");
+												getresultObj.put("startDate", map.get("startDate"));
+											} else if (entity.getKey().equalsIgnoreCase("EmpEmployment")) {
+												getresultObj.put("notes", "Updated by Fast Hire App");
+												getresultObj.put("startDate", map.get("startDate"));
+											} else if (entity.getKey().equalsIgnoreCase("PerEmail")) {
+												getresultObj.put("customString1", "Updated by Fast Hire App");
+											} else if (entity.getKey().equalsIgnoreCase("PerPerson")) {
+												getresultObj.remove("perPersonUuid");
+												getresultObj.put("customString1", "Updated by Fast Hire App");
 											} else {
 												getresultObj.put("startDate", map.get("startDate"));
 											}
@@ -2103,9 +2115,9 @@ public class PreHireManagerController {
 		entityMap.put("EmpJob", "?$filter=userId eq '" + map.get("userId") + "'&fromDate=" + dateString
 				+ "&$format=json&$expand=positionNav/companyNav,positionNav&$select=positionNav/companyNav/country,jobTitle,startDate,userId,jobCode,employmentType,workscheduleCode,division,standardHours,costCenter,payGrade,department,timeTypeProfileCode,businessUnit,managerId,position,employeeClass,countryOfCompany,location,holidayCalendarCode,company,eventReason,contractEndDate,contractType,customString1,positionNav/externalName_localized,customDate18");
 		entityMap.put("PerPerson", "?$filter=personIdExternal  eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid");
+				+ "&$format=json&$select=personIdExternal,dateOfBirth,placeOfBirth,perPersonUuid,countryOfBirth");
 		entityMap.put("PerEmail", "?$filter=personIdExternal eq '" + map.get("userId") + "'&fromDate=" + dateString
-				+ "&$format=json&$select=personIdExternal,emailAddress");
+				+ "&$format=json&$select=personIdExternal,emailAddress,isPrimary");
 		entityMap.put("cust_Additional_Information",
 				"?$format=json&$filter=externalCode eq '" + map.get("userId") + "'&fromDate=" + dateString);
 		entityMap.put("cust_personIdGenerate",
@@ -2171,9 +2183,7 @@ public class PreHireManagerController {
 
 							for (Map.Entry<String, String> entity : entityMap.entrySet()) {
 
-								if (!(entity.getKey().equalsIgnoreCase("PerPerson")
-										|| entity.getKey().equalsIgnoreCase("PerEmail")
-										|| entity.getKey().equalsIgnoreCase("cust_Additional_Information")
+								if (!(entity.getKey().equalsIgnoreCase("cust_Additional_Information")
 										|| entity.getKey().equalsIgnoreCase("cust_personIdGenerate"))) {
 
 									String getresponseJson = entityResponseMap.get(entity.getKey());
@@ -2192,8 +2202,10 @@ public class PreHireManagerController {
 														.getJSONArray("results").getJSONObject(0);
 												paymentInfoDetail.put("PaymentInformationV3_effectiveStartDate",
 														map.get("startDate"));
+												paymentInfoDetail.put("cust_notes", "Updated by Fast Hire App");
+												;
 												getresultObj.put("toPaymentInformationDetailV3", paymentInfoDetail);
-
+												getresultObj.put("cust_notes", "Updated by Fast Hire App");
 											} else if (entity.getKey().equalsIgnoreCase("EmpJob")) {
 												getresultObj.put("startDate", map.get("startDate"));
 												if (getresultObj.getString("countryOfCompany") != null) {
@@ -2209,16 +2221,29 @@ public class PreHireManagerController {
 												getresultObj.remove("countryOfCompany");
 												getresultObj.remove("jobTitle");
 												getresultObj.remove("positionNav");
-
+												getresultObj.put("notes", "Updated by Fast Hire App");
 											} else if (entity.getKey().equalsIgnoreCase("EmpPayCompRecurring")) {
 												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
+												getresultObj.put("notes", "Updated by Fast hire app");
 											} else if (entity.getKey().equalsIgnoreCase("EmpCompensation")) {
 												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
+												getresultObj.put("notes", "Updated by Fast hire app");
 											} else if (entity.getKey().equalsIgnoreCase("PerAddressDEFLT")) {
 												getresultObj.put("startDate", map.get("startDate"));
-												getresultObj.put("notes", "Date updated");
+												getresultObj.put("notes", "Updated by Fast hire app");
+											}
+
+											else if (entity.getKey().equalsIgnoreCase("PerPersonal")) {
+												getresultObj.put("notes", "Updated by Fast Hire App");
+												getresultObj.put("startDate", map.get("startDate"));
+											} else if (entity.getKey().equalsIgnoreCase("EmpEmployment")) {
+												getresultObj.put("notes", "Updated by Fast Hire App");
+												getresultObj.put("startDate", map.get("startDate"));
+											} else if (entity.getKey().equalsIgnoreCase("PerEmail")) {
+												getresultObj.put("customString1", "Updated by Fast Hire App");
+											} else if (entity.getKey().equalsIgnoreCase("PerPerson")) {
+												getresultObj.remove("perPersonUuid");
+												getresultObj.put("customString1", "Updated by Fast Hire App");
 											} else {
 												getresultObj.put("startDate", map.get("startDate"));
 											}
